@@ -1,5 +1,3 @@
-let orbitAngle = 0;
-
 // --- 1. ИНИЦИАЛИЗАЦИЯ ---
 const firebaseConfig = {
     apiKey: "AIzaSyABKHaAdlSFq1KzURXmCF5Q-9xMUgE4Ot0",
@@ -115,50 +113,68 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-
-    planets.forEach(p => {
-        const posX = p.x * canvas.width;
-        const posY = p.y * canvas.height;
-
-        // Расстояние от клика до центра планеты
-        const dist = Math.hypot(clickX - posX, clickY - posY);
-
-        // Если расстояние меньше радиуса (с запасом в 10 пикселей)
-        if (dist < (p.size / 2) + 10) {
-            console.log('Клик по планете:', p.id);
-            activatePlanetFunction(p.id);
-        }
-    });
-});
-
-function handlePress(id) {
-    tg.HapticFeedback.impactOccurred('medium');
+// --- 1. ЛОГИКА ДЕЙСТВИЙ ПРИ НАЖАТИИ ---
+function activatePlanet(id) {
+    // Проверка на наличие Telegram WebApp для вибрации
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
 
     if (id === 'runner') {
-        // Квант-ядро: вход в добычу ресурсов
         tg.showPopup({
             title: 'Добыча Кванта',
             message: 'Вход в режим Runner для сбора ресурсов и переработки их в Квант.',
             buttons: [{id: 'start', type: 'default', text: 'Запустить'}, {type: 'cancel'}]
         }, (buttonId) => {
             if (buttonId === 'start') {
-                // Здесь будет переход: window.location.href = 'runner.html';
                 console.log("Запуск Раннера...");
+                // window.location.href = 'runner.html'; // Разкомментируй, когда файл будет готов
             }
         });
     } 
     else if (id === 'build') {
-        // Земля: создание своей планеты
         tg.showAlert("Режим «Создание планеты» станет доступен в следующем обновлении!");
     }
     else if (id === 'shop') {
         tg.showAlert("Магазин временно на техобслуживании.");
     }
 }
+
+// --- 2. ОБРАБОТКА НАЖАТИЯ (КООРДИНАТЫ) ---
+function processInput(e) {
+    // Определяем координаты клика или тапа (поддержка ТГ и ПК)
+    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+
+    const rect = canvas.getBoundingClientRect();
+    const clickX = clientX - rect.left;
+    const clickY = clientY - rect.top;
+
+    planets.forEach(p => {
+        // Положение планеты на экране
+        const posX = p.x * canvas.width;
+        const posY = p.y * canvas.height;
+
+        // Расстояние от точки нажатия до центра планеты
+        const dist = Math.hypot(clickX - posX, clickY - posY);
+
+        // Если попали в радиус (+20 пикселей для удобства пальца)
+        if (dist < (p.size / 2) + 20) {
+            console.log('Попадание в планету:', p.id);
+            activatePlanet(p.id); 
+        }
+    });
+}
+
+// --- 3. ПРИВЯЗКА СОБЫТИЙ ---
+// Убираем старые клики и ставим эти:
+canvas.addEventListener('click', processInput);
+
+canvas.addEventListener('touchend', (e) => {
+    // ВАЖНО: это предотвращает "двойной клик" и лишние действия в ТГ
+    if (e.cancelable) e.preventDefault();
+    processInput(e);
+}, { passive: false });
 
 function createClickRipple(x, y) {
     const ripple = document.createElement('div');
