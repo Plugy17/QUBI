@@ -74,15 +74,26 @@ canvas {
     gap: 10px;
 }
 
-/* Настройка иконок: Крупные, но в узде */
+/* 1. Общие правила для всех иконок (защита от искажений) */
 .coin-tag img {
-    /* Мы задаем размер через высоту строки, чтобы ничего не поехало */
-    height: 28px !important; 
-    width: 28px !important;
-    min-width: 28px;
-    min-height: 28px;
-    object-fit: contain; /* Сохраняет пропорции, не плющит */
+    object-fit: contain; 
     filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+    flex-shrink: 0; /* Запрещает контейнеру сжимать иконку */
+}
+
+/* 2. Размер для QUANT (оставляем аккуратным) */
+.quant .coin-tag img {
+    height: 22px !important; 
+    width: 22px !important;
+}
+
+/* 3. УВЕЛИЧИВАЕМ ТОЛЬКО QUBI */
+/* Здесь ты можешь менять 34px на любой размер, 
+   строка .currency сама подстроится под него аккуратно */
+.qubi .coin-tag img {
+    height: 34px !important; 
+    width: 34px !important;
+    /* Если хочешь еще больше, просто увеличь цифру выше */
 }
 
 .coin-tag span {
