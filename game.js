@@ -32,6 +32,18 @@ let playerData = {
     level: 1
 };
 
+let stars = [];
+// Создаем 80 мерцающих звезд
+for(let i = 0; i < 80; i++) {
+    stars.push({
+        x: Math.random() * 100, // в процентах
+        y: Math.random() * 100,
+        size: Math.random() * 2,
+        opacity: Math.random(),
+        speed: 0.01 + Math.random() * 0.03
+    });
+}
+
 // --- 2. АВТОРИЗАЦИЯ И ЗАГРУЗКА ---
 function initGame() {
     document.getElementById('player-name').innerText = tgUser.first_name;
@@ -74,39 +86,84 @@ function hideLoading() {
 function draw() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+    // 1. Рисуем фон с легким масштабированием, чтобы он "дышал"
+    const scale = 1.05 + Math.sin(Date.now() * 0.0005) * 0.02;
+    const w = canvas.width * scale;
+    const h = canvas.height * scale;
+    const x = (canvas.width - w) / 2;
+    const y = (canvas.height - h) / 2;
+
+    ctx.drawImage(bg, x, y, w, h);
+
+    // 2. Рисуем "живые" звезды поверх
+    ctx.fillStyle = "white";
+    stars.forEach(s => {
+        s.opacity += s.speed;
+        if(s.opacity > 1 || s.opacity < 0) s.speed *= -1; // Мерцание
+        
+        ctx.globalAlpha = Math.abs(s.opacity);
+        ctx.beginPath();
+        ctx.arc((s.x / 100) * canvas.width, (s.y / 100) * canvas.height, s.size, 0, Math.PI*2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1.0;
+
+    // 3. Рисуем пульсацию вокруг активных планет
+    zones.forEach(z => {
+        const pulse = Math.sin(Date.now() * 0.003) * 10;
+        const grad = ctx.createRadialGradient(
+            z.x * canvas.width, z.y * canvas.height, z.r - 10,
+            z.x * canvas.width, z.y * canvas.height, z.r + pulse
+        );
+        grad.addColorStop(0, 'rgba(0, 229, 255, 0)');
+        grad.addColorStop(1, 'rgba(0, 229, 255, 0.2)');
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(z.x * canvas.width, z.y * canvas.height, z.r + pulse, 0, Math.PI*2);
+        ctx.fill();
+    });
+
     requestAnimationFrame(draw);
 }
 
-const zones = [
-    { id: 'runner', x: 0.22, y: 0.36, r: 60 },
-    { id: 'planet', x: 0.50, y: 0.52, r: 80 },
-    { id: 'shop',   x: 0.85, y: 0.46, r: 55 }
-];
-
-canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    zones.forEach(z => {
-        const dist = Math.sqrt((x - z.x*canvas.width)**2 + (y - z.y*canvas.height)**2);
-        if (dist < z.r) handlePress(z.id);
-    });
-});
-
 function handlePress(id) {
-    tg.HapticFeedback.impactOccurred('light');
+    // Разная вибрация для разных планет
+    if (id === 'runner') tg.HapticFeedback.notificationOccurred('success');
+    else if (id === 'planet') tg.HapticFeedback.impactOccurred('heavy');
+    else tg.HapticFeedback.impactOccurred('medium');
+
+    // Эффект вспышки на экране
+    const flash = document.createElement('div');
+    flash.style.position = 'fixed';
+    flash.style.top = '0';
+    flash.style.left = '0';
+    flash.style.width = '100%';
+    flash.style.height = '100%';
+    flash.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+    flash.style.pointerEvents = 'none';
+    flash.style.zIndex = '100';
+    document.body.appendChild(flash);
     
-    if (id === 'runner') {
-        // Пример: тратим 5 энергии за вход, получаем 1 QUANT
-        if (playerData.energy >= 5) {
-            playerData.energy -= 5;
-            playerData.quant += 1;
-            userRef.update(playerData);
-        } else {
-            tg.showAlert("Нужна подзаправка!");
-        }
+    setTimeout(() => flash.remove(), 100);
+
+    // Логика по планетам
+    switch(id) {
+        case 'runner':
+            console.log("Режим полета");
+            // Здесь можно запустить анимацию "влета" в планету
+            break;
+        case 'planet':
+            tg.showPopup({
+                title: 'Ваша Планета',
+                message: `Уровень: ${playerData.level}\nРесурсов: ${playerData.quant}`,
+                buttons: [{type: 'ok'}]
+            });
+            break;
+        case 'shop':
+            tg.showAlert("Магазин QUANT: Скоро открытие!");
+            break;
     }
 }
 
