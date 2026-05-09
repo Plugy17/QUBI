@@ -171,6 +171,8 @@ function processInput(e) {
 
         const dist = Math.hypot(clickX - posX, clickY - posY);
 
+        if (p.id === 'leaderboard') openLeaderboard();
+
         // Попадание в радиус планеты + небольшой запас
         if (dist < (p.size / 2) + 15) {
             console.log('Нажата планета:', p.id);
@@ -229,3 +231,12 @@ if (closeBtn) closeBtn.onclick = closeMoonMenu;
 // Старт
 bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
+
+function openLeaderboard() {
+    document.getElementById('leaderboard-modal').style.display = 'flex';
+    // Здесь позже добавим логику загрузки ТОП-100 из Firebase
+}
+
+function closeLeaderboard() {
+    document.getElementById('leaderboard-modal').style.display = 'none';
+}
