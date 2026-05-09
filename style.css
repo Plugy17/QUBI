@@ -49,26 +49,49 @@ canvas {
 .wallet {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(10px);
-    padding: 10px;
-    border-radius: 12px;
-    border: 1px solid rgba(0, 229, 255, 0.2);
-    min-width: 110px;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(15px);
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 140px;
     pointer-events: auto;
 }
 
 .currency {
     display: flex;
-    justify-content: space-between;
-    color: #fff;
-    font-size: 11px;
-    gap: 10px;
+    justify-content: space-between; /* Название слева, баланс справа */
+    align-items: center;
+    width: 100%;
 }
 
-#quant-val { color: #00e5ff; font-family: monospace; }
-#qubi-val { color: #ffd700; font-family: monospace; }
+.coin-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px; /* Отступ между иконкой и текстом */
+}
+
+.coin-tag img {
+    width: 18px;  /* Размер иконки */
+    height: 18px;
+    object-fit: contain;
+}
+
+.coin-tag span {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+#quant-val, #qubi-val {
+    font-size: 14px;
+    font-family: 'Courier New', monospace; /* Цифры не будут прыгать */
+}
+
+#quant-val { color: #00e5ff; }
+#qubi-val { color: #ffd700; }
 
 .energy-section {
     width: 100%;
