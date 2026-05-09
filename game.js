@@ -108,6 +108,15 @@ function initGame() {
     });
 }
 
+function updateLeaderboardData() {
+    // Создаем краткую запись о игроке
+    const leaderRef = db.ref('leaderboard/' + tgUser.id);
+    leaderRef.set({
+        name: tgUser.first_name || "Unknown Pilot",
+        qubi: playerData.qubi || 0
+    });
+}
+
 function updateUI() {
     const q = document.getElementById('quant-val'), 
           b = document.getElementById('qubi-val'), 
@@ -235,8 +244,42 @@ bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
 
 function openLeaderboard() {
-    document.getElementById('leaderboard-modal').style.display = 'flex';
-    // Здесь позже добавим логику загрузки ТОП-100 из Firebase
+    const modal = document.getElementById('leaderboard-modal');
+    const container = document.getElementById('leaderboard-container');
+    
+    if (modal) modal.style.display = 'flex';
+
+    // Ссылка на таблицу лидеров в Firebase
+    const leaderboardRef = db.ref('leaderboard');
+
+    // Запрашиваем данные, сортируем по QUBI (от большего к меньшему) и берем 100 лучших
+    leaderboardRef.orderByChild('qubi').limitToLast(100).once('value', (snapshot) => {
+        if (container) {
+            container.innerHTML = ''; // Очищаем текст загрузки
+            
+            let players = [];
+            snapshot.forEach((childSnapshot) => {
+                players.push(childSnapshot.val());
+            });
+
+            // Данные приходят от меньшего к большему, переворачиваем список
+            players.reverse();
+
+            players.forEach((player, index) => {
+                const row = document.createElement('div');
+                row.className = 'player-row';
+                
+                // Выделяем текущего игрока (тебя) другим цветом
+                const isMe = player.name === tgUser.first_name ? 'style="color: #00e5ff; font-weight: bold;"' : '';
+
+                row.innerHTML = `
+                    <span ${isMe}>${index + 1}. ${player.name}</span>
+                    <span class="score">${Math.floor(player.qubi).toLocaleString()} QUBI</span>
+                `;
+                container.appendChild(row);
+            });
+        }
+    });
 }
 
 function closeLeaderboard() {
