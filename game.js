@@ -64,7 +64,14 @@ const planets = [
         x: 0.5, y: 0.72, // Снизу от Ядра, но по центру
         size: 60,
         rotation: 0, speed: 0.003, img: new Image() 
-    }
+    },
+    { 
+    id: 'leaderboard',   
+    src: 'assets/neptun.png',  
+    x: 0.5, y: 0.32, // Располагаем над центральным ядром
+    size: 70,       
+    rotation: 0, speed: -0.0015, img: new Image() 
+}
 ];
 
 planets.forEach(p => { p.img.src = p.src; });
