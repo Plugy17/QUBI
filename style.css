@@ -52,13 +52,13 @@ canvas {
 .wallet {
     display: flex;
     flex-direction: column;
-    gap: 12px; /* Увеличили отступ между QUANT и QUBI */
-    background: rgba(0, 0, 0, 0.6); /* Чуть темнее для контраста */
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(15px);
-    padding: 15px; /* Больше внутреннего пространства */
+    padding: 12px 18px;
     border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 160px; /* Расширили, чтобы цифрам было просторно */
+    min-width: 150px;
     pointer-events: auto;
 }
 
@@ -69,41 +69,43 @@ canvas {
     width: 100%;
 }
 
+/* Общий стиль для тегов валют */
 .coin-tag {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
-.coin-tag img {
-    width: 26px;  /* Увеличили иконки */
-    height: 26px;
-    object-fit: contain; /* ГАРАНТИРУЕТ, что иконку не сплющит */
-    flex-shrink: 0; /* Не дает контейнеру сжимать картинку */
+/* Стандартная иконка для QUANT */
+.quant .coin-tag img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+/* УВЕЛИЧЕННАЯ ИКОНКА ДЛЯ QUBI */
+.qubi .coin-tag img {
+    width: 32px; /* Сделали значительно больше и виднее */
+    height: 32px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.3)); /* Легкое выделение */
 }
 
 .coin-tag span {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.8);
     font-size: 11px;
     font-weight: bold;
-    text-transform: uppercase;
 }
 
-/* QUANT оставляем аккуратным */
-#quant-val {
-    color: #00e5ff;
-    font-size: 18px;
+/* Обычный размер шрифта для всех цифр */
+#quant-val, #qubi-val {
+    font-size: 15px; 
     font-family: 'Courier New', monospace;
+    color: #fff;
 }
 
-/* QUBI делаем ГЛАВНЫМ и БОЛЬШИМ */
-#qubi-val {
-    color: #ffd700;
-    font-size: 32px; /* Значительно крупнее */
-    font-weight: 800;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-    font-family: 'Segoe UI', sans-serif; /* Более жирный шрифт для веса */
-}
+#quant-val { color: #00e5ff; }
+#qubi-val { color: #ffd700; }
 
 .energy-section {
     width: 100%;
