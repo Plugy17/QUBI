@@ -101,6 +101,10 @@ function initGame() {
         if (snapshot.exists()) {
             playerData = snapshot.val();
             updateUI();
+            
+            // ДОБАВЬ ЭТУ СТРОКУ НИЖЕ:
+            syncWithLeaderboard(); 
+            
         } else {
             userRef.set(playerData);
         }
