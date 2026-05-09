@@ -285,3 +285,12 @@ function openLeaderboard() {
 function closeLeaderboard() {
     document.getElementById('leaderboard-modal').style.display = 'none';
 }
+
+function syncWithLeaderboard() {
+    // Путь к твоим очкам в общей таблице
+    const lbRef = db.ref('leaderboard/' + tgUser.id);
+    lbRef.set({
+        name: tgUser.first_name || "Unknown Pilot",
+        qubi: playerData.qubi || 0
+    });
+}
