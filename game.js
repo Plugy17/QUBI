@@ -49,23 +49,31 @@ const planets = [
     { 
         id: 'runner', 
         src: 'assets/quant.png', 
-        x: 0.5, y: 0.5, // Строго центр
+        x: 0.5, y: 0.5,
         size: 120, 
         rotation: 0, speed: 0.002, img: new Image() 
     },
     { 
         id: 'build',  
         src: 'assets/earth.png', 
-        x: 0.22, y: 0.5, // Слева
+        x: 0.22, y: 0.5,
         size: 75, 
         rotation: 0, speed: 0.001, img: new Image() 
     },
     { 
         id: 'shop',   
         src: 'assets/mars.png',  
-        x: 0.78, y: 0.5, // Справа
+        x: 0.78, y: 0.5,
         size: 75, 
         rotation: 0, speed: -0.001, img: new Image() 
+    },
+    // НОВАЯ ПЛАНЕТА: ЛУНА
+    { 
+        id: 'moon',   
+        src: 'assets/moon.png',  
+        x: 0.5, y: 0.2, // Вверху по центру
+        size: 60,       // Чуть меньше остальных
+        rotation: 0, speed: 0.003, img: new Image() 
     }
 ];
 
@@ -175,6 +183,37 @@ function activatePlanet(id) {
     else if (id === 'shop') {
         tg.showAlert("Магазин временно на техобслуживании.");
     }
+}
+
+// Обработка кликов по планетам
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    planets.forEach(p => {
+        const px = p.x * canvas.width / (window.devicePixelRatio || 1);
+        const py = p.y * canvas.height / (window.devicePixelRatio || 1);
+        
+        // Проверка: попал ли клик в радиус планеты
+        const dist = Math.sqrt((x - px)**2 + (y - py)**2);
+        
+        if (dist < p.size / 2) {
+            if (p.id === 'moon') openMoonMenu();
+            if (p.id === 'runner') console.log("Запуск раннера...");
+            // Добавь логику для остальных планет здесь
+        }
+    });
+});
+
+function openMoonMenu() {
+    document.getElementById('moon-modal').style.display = 'flex';
+    // Обнови количество ресурсов из своей переменной
+    // document.getElementById('res-amount').innerText = userResources;
+}
+
+function closeMoonMenu() {
+    document.getElementById('moon-modal').style.display = 'none';
 }
 
 // --- 2. ОБРАБОТКА НАЖАТИЯ (КООРДИНАТЫ) ---
