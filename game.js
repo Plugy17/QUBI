@@ -1,4 +1,4 @@
-// --- 1. CONFIG & INIT ---
+// --- 1. ИНИЦИАЛИЗАЦИЯ ---
 const firebaseConfig = {
     apiKey: "AIzaSyABKHaAdlSFq1KzURXmCF5Q-9xMUgE4Ot0",
     authDomain: "berry-game-4fa9b.firebaseapp.com",
@@ -20,31 +20,32 @@ const ctx = canvas.getContext('2d');
 const bg = new Image();
 bg.src = 'assets/background1.jpg'; 
 
-// --- 2. PLANETS DATA (ONLY ONE DECLARATION) ---
+// --- 2. ПЛАНЕТЫ ---
 const planets = [
     { id: 'runner', src: 'assets/earth.png', x: 0.15, y: 0.3, size: 80, rotation: 0, speed: 0.002, img: new Image() },
-    { id: 'planet', src: 'assets/quant.png', x: 0.5, y: 0.5, size: 150, rotation: 0, speed: 0.001, img: new Image() },
-    { id: 'shop',   src: 'assets/mars.png',  x: 0.8, y: 0.6, size: 90,  rotation: 0, speed: -0.0015, img: new Image() }
+    { id: 'planet', src: 'assets/quant.png', x: 0.5, y: 0.5, size: 140, rotation: 0, speed: 0.001, img: new Image() },
+    { id: 'shop',   src: 'assets/mars.png',  x: 0.8, y: 0.65, size: 90,  rotation: 0, speed: -0.0015, img: new Image() }
 ];
 
 planets.forEach(p => { p.img.src = p.src; });
 
-// User Data
+// Данные игрока
 const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot" };
 const userRef = db.ref('users/' + tgUser.id);
 let playerData = { quant: 0, qubi: 0, energy: 100, level: 1 };
 
 let mouseX = 0, mouseY = 0;
+// Ослабил параллакс для мобилок (коэффициент 5 вместо 15)
 window.addEventListener('mousemove', (e) => {
-    mouseX = (e.clientX / window.innerWidth - 0.5) * 15;
-    mouseY = (e.clientY / window.innerHeight - 0.5) * 15;
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 5;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 5;
 });
 
 let stars = Array.from({length: 80}, () => ({
     x: Math.random() * 100, y: Math.random() * 100, size: Math.random() * 2, blink: 0.02 + Math.random() * 0.03
 }));
 
-// --- 3. FUNCTIONS ---
+// --- 3. ЛОГИКА ---
 function initGame() {
     const nameEl = document.getElementById('player-name');
     if(nameEl) nameEl.innerText = tgUser.first_name;
@@ -99,21 +100,34 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-// --- 4. INPUTS ---
 canvas.addEventListener('click', (e) => {
     const x = e.clientX, y = e.clientY;
     planets.forEach(p => {
         const pX = p.x * canvas.width + (mouseX * 0.5), pY = p.y * canvas.height + (mouseY * 0.5);
-        if (Math.sqrt((x - pX)**2 + (y - pY)**2) < p.size / 2) handlePress(p.id);
+        if (Math.sqrt((x - pX)**2 + (y - pY)**2) < p.size / 2) {
+            createClickRipple(x, y);
+            handlePress(p.id);
+        }
     });
 });
 
 function handlePress(id) {
     tg.HapticFeedback.impactOccurred('light');
-    if (id === 'runner') console.log("Run!");
-    else if (id === 'planet') tg.showAlert(`QUBI Level: ${playerData.level}`);
+    if (id === 'runner') console.log("Run Game");
+    else if (id === 'planet') {
+        playerData.quant += 1; // Простой кликер для теста
+        updateUI();
+        userRef.update({ quant: playerData.quant });
+    }
 }
 
-// Start
+function createClickRipple(x, y) {
+    const ripple = document.createElement('div');
+    ripple.className = 'ripple';
+    ripple.style.left = x + 'px'; ripple.style.top = y + 'px';
+    document.body.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 400);
+}
+
 bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
