@@ -142,12 +142,33 @@ function draw() {
 }
 
 canvas.addEventListener('click', (e) => {
-    const x = e.clientX, y = e.clientY;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
     planets.forEach(p => {
-        const pX = p.x * canvas.width + (mouseX * 0.5), pY = p.y * canvas.height + (mouseY * 0.5);
-        if (Math.sqrt((x - pX)**2 + (y - pY)**2) < p.size / 2) {
-            createClickRipple(x, y);
-            handlePress(p.id);
+        let posX, posY;
+
+        // ВЫЧИСЛЯЕМ ТЕКУЩИЕ КООРДИНАТЫ (копия логики из draw)
+        if (p.id === 'runner') {
+            posX = 0.5 * canvas.width;
+            posY = 0.5 * canvas.height;
+        } else if (p.id === 'build') {
+            const radius = canvas.width * 0.22;
+            posX = (0.5 * canvas.width) + Math.cos(orbitAngle) * radius;
+            posY = (0.5 * canvas.height) + Math.sin(orbitAngle) * radius;
+        } else if (p.id === 'shop') {
+            const radius = canvas.width * 0.32;
+            posX = (0.5 * canvas.width) + Math.cos(orbitAngle + Math.PI) * radius;
+            posY = (0.5 * canvas.height) + Math.sin(orbitAngle + Math.PI) * radius;
+        }
+
+        // Проверяем расстояние от клика до центра планеты
+        const dist = Math.hypot(clickX - posX, clickY - posY);
+
+        if (dist < p.size / 2) {
+            console.log('Нажали на:', p.id);
+            activatePlanetFunction(p.id); // Твоя функция активации
         }
     });
 });
