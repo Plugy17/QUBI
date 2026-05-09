@@ -31,33 +31,30 @@ canvas {
 
 #ui-layer {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0; 
+    left: 0;
+    width: 100%; 
+    height: 100%;
     z-index: 10;
     pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 20px;
     box-sizing: border-box;
 }
 
-.game-header { /* Замени на свой класс верхней панели */
+.game-header {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    padding-top: env(safe-area-inset-top, 20px); /* ВОТ ЭТО ГЛАВНОЕ */
+    /* Увеличиваем отступ: безопасная зона + 15px сверху */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 15px); 
     padding-left: 15px;
     padding-right: 15px;
+    
     display: flex;
     justify-content: space-between;
+    /* Выравниваем элементы по верху, чтобы они не растягивались */
+    align-items: flex-start; 
     z-index: 20;
-}
-
-/* Если ник и кошелек в разных блоках, добавь это им: */
-.wallet, .user-nick {
-    margin-top: 10px; /* Дополнительный отступ, если нужно */
 }
 
 .user-info {
@@ -70,10 +67,13 @@ canvas {
     font-weight: 600;
     font-size: 12px;
     pointer-events: auto;
+    
+    /* Чтобы блок не растягивался по вертикали */
+    display: flex;
+    align-items: center;
+    height: fit-content; 
 }
 
-/* Контейнер кошелька */
-/* Контейнер кошелька */
 .wallet {
     display: flex;
     flex-direction: column;
@@ -83,8 +83,20 @@ canvas {
     padding: 12px 16px;
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 170px; /* Фиксированная ширина — наш главный якорь */
+    width: 170px; 
     pointer-events: auto;
+    
+    /* Дополнительный сдвиг вниз для кошелька, если нужно */
+    margin-top: 5px; 
+}
+
+/* Секция энергии (внизу) */
+.energy-section {
+    position: absolute;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
 }
 
 .currency {
