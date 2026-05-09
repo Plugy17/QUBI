@@ -86,3 +86,25 @@ canvas {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.ripple {
+    position: fixed;
+    width: 2px; height: 2px;
+    background: rgba(0, 229, 255, 0.8);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 100;
+    transform: translate(-50%, -50%);
+    animation: ripple-animation 0.6s ease-out;
+}
+
+@keyframes ripple-animation {
+    from { width: 0; height: 0; opacity: 1; }
+    to { width: 150px; height: 150px; opacity: 0; }
+}
+
+/* Сделаем шрифт в UI более "космическим" */
+#player-name, .wallet {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
