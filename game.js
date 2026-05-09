@@ -90,20 +90,22 @@ function draw() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Рисуем чистый фон без прозрачности
-    ctx.globalAlpha = 1.0; 
+    // Сбрасываем все настройки канваса до "чистых"
+    ctx.filter = 'none'; 
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0; // Убираем возможные тени
+
     if (bg.complete) {
         ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
     }
 
-    // Отрисовка планет (строго квадратные, чтобы не плющило)
     planets.forEach(p => {
         if (p.img.complete) {
             ctx.save();
             ctx.translate(p.x * canvas.width, p.y * canvas.height);
             p.rotation += p.speed;
             ctx.rotate(p.rotation);
-            // Используем p.size и для ширины, и для высоты
+            // Рисуем строго в размер p.size без эффектов
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
