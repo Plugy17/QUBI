@@ -4,107 +4,153 @@ body, html {
     overflow: hidden; background: #000;
     font-family: 'Segoe UI', Roboto, sans-serif;
     user-select: none;
+    -webkit-tap-highlight-color: transparent; /* Убирает синюю рамку при клике на мобилках */
 }
 
+/* Оптимизируем канвас: убираем лишние фильтры, чтобы PNG планет выглядели чисто */
 canvas {
-    filter: contrast(1.1) brightness(1.1) saturate(1.1);
+    display: block;
+    /* Убрали жесткий контраст, оставили легкую сочность */
+    filter: saturate(1.05);
 }
 
 #ui-layer {
     position: absolute; top: 0; left: 0;
     width: 100%; height: 100%;
     z-index: 10;
+    pointer-events: none; /* Пропускает клики сквозь слой UI к канвасу */
 }
 
 /* Шапка профиля */
 .game-header {
     display: flex; justify-content: space-between;
-    align-items: flex-start; padding: 20px;
-    pointer-events: auto;
+    align-items: flex-start; padding: 25px 20px;
+    pointer-events: none;
 }
 
 .user-info {
     display: flex; align-items: center;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 8px 15px; border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff; font-weight: 500;
+    background: rgba(255, 255, 255, 0.05); /* Более прозрачный и современный вид */
+    backdrop-filter: blur(10px); /* Эффект матового стекла */
+    padding: 8px 18px; border-radius: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff; font-weight: 600;
+    pointer-events: auto;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* Кошелек с валютами */
 .wallet {
-    display: flex; flex-direction: column; gap: 5px;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 10px; border-radius: 15px;
-    border: 1px solid rgba(0, 229, 255, 0.3);
-    min-width: 120px;
+    display: flex; flex-direction: column; gap: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    padding: 12px 15px; border-radius: 18px;
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    min-width: 130px;
+    pointer-events: auto;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
 }
 
-.currency { display: flex; align-items: center; justify-content: space-between; color: #fff; }
-.quant span { color: #00e5ff; font-family: 'Courier New', monospace; font-weight: bold; }
-.qubi b { color: #ffd700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+.currency { 
+    display: flex; align-items: center; justify-content: space-between; 
+    color: #fff; font-size: 14px;
+}
+
+.quant span { 
+    color: #00e5ff; 
+    font-family: 'Courier New', monospace; 
+    font-weight: bold; 
+    text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+.qubi b { 
+    color: #ffd700; 
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); 
+}
 
 /* Энергия */
 .energy-section {
-    position: absolute; bottom: 40px; left: 50%;
+    position: absolute; bottom: 50px; left: 50%;
     transform: translateX(-50%); text-align: center;
     pointer-events: auto;
 }
 
 .energy-bar {
-    width: 220px; height: 14px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 7px; border: 1px solid rgba(255, 255, 255, 0.4);
-    overflow: hidden; margin-bottom: 5px;
+    width: 240px; height: 10px; /* Сделали чуть тоньше для изящности */
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden; margin-bottom: 8px;
+    backdrop-filter: blur(5px);
 }
 
 #energy-fill {
     width: 100%; height: 100%;
-    background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
-    box-shadow: 0 0 10px #4facfe;
-    transition: width 0.5s ease-out;
+    background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.6);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.energy-label { color: #fff; font-size: 10px; letter-spacing: 2px; font-weight: bold; }
+.energy-label { 
+    color: rgba(255, 255, 255, 0.8); 
+    font-size: 9px; letter-spacing: 3px; 
+    font-weight: 900; text-transform: uppercase;
+}
 
 /* Экран загрузки */
 #loading-screen {
     position: fixed; top: 0; left: 0;
     width: 100%; height: 100%;
-    background: #000; display: flex;
-    flex-direction: column; align-items: center;
-    justify-content: center; z-index: 100;
-    color: #fff; transition: opacity 0.5s ease;
+    background: radial-gradient(circle at center, #111 0%, #000 100%); 
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; z-index: 1000;
+    color: #fff; transition: opacity 0.8s ease;
 }
 
 .loader {
-    width: 50px; height: 50px;
-    border: 3px solid rgba(0, 229, 255, 0.2);
+    width: 40px; height: 40px;
+    border: 2px solid rgba(0, 229, 255, 0.1);
     border-top-color: #00e5ff;
-    border-radius: 50%; animation: spin 1s linear infinite;
+    border-radius: 50%; animation: spin 0.8s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
     margin-bottom: 20px;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Эффекты нажатия */
 .ripple {
     position: fixed;
     width: 2px; height: 2px;
-    background: rgba(0, 229, 255, 0.8);
+    background: radial-gradient(circle, rgba(0, 229, 255, 0.6) 0%, transparent 70%);
+    border: 1px solid rgba(0, 229, 255, 0.3);
     border-radius: 50%;
     pointer-events: none;
-    z-index: 100;
+    z-index: 99;
     transform: translate(-50%, -50%);
-    animation: ripple-animation 0.6s ease-out;
+    animation: ripple-animation 0.5s ease-out;
 }
 
 @keyframes ripple-animation {
     from { width: 0; height: 0; opacity: 1; }
-    to { width: 150px; height: 150px; opacity: 0; }
+    to { width: 120px; height: 120px; opacity: 0; }
 }
 
-/* Сделаем шрифт в UI более "космическим" */
-#player-name, .wallet {
+/* Вспышка при клике на планету */
+.screen-flash {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 229, 255, 0.05);
+    pointer-events: none; z-index: 100;
+    animation: flash-anim 0.2s ease-out;
+}
+
+@keyframes flash-anim {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+#player-name, .wallet, .energy-label {
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
 }
