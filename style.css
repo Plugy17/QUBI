@@ -48,16 +48,17 @@ canvas {
 }
 
 /* Контейнер кошелька */
+/* Контейнер кошелька */
 .wallet {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(15px);
     padding: 12px 16px;
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 160px; /* Фиксируем ширину кошелька */
+    width: 170px; /* Фиксированная ширина — наш главный якорь */
     pointer-events: auto;
 }
 
@@ -65,7 +66,8 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 32px; /* Строгий лимит высоты строки */
+    width: 100%;
+    /* УБРАЛИ height: 32px, чтобы высокая иконка не ломала логику */
 }
 
 .coin-tag {
@@ -74,40 +76,39 @@ canvas {
     gap: 10px;
 }
 
-/* 1. Общие правила для всех иконок (защита от искажений) */
+/* Общие правила защиты */
 .coin-tag img {
     object-fit: contain; 
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
-    flex-shrink: 0; /* Запрещает контейнеру сжимать иконку */
+    flex-shrink: 0; 
 }
 
-/* 2. Размер для QUANT (оставляем аккуратным) */
+/* 1. QUANT (аккуратный) */
 .quant .coin-tag img {
     height: 22px !important; 
     width: 22px !important;
 }
 
-/* 3. УВЕЛИЧИВАЕМ ТОЛЬКО QUBI */
-/* Здесь ты можешь менять 34px на любой размер, 
-   строка .currency сама подстроится под него аккуратно */
+/* 2. УВЕЛИЧЕННЫЙ QUBI */
 .qubi .coin-tag img {
-    height: 34px !important; 
-    width: 34px !important;
-    /* Если хочешь еще больше, просто увеличь цифру выше */
+    /* Теперь здесь 36px, и это безопасно */
+    height: 36px !important; 
+    width: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    /* Тень, чтобы иконка "горела" */
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
 }
 
 .coin-tag span {
     font-size: 11px;
     color: rgba(255, 255, 255, 0.8);
     font-weight: bold;
-    letter-spacing: 0.5px;
 }
 
 #quant-val, #qubi-val {
     font-size: 18px;
     font-family: 'Courier New', monospace;
     font-weight: bold;
-    text-align: right;
 }
 
 #quant-val { color: #00e5ff; }
