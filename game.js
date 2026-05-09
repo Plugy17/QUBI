@@ -109,50 +109,86 @@ function hideLoading() {
     }
 }
 
+// Вставляй это в game.js ПЕРЕД функцией draw()
+const planets = [
+    { 
+        id: 'runner', 
+        src: 'assets/earth.png', 
+        x: 0.15, y: 0.3, 
+        size: 80, 
+        rotation: 0, speed: 0.002,
+        img: new Image() // Создаем объект изображения
+    },
+    { 
+        id: 'planet', 
+        src: 'assets/quant.png', 
+        x: 0.5, y: 0.5, 
+        size: 150, 
+        rotation: 0, speed: 0.001,
+        img: new Image()
+    }
+];
+
+// Автоматически запускаем загрузку всех картинок планет
+planets.forEach(p => {
+    p.img.src = p.src;
+});
+
 // --- 4. ОТРИСОВКА ---
 function draw() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
     // 1. Фон (параллакс)
-    ctx.drawImage(bg, -20 + mouseX, -20 + mouseY, canvas.width + 40, canvas.height + 40);
+    if (bg.complete && bg.naturalWidth !== 0) {
+        ctx.drawImage(bg, -20 + mouseX, -20 + mouseY, canvas.width + 40, canvas.height + 40);
+    } else {
+        // Заливка на случай, если фон еще не загружен
+        ctx.fillStyle = '#050010';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
 
     // 2. Звезды
     ctx.fillStyle = "white";
     stars.forEach(s => {
-        ctx.globalAlpha = 0.2 + Math.abs(Math.sin(Date.now() * s.blink));
+        // Важно: проверяем наличие s.blink, в твоем коде выше было s.speed
+        const blinkFreq = s.blink || 0.02; 
+        ctx.globalAlpha = 0.2 + Math.abs(Math.sin(Date.now() * blinkFreq));
         ctx.beginPath();
         ctx.arc((s.x/100) * canvas.width, (s.y/100) * canvas.height, s.size, 0, Math.PI*2);
         ctx.fill();
     });
     ctx.globalAlpha = 1.0;
 
-    // 3. Планеты (Отрисовка отдельных PNG)
+    // 3. Планеты
     planets.forEach(p => {
-        const pX = p.x * canvas.width + (mouseX * 0.5); // Планеты двигаются чуть иначе для глубины
-        const pY = p.y * canvas.height + (mouseY * 0.5);
+        // Рисуем только если картинка существует и загружена
+        if (p.img && p.img.complete && p.img.naturalWidth !== 0) {
+            const pX = p.x * canvas.width + (mouseX * 0.5);
+            const pY = p.y * canvas.height + (mouseY * 0.5);
 
-        ctx.save();
-        ctx.translate(pX, pY);
-        
-        // Вращение
-        p.rotation += p.speed;
-        ctx.rotate(p.rotation);
+            // Аура (рисуем ПОД планетой)
+            const glow = ctx.createRadialGradient(pX, pY, p.size/3, pX, pY, p.size/1.2);
+            glow.addColorStop(0, 'rgba(0, 229, 255, 0)');
+            glow.addColorStop(1, 'rgba(0, 229, 255, 0.1)'); // Чуть ярче для видимости
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(pX, pY, p.size/1.2, 0, Math.PI*2);
+            ctx.fill();
 
-        // Сама планета
-        if (p.img.complete) {
+            ctx.save();
+            ctx.translate(pX, pY);
+            
+            // Вращение
+            p.rotation += p.speed || 0.001;
+            ctx.rotate(p.rotation);
+
+            // Отрисовка с ПРИНУДИТЕЛЬНЫМ размером p.size
+            // Это не даст картинке "расползтись", какой бы огромной она ни была
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+            
+            ctx.restore();
         }
-        ctx.restore();
-
-        // Очень мягкая аура под планетой
-        const glow = ctx.createRadialGradient(pX, pY, p.size/3, pX, pY, p.size/1.2);
-        glow.addColorStop(0, 'rgba(255, 255, 255, 0)');
-        glow.addColorStop(1, 'rgba(0, 229, 255, 0.05)');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(pX, pY, p.size/1.2, 0, Math.PI*2);
-        ctx.fill();
     });
 
     requestAnimationFrame(draw);
@@ -207,3 +243,4 @@ bg.onload = () => {
     initGame();
     draw();
 };
+
