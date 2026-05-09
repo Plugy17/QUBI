@@ -13,27 +13,30 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const tg = window.Telegram.WebApp;
 
-// 1. Разворачиваем на максимум
+// 1. Обычное расширение (работает почти везде)
 tg.expand();
 
-// 2. ЗАПРАШИВАЕМ ПОЛНЫЙ ЭКРАН (как на фото с уткой)
-// Это уберет зазор сверху и растянет игру под часы/челку
-if (tg.requestFullscreen) {
-    tg.requestFullscreen();
+// 2. Полный экран — проверяем поддержку, чтобы не было ошибки как на скрине
+if (tg.requestFullscreen && typeof tg.requestFullscreen === 'function') {
+    try {
+        tg.requestFullscreen();
+    } catch (e) {
+        console.error("Fullscreen failed:", e);
+    }
 }
 
-// 3. БЛОКИРУЕМ СВАЙП ВНИЗ 
-// Это самая важная строка, чтобы приложение не опускалось за пальцем
-if (tg.disableVerticalSwipes) {
+// 3. Блокировка свайпов — тоже через проверку
+if (tg.disableVerticalSwipes && typeof tg.disableVerticalSwipes === 'function') {
     tg.disableVerticalSwipes();
 }
 
-// 4. Подтверждение закрытия (чтобы не вылететь случайно)
+// 4. Остальные настройки
 tg.isClosingConfirmationEnabled = true;
+tg.setHeaderColor('#000000');
+tg.setBackgroundColor('#000000');
 
-// 5. Цвет шапки и фона в тон игры
-if (tg.setHeaderColor) tg.setHeaderColor('#000000');
-if (tg.setBackgroundColor) tg.setBackgroundColor('#000000');
+// 5. Сообщаем Telegram, что приложение готово (важно для скрытия лоадера)
+tg.ready();
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
