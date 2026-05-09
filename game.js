@@ -76,13 +76,15 @@ let playerData = { quant: 0, qubi: 0, energy: 100, level: 1 };
 // --- 3. ФУНКЦИИ ИНТЕРФЕЙСА И КАНВАСА ---
 
 function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     canvas.style.width = window.innerWidth + 'px';
     canvas.style.height = window.innerHeight + 'px';
 }
+
 window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+resizeCanvas(); // Вызываем один раз при старте
 
 function initGame() {
     const nameEl = document.getElementById('player-name');
@@ -117,10 +119,11 @@ function hideLoading() {
 }
 
 function draw() {
-    ctx.save();
-    ctx.scale(dpr, dpr); // Масштабируем всё под экран один раз
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.save();
+    ctx.scale(dpr, dpr);
 
     if (bg.complete) {
         ctx.drawImage(bg, 0, 0, window.innerWidth, window.innerHeight);
