@@ -155,7 +155,6 @@ function draw() {
 // --- 4. ОБРАБОТКА НАЖАТИЙ (ЕДИНЫЙ БЛОК) ---
 
 function processInput(e) {
-    // Останавливаем скролл страницы при тапе
     if (e.type === 'touchend' && e.cancelable) e.preventDefault();
 
     const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
@@ -168,21 +167,20 @@ function processInput(e) {
     planets.forEach(p => {
         const posX = p.x * window.innerWidth;
         const posY = p.y * window.innerHeight;
-
         const dist = Math.hypot(clickX - posX, clickY - posY);
 
-        if (p.id === 'leaderboard') openLeaderboard();
-
-        // Попадание в радиус планеты + небольшой запас
+        // 1. Сначала проверяем, попал ли палец ВООБЩЕ в радиус планеты
         if (dist < (p.size / 2) + 15) {
             console.log('Нажата планета:', p.id);
             
-            // Вибрация
             if (tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('medium');
             }
 
-            if (p.id === 'moon') {
+            // 2. И только если попали, выбираем, какое окно открыть
+            if (p.id === 'leaderboard') {
+                openLeaderboard();
+            } else if (p.id === 'moon') {
                 openMoonMenu();
             } else {
                 activatePlanet(p.id);
