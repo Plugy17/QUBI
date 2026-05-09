@@ -52,19 +52,19 @@ canvas {
 .wallet {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.4);
+    gap: 12px; /* Увеличили отступ между QUANT и QUBI */
+    background: rgba(0, 0, 0, 0.6); /* Чуть темнее для контраста */
     backdrop-filter: blur(15px);
-    padding: 12px;
-    border-radius: 16px;
+    padding: 15px; /* Больше внутреннего пространства */
+    border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 140px;
+    min-width: 160px; /* Расширили, чтобы цифрам было просторно */
     pointer-events: auto;
 }
 
 .currency {
     display: flex;
-    justify-content: space-between; /* Название слева, баланс справа */
+    justify-content: space-between;
     align-items: center;
     width: 100%;
 }
@@ -72,29 +72,38 @@ canvas {
 .coin-tag {
     display: flex;
     align-items: center;
-    gap: 6px; /* Отступ между иконкой и текстом */
+    gap: 10px;
 }
 
 .coin-tag img {
-    width: 24px;  /* Размер иконки */
-    height: 24px;
-    object-fit: contain;
+    width: 26px;  /* Увеличили иконки */
+    height: 26px;
+    object-fit: contain; /* ГАРАНТИРУЕТ, что иконку не сплющит */
+    flex-shrink: 0; /* Не дает контейнеру сжимать картинку */
 }
 
 .coin-tag span {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11px;
     font-weight: bold;
-    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
-#quant-val, #qubi-val {
-    font-size: 14px;
-    font-family: 'Courier New', monospace; /* Цифры не будут прыгать */
+/* QUANT оставляем аккуратным */
+#quant-val {
+    color: #00e5ff;
+    font-size: 16px;
+    font-family: 'Courier New', monospace;
 }
 
-#quant-val { color: #00e5ff; }
-#qubi-val { color: #ffd700; }
+/* QUBI делаем ГЛАВНЫМ и БОЛЬШИМ */
+#qubi-val {
+    color: #ffd700;
+    font-size: 22px; /* Значительно крупнее */
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    font-family: 'Segoe UI', sans-serif; /* Более жирный шрифт для веса */
+}
 
 .energy-section {
     width: 100%;
