@@ -32,11 +32,18 @@ let playerData = {
     level: 1
 };
 
+// Переменные для мягкого параллакса
+let mouseX = 0, mouseY = 0;
+window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 20;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 20;
+});
+
 // --- 1. ПЕРЕМЕННЫЕ И НАСТРОЙКИ ---
 const zones = [
-    { id: 'runner', x: 0.22, y: 0.36, r: 60, color: 'rgba(0, 229, 255, 0.4)' }, // Земля
-    { id: 'planet', x: 0.50, y: 0.52, r: 80, color: 'rgba(255, 255, 255, 0.3)' }, // Центр
-    { id: 'shop',   x: 0.85, y: 0.46, r: 55, color: 'rgba(255, 87, 34, 0.4)' }  // Марс
+    { id: 'runner', x: 0.16, y: 0.46, r: 55, color: 'rgba(0, 229, 255, 0.4)' }, // Земля (левее и ниже)
+    { id: 'planet', x: 0.48, y: 0.60, r: 75, color: 'rgba(255, 255, 255, 0.2)' }, // Ядро галактики
+    { id: 'shop',   x: 0.86, y: 0.54, r: 50, color: 'rgba(255, 87, 34, 0.4)' }  // Марс (правее)
 ];
 
 let stars = [];
@@ -94,20 +101,14 @@ function draw() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Эффект "дыхания" фона
-    const breathe = Math.sin(Date.now() * 0.001) * 0.01;
-    const w = canvas.width * (1.02 + breathe);
-    const h = canvas.height * (1.02 + breathe);
-    const offsetX = (canvas.width - w) / 2;
-    const offsetY = (canvas.height - h) / 2;
+    // Отрисовка фона БЕЗ пульсации, с легким смещением (параллакс)
+    // Добавляем небольшой запас (-20px), чтобы края не обрезались при движении
+    ctx.drawImage(bg, -20 + mouseX, -20 + mouseY, canvas.width + 40, canvas.height + 40);
 
-    // Рисуем основной фон
-    ctx.drawImage(bg, offsetX, offsetY, w, h);
-
-    // Рисуем живые звезды
+    // Звезды (оставляем, они добавляют глубины)
     ctx.fillStyle = "white";
     stars.forEach(s => {
-        const opacity = 0.3 + Math.abs(Math.sin(Date.now() * s.blink));
+        const opacity = 0.2 + Math.abs(Math.sin(Date.now() * s.blink));
         ctx.globalAlpha = opacity;
         ctx.beginPath();
         ctx.arc((s.x/100) * canvas.width, (s.y/100) * canvas.height, s.size, 0, Math.PI*2);
@@ -115,19 +116,25 @@ function draw() {
     });
     ctx.globalAlpha = 1.0;
 
-    // Анимированное свечение планет
+    // Мягкое, едва заметное свечение планет (не перекрывает текстуру)
     zones.forEach(z => {
-        const pulse = Math.sin(Date.now() * 0.004) * 8;
         const x = z.x * canvas.width;
         const y = z.y * canvas.height;
-
-        const gradient = ctx.createRadialGradient(x, y, z.r * 0.7, x, y, z.r + pulse);
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-        gradient.addColorStop(1, z.color);
-
-        ctx.fillStyle = gradient;
+        
+        // Рисуем только тонкий ободок
+        ctx.strokeStyle = z.color;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(x, y, z.r + pulse, 0, Math.PI * 2);
+        // Добавляем легкую пульсацию только размеру ободка
+        const pulseR = z.r + Math.sin(Date.now() * 0.003) * 3;
+        ctx.arc(x, y, pulseR, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Внутреннее очень слабое свечение
+        const grad = ctx.createRadialGradient(x, y, z.r * 0.8, x, y, z.r);
+        grad.addColorStop(0, 'transparent');
+        grad.addColorStop(1, z.color.replace('0.4', '0.1'));
+        ctx.fillStyle = grad;
         ctx.fill();
     });
 
