@@ -73,8 +73,8 @@ canvas {
 }
 
 .coin-tag img {
-    width: 18px;  /* Размер иконки */
-    height: 18px;
+    width: 24px;  /* Размер иконки */
+    height: 24px;
     object-fit: contain;
 }
 
