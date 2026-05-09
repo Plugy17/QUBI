@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <!-- ДОБАВЛЕНО viewport-fit=cover -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>QUBI: Space Adventure</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -12,58 +11,51 @@
 </head>
 <body>
 
-    <!-- Задний план -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Слой интерфейса -->
     <div id="ui-layer">
-    <header class="game-header">
-        <div class="user-info">
-            <span id="player-name">Загрузка...</span>
-        </div>
         
-        <div class="wallet">
+        <header class="game-header">
+            <div class="user-info">
+                <span id="player-name">Загрузка...</span>
             </div>
-    </header>
-
-    <div id="moon-modal" class="modal-overlay" style="display: none;">
-        <div class="moon-card">
-            <button class="close-btn" id="close-moon">×</button>
-            <div class="moon-header">
-                <img src="assets/moon.png" alt="Moon">
-                <h2>LUNAR REFINERY</h2>
-            </div>
-            <div class="refinery-body">
-                <p>Переработка ресурсов QUANT в чистую ЭНЕРГИЮ</p>
-                <div class="res-info">
-                    <span>Доступно QUANT:</span>
-                    <span id="res-amount">0</span>
+            
+            <div class="wallet">
+                <div class="currency quant">
+                    <div class="coin-tag">
+                        <img src="assets/quant-icon.png" alt="Q">
+                        <span>QUANT</span>
+                    </div>
+                    <span id="quant-val">0</span>
                 </div>
-                <button id="process-btn">НАЧАТЬ ПЕРЕРАБОТКУ</button>
+                
+                <div class="currency qubi">
+                    <div class="coin-tag">
+                        <img src="assets/qubi-icon.png" alt="B">
+                        <span>QUBI</span>
+                    </div>
+                    <b id="qubi-val">0</b>
+                </div>
+            </div>
+        </header>
+
+        <div id="moon-modal" class="modal-overlay" style="display: none;">
+            <div class="moon-card">
+                <button class="close-btn" id="close-moon">×</button>
+                <div class="moon-header">
+                    <img src="assets/moon.png" alt="Moon">
+                    <h2>LUNAR REFINERY</h2>
+                </div>
+                <div class="refinery-body">
+                    <p>Переработка ресурсов QUANT в чистую ЭНЕРГИЮ</p>
+                    <div class="res-info">
+                        <span>Доступно QUANT:</span>
+                        <span id="res-amount">0</span>
+                    </div>
+                    <button id="process-btn">НАЧАТЬ ПЕРЕРАБОТКУ</button>
+                </div>
             </div>
         </div>
-    </div>
-
-    </div>
-    <!-- Добавили класс quant -->
-    <div class="currency quant">
-        <div class="coin-tag">
-            <img src="assets/quant-icon.png" alt="Q">
-            <span>QUANT</span>
-        </div>
-        <span id="quant-val">0</span>
-    </div>
-    
-    <!-- Добавили класс qubi -->
-    <div class="currency qubi">
-        <div class="coin-tag">
-            <img src="assets/qubi-icon.png" alt="B">
-            <span>QUBI</span>
-        </div>
-        <b id="qubi-val">0</b>
-    </div>
-</div>
-        </header>
 
         <div class="energy-section">
             <div class="energy-bar">
