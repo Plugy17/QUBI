@@ -84,13 +84,13 @@ canvas {
 
 /* ИКОНКА QUBI (Увеличенная и заметная) */
 .qubi .coin-tag img {
-    width: 32px !important; /* Увеличили размер */
-    height: 32px !important;
-    max-width: 32px;
-    max-height: 32px;
+    width: 28px !important; 
+    height: 28px !important;
+    max-width: 28px;
+    max-height: 28px;
     object-fit: contain;
-    /* Добавим легкое свечение самой иконке, чтобы она "горела" */
-    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+    /* Убираем лишнее размытие, оставляем только четкость */
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.4));
 }
 
 .coin-tag span {
