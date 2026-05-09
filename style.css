@@ -50,13 +50,13 @@ canvas {
 .wallet {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(15px);
-    padding: 12px 18px;
-    border-radius: 18px;
+    padding: 10px 14px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 150px;
+    min-width: 130px; /* Немного ужали сам блок */
     pointer-events: auto;
 }
 
@@ -64,46 +64,40 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    height: 30px; /* Фиксируем высоту строки, чтобы иконка её не раздувала */
 }
 
-/* Общий стиль для тегов валют */
 .coin-tag {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
-/* Стандартная иконка для QUANT */
-.quant .coin-tag img {
-    width: 20px;
-    height: 20px;
-    object-fit: contain;
-}
-
-/* УВЕЛИЧЕННАЯ ИКОНКА ДЛЯ QUBI */
+/* Настраиваем иконку QUBI отдельно */
 .qubi .coin-tag img {
-    width: 32px; /* Сделали значительно больше и виднее */
-    height: 32px;
+    width: 24px;  /* Умеренный размер */
+    height: 24px;
+    max-width: 24px;
+    max-height: 24px;
     object-fit: contain;
-    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.3)); /* Легкое выделение */
+}
+
+/* Иконка QUANT чуть меньше */
+.quant .coin-tag img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
 }
 
 .coin-tag span {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 11px;
-    font-weight: bold;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
 }
 
-/* Обычный размер шрифта для всех цифр */
 #quant-val, #qubi-val {
-    font-size: 15px; 
-    font-family: 'Courier New', monospace;
-    color: #fff;
+    font-size: 14px;
+    font-family: monospace;
 }
-
-#quant-val { color: #00e5ff; }
-#qubi-val { color: #ffd700; }
 
 .energy-section {
     width: 100%;
