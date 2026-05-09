@@ -51,13 +51,13 @@ canvas {
 .wallet {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(15px);
-    padding: 12px 18px;
-    border-radius: 18px;
+    backdrop-filter: blur(10px);
+    padding: 10px 15px;
+    border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 150px;
+    width: 145px;
     pointer-events: auto;
 }
 
@@ -65,55 +65,47 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
-    height: 36px; /* Фиксированная высота строки — это наш предохранитель */
+    height: 32px; /* Фиксируем высоту всей строки */
 }
 
 .coin-tag {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    height: 100%; /* Тег занимает всю высоту строки */
 }
 
-/* Иконка QUANT (средняя) */
-.quant .coin-tag img {
-    width: 22px;
-    height: 22px;
+/* ОБЩИЕ ПРАВИЛА ДЛЯ ИКОНОК */
+.coin-tag img {
     object-fit: contain;
+    display: block;
 }
 
-/* ИКОНКА QUBI (Увеличенная и заметная) */
+/* СПЕЦИАЛЬНО ДЛЯ QUBI */
 .qubi .coin-tag img {
-    width: 28px !important; 
-    height: 28px !important;
-    max-width: 28px;
-    max-height: 28px;
-    object-fit: contain;
-    /* Убираем лишнее размытие, оставляем только четкость */
+    height: 26px !important; /* Жестко ограничиваем высоту */
+    width: 26px !important;  /* И ширину */
+    max-width: 26px;
+    max-height: 26px;
     filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.4));
 }
 
+/* QUANT ЧУТЬ МЕНЬШЕ */
+.quant .coin-tag img {
+    height: 18px !important;
+    width: 18px !important;
+}
+
 .coin-tag span {
+    font-size: 10px;
     color: rgba(255, 255, 255, 0.7);
-    font-size: 11px;
     font-weight: bold;
-    text-transform: uppercase;
 }
 
 #quant-val, #qubi-val {
-    font-size: 16px;
+    font-size: 14px;
     font-family: 'Courier New', monospace;
-    font-weight: bold;
-}
-
-#qubi-val { color: #ffd700; }
-#quant-val { color: #00e5ff; }
-.energy-section {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: env(safe-area-inset-bottom, 20px);
+    color: #fff;
 }
 
 .energy-bar {
