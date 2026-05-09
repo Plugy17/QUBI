@@ -25,23 +25,23 @@ const planets = [
     { 
         id: 'build',  
         src: 'assets/earth.png', 
-        x: 0.2, y: 0.28, // Сместили чуть ниже, чтобы не мешала нику
-        size: 85, // Сделали Землю солиднее
+        x: 0.22, y: 0.25, // Позиция Земли
+        size: 80, 
         rotation: 0, speed: 0.001, img: new Image() 
-    },
-    { 
-        id: 'runner', 
-        src: 'assets/quant.png', 
-        x: 0.5, y: 0.5, // Строго центр
-        size: 180, 
-        rotation: 0, speed: 0.002, img: new Image() 
     },
     { 
         id: 'shop',   
         src: 'assets/mars.png',  
-        x: 0.78, y: 0.72, // Подняли из самого угла, чтобы не плющило об край
-        size: 105, 
+        x: 0.45, y: 0.22, // Сместили Марс ВВЕРХ и ВЛЕВО, ближе к Земле
+        size: 75, 
         rotation: 0, speed: -0.0012, img: new Image() 
+    },
+    { 
+        id: 'runner', 
+        src: 'assets/quant.png', 
+        x: 0.5, y: 0.6, // Квант чуть ниже центра, чтобы освободить верх для планет
+        size: 190, 
+        rotation: 0, speed: 0.002, img: new Image() 
     }
 ];
 
@@ -90,26 +90,25 @@ function draw() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    if (bg.complete) ctx.drawImage(bg, -20 + mouseX, -20 + mouseY, canvas.width + 40, canvas.height + 40);
+    // Рисуем чистый фон без прозрачности
+    ctx.globalAlpha = 1.0; 
+    if (bg.complete) {
+        ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+    }
 
-    stars.forEach(s => {
-        ctx.globalAlpha = 0.2 + Math.abs(Math.sin(Date.now() * s.blink));
-        ctx.fillStyle = "white";
-        ctx.beginPath(); ctx.arc((s.x/100) * canvas.width, (s.y/100) * canvas.height, s.size, 0, Math.PI*2); ctx.fill();
-    });
-    ctx.globalAlpha = 1.0;
-
+    // Отрисовка планет (строго квадратные, чтобы не плющило)
     planets.forEach(p => {
-        if (p.img.complete && p.img.naturalWidth !== 0) {
-            const pX = p.x * canvas.width + (mouseX * 0.5), pY = p.y * canvas.height + (mouseY * 0.5);
+        if (p.img.complete) {
             ctx.save();
-            ctx.translate(pX, pY);
+            ctx.translate(p.x * canvas.width, p.y * canvas.height);
             p.rotation += p.speed;
             ctx.rotate(p.rotation);
+            // Используем p.size и для ширины, и для высоты
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
     });
+
     requestAnimationFrame(draw);
 }
 
