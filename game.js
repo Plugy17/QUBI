@@ -21,27 +21,26 @@ const bg = new Image();
 bg.src = 'assets/background1.jpg'; 
 
 // --- 2. ПЛАНЕТЫ ---
-// --- ОБНОВЛЕННЫЕ КООРДИНАТЫ ---
 const planets = [
     { 
         id: 'build',  
         src: 'assets/earth.png', 
-        x: 0.25, y: 0.22, // Сверху слева
-        size: 65, 
+        x: 0.22, y: 0.22, 
+        size: 60, 
         rotation: 0, speed: 0.001, img: new Image() 
     },
     { 
         id: 'shop',   
         src: 'assets/mars.png',  
-        x: 0.45, y: 0.18, // Рядом с землей, чуть выше
-        size: 65, 
+        x: 0.42, y: 0.2, 
+        size: 60, 
         rotation: 0, speed: -0.001, img: new Image() 
     },
     { 
         id: 'runner', 
         src: 'assets/quant.png', 
-        x: 0.5, y: 0.48, // ЦЕНТР ГАЛАКТИКИ (чуть выше середины экрана)
-        size: 130, // УМЕНЬШИЛИ, чтобы смотрелось изящно
+        x: 0.5, y: 0.5, // ГЕОМЕТРИЧЕСКИЙ ЦЕНТР
+        size: 110,      // УМЕНЬШЕННЫЙ РАЗМЕР (изящно и в центре)
         rotation: 0, speed: 0.002, img: new Image() 
     }
 ];
