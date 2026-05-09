@@ -19,7 +19,7 @@ tg.ready();
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const bg = new Image();
-bg.src = 'background1.jpg';
+bg.src = 'assets/background1.jpg';
 
 // Данные из ТГ
 const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot" };
