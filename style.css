@@ -84,8 +84,8 @@ canvas {
 
 /* 1. QUANT (аккуратный) */
 .quant .coin-tag img {
-    height: 22px !important; 
-    width: 22px !important;
+    height: 26px !important; 
+    width: 26px !important;
 }
 
 /* 2. УВЕЛИЧЕННЫЙ QUBI */
