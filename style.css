@@ -92,14 +92,14 @@ canvas {
 /* QUANT оставляем аккуратным */
 #quant-val {
     color: #00e5ff;
-    font-size: 16px;
+    font-size: 18px;
     font-family: 'Courier New', monospace;
 }
 
 /* QUBI делаем ГЛАВНЫМ и БОЛЬШИМ */
 #qubi-val {
     color: #ffd700;
-    font-size: 22px; /* Значительно крупнее */
+    font-size: 32px; /* Значительно крупнее */
     font-weight: 800;
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
     font-family: 'Segoe UI', sans-serif; /* Более жирный шрифт для веса */
