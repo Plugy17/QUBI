@@ -114,9 +114,17 @@ function draw() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // 1. ПОЛНАЯ ОЧИСТКА (убирает наслоение кадров)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 2. ОТКЛЮЧЕНИЕ ЭФФЕКТОВ
     ctx.filter = 'none'; 
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
+    ctx.shadowColor = 'transparent'; // На всякий случай сбрасываем цвет тени
+    
+    // Отключаем сглаживание, если хочешь максимально четкие края
+    ctx.imageSmoothingEnabled = false; 
 
     if (bg.complete) {
         ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
@@ -125,11 +133,20 @@ function draw() {
     planets.forEach(p => {
         if (p.img.complete) {
             ctx.save();
-            // Просто рисуем по координатам из массива
-            ctx.translate(p.x * canvas.width, p.y * canvas.height);
+            
+            // Используем Math.floor, чтобы координаты были целыми числами
+            // Это уберет эффект размытия краев
+            const x = Math.floor(p.x * canvas.width);
+            const y = Math.floor(p.y * canvas.height);
+            
+            ctx.translate(x, y);
+            
             p.rotation += p.speed;
             ctx.rotate(p.rotation);
+            
+            // Рисуем планету
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+            
             ctx.restore();
         }
     });
