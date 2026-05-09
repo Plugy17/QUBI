@@ -51,62 +51,63 @@ canvas {
 .wallet {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(10px);
-    padding: 12px;
-    border-radius: 16px;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(15px);
+    padding: 12px 18px;
+    border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 150px; /* Жесткая ширина кошелька */
+    min-width: 150px;
     pointer-events: auto;
 }
 
-/* Строка с валютой */
 .currency {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    height: 30px; /* Ограничиваем высоту строки */
-    overflow: hidden; /* Всё, что больше 30px, обрежется */
+    height: 36px; /* Фиксированная высота строки — это наш предохранитель */
 }
 
 .coin-tag {
     display: flex;
     align-items: center;
-    gap: 8px;
-    width: 70%; /* Ограничиваем левую часть */
+    gap: 10px;
 }
 
-/* ФИНАЛЬНОЕ РЕШЕНИЕ ДЛЯ ИКОНОК */
-.coin-tag img {
-    /* Используем max-параметры, чтобы картинка не могла раздуться */
-    width: 24px !important; 
-    height: 24px !important;
-    min-width: 24px !important;
-    min-height: 24px !important;
-    max-width: 24px !important;
-    max-height: 24px !important;
-    object-fit: contain !important;
-    display: inline-block;
+/* Иконка QUANT (средняя) */
+.quant .coin-tag img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
 }
 
-/* Текст рядом с иконкой */
+/* ИКОНКА QUBI (Увеличенная и заметная) */
+.qubi .coin-tag img {
+    width: 32px !important; /* Увеличили размер */
+    height: 32px !important;
+    max-width: 32px;
+    max-height: 32px;
+    object-fit: contain;
+    /* Добавим легкое свечение самой иконке, чтобы она "горела" */
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+}
+
 .coin-tag span {
-    font-size: 10px;
-    color: #fff;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
     font-weight: bold;
-    white-space: nowrap; /* Запрещаем перенос текста */
+    text-transform: uppercase;
 }
 
-/* Значения баланса */
 #quant-val, #qubi-val {
-    font-size: 14px;
-    font-family: monospace;
-    color: #fff;
-    text-align: right;
+    font-size: 16px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
 }
 
+#qubi-val { color: #ffd700; }
+#quant-val { color: #00e5ff; }
 .energy-section {
     width: 100%;
     display: flex;
