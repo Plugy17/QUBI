@@ -52,11 +52,11 @@ canvas {
     flex-direction: column;
     gap: 8px;
     background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(15px);
-    padding: 10px 14px;
-    border-radius: 14px;
+    backdrop-filter: blur(10px);
+    padding: 10px 15px;
+    border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 130px; /* Немного ужали сам блок */
+    width: 140px; /* Фиксируем ширину всего кошелька */
     pointer-events: auto;
 }
 
@@ -64,39 +64,44 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 30px; /* Фиксируем высоту строки, чтобы иконка её не раздувала */
+    height: 32px; /* Фиксируем высоту строки */
 }
 
 .coin-tag {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
-/* Настраиваем иконку QUBI отдельно */
-.qubi .coin-tag img {
-    width: 24px;  /* Умеренный размер */
-    height: 24px;
-    max-width: 24px;
-    max-height: 24px;
+/* ОБЩИЙ СТИЛЬ ДЛЯ ВСЕХ ИКОНОК В КОШЕЛЬКЕ */
+.coin-tag img {
     object-fit: contain;
+    flex-shrink: 0;
 }
 
-/* Иконка QUANT чуть меньше */
+/* QUANT - поменьше */
 .quant .coin-tag img {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
+    width: 18px !important;
+    height: 18px !important;
+}
+
+/* QUBI - заметный, но под контролем */
+.qubi .coin-tag img {
+    width: 28px !important; /* Больше, чем квант, но не на пол-экрана */
+    height: 28px !important;
 }
 
 .coin-tag span {
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: bold;
 }
 
 #quant-val, #qubi-val {
     font-size: 14px;
-    font-family: monospace;
+    font-family: 'Courier New', monospace;
+    color: #fff;
 }
 
 .energy-section {
