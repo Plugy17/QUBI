@@ -42,11 +42,22 @@ canvas {
     box-sizing: border-box;
 }
 
-.game-header {
+.game-header { /* Замени на свой класс верхней панели */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding-top: env(safe-area-inset-top, 20px); /* ВОТ ЭТО ГЛАВНОЕ */
+    padding-left: 15px;
+    padding-right: 15px;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    width: 100%;
+    z-index: 20;
+}
+
+/* Если ник и кошелек в разных блоках, добавь это им: */
+.wallet, .user-nick {
+    margin-top: 10px; /* Дополнительный отступ, если нужно */
 }
 
 .user-info {
