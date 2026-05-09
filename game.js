@@ -228,6 +228,10 @@ canvas.addEventListener('touchend', processInput, { passive: false });
 const closeBtn = document.getElementById('close-moon');
 if (closeBtn) closeBtn.onclick = closeMoonMenu;
 
+// Привязка кнопки закрытия (добавь это там, где привязываешь close-moon)
+const closeLdbBtn = document.getElementById('close-leaderboard');
+if (closeLdbBtn) closeLdbBtn.onclick = closeLeaderboard;
+
 // Старт
 bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
