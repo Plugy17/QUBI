@@ -22,9 +22,9 @@ bg.src = 'assets/background1.jpg';
 
 // --- 2. ПЛАНЕТЫ ---
 const planets = [
-    { id: 'runner', src: 'assets/earth.png', x: 0.15, y: 0.3, size: 80, rotation: 0, speed: 0.002, img: new Image() },
-    { id: 'planet', src: 'assets/quant.png', x: 0.5, y: 0.5, size: 140, rotation: 0, speed: 0.001, img: new Image() },
-    { id: 'shop',   src: 'assets/mars.png',  x: 0.8, y: 0.65, size: 90,  rotation: 0, speed: -0.0015, img: new Image() }
+    { id: 'build',  src: 'assets/earth.png', x: 0.2, y: 0.25, size: 65, rotation: 0, speed: 0.001, img: new Image() },
+    { id: 'runner', src: 'assets/quant.png', x: 0.5, y: 0.5,  size: 170, rotation: 0, speed: 0.002, img: new Image() },
+    { id: 'shop',   src: 'assets/mars.png',  x: 0.8, y: 0.75, size: 80,  rotation: 0, speed: -0.001, img: new Image() }
 ];
 
 planets.forEach(p => { p.img.src = p.src; });
@@ -107,12 +107,27 @@ canvas.addEventListener('click', (e) => {
 });
 
 function handlePress(id) {
-    tg.HapticFeedback.impactOccurred('light');
-    if (id === 'runner') console.log("Run Game");
-    else if (id === 'planet') {
-        playerData.quant += 1; // Простой кликер для теста
-        updateUI();
-        userRef.update({ quant: playerData.quant });
+    tg.HapticFeedback.impactOccurred('medium');
+
+    if (id === 'runner') {
+        // Квант-ядро: вход в добычу ресурсов
+        tg.showPopup({
+            title: 'Добыча Кванта',
+            message: 'Вход в режим Runner для сбора ресурсов и переработки их в Квант.',
+            buttons: [{id: 'start', type: 'default', text: 'Запустить'}, {type: 'cancel'}]
+        }, (buttonId) => {
+            if (buttonId === 'start') {
+                // Здесь будет переход: window.location.href = 'runner.html';
+                console.log("Запуск Раннера...");
+            }
+        });
+    } 
+    else if (id === 'build') {
+        // Земля: создание своей планеты
+        tg.showAlert("Режим «Создание планеты» станет доступен в следующем обновлении!");
+    }
+    else if (id === 'shop') {
+        tg.showAlert("Магазин временно на техобслуживании.");
     }
 }
 
