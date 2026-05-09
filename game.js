@@ -22,9 +22,27 @@ bg.src = 'assets/background1.jpg';
 
 // --- 2. ПЛАНЕТЫ ---
 const planets = [
-    { id: 'build',  src: 'assets/earth.png', x: 0.2, y: 0.25, size: 65, rotation: 0, speed: 0.001, img: new Image() },
-    { id: 'runner', src: 'assets/quant.png', x: 0.5, y: 0.5,  size: 170, rotation: 0, speed: 0.002, img: new Image() },
-    { id: 'shop',   src: 'assets/mars.png',  x: 0.8, y: 0.75, size: 80,  rotation: 0, speed: -0.001, img: new Image() }
+    { 
+        id: 'build',  
+        src: 'assets/earth.png', 
+        x: 0.2, y: 0.28, // Сместили чуть ниже, чтобы не мешала нику
+        size: 85, // Сделали Землю солиднее
+        rotation: 0, speed: 0.001, img: new Image() 
+    },
+    { 
+        id: 'runner', 
+        src: 'assets/quant.png', 
+        x: 0.5, y: 0.5, // Строго центр
+        size: 180, 
+        rotation: 0, speed: 0.002, img: new Image() 
+    },
+    { 
+        id: 'shop',   
+        src: 'assets/mars.png',  
+        x: 0.78, y: 0.72, // Подняли из самого угла, чтобы не плющило об край
+        size: 105, 
+        rotation: 0, speed: -0.0012, img: new Image() 
+    }
 ];
 
 planets.forEach(p => { p.img.src = p.src; });
