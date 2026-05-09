@@ -4,41 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QUBI: Space Adventure</title>
-    
-    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- Firebase SDK (Версия Compatibility для простоты интеграции) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Интерфейс поверх игры -->
+    <!-- Задний план -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Слой интерфейса -->
     <div id="ui-layer">
-        
-        <!-- Шапка с профилем и валютой -->
         <header class="game-header">
             <div class="user-info">
-                <img id="user-photo" src="" alt="" style="display:none;">
                 <span id="player-name">Загрузка...</span>
             </div>
             
             <div class="wallet">
-                <div class="currency quant">
-                    <img src="assets/quant-icon.png" alt=""> <!-- Если есть иконка -->
+                <div class="currency">
+                    <span>QUANT</span>
                     <span id="quant-val">0</span>
                 </div>
-                <div class="currency qubi">
-                    <img src="assets/qubi-icon.png" alt=""> <!-- Если есть иконка -->
+                <div class="currency">
+                    <span>QUBI</span>
                     <b id="qubi-val">0</b>
                 </div>
             </div>
         </header>
 
-        <!-- Индикатор энергии внизу -->
         <div class="energy-section">
             <div class="energy-bar">
                 <div id="energy-fill"></div>
@@ -46,17 +40,12 @@
             <div class="energy-label">ENERGY</div>
         </div>
 
-        <!-- Экран загрузки (пока данные тянутся из Firebase) -->
         <div id="loading-screen">
             <div class="loader"></div>
             <p>Инициализация систем QUBI...</p>
         </div>
     </div>
 
-    <!-- Основной холст для графики (фон и планеты) -->
-    <canvas id="gameCanvas"></canvas>
-
-    <!-- Скрипт игры -->
     <script src="game.js"></script>
 </body>
 </html>
