@@ -27,22 +27,22 @@ const planets = [
     { 
         id: 'runner', 
         src: 'assets/quant.png', 
-        x: 0.5, y: 0.5, // ЦЕНТР ГАЛАКТИКИ
+        x: 0.5, y: 0.5, // Строго центр
         size: 120, 
         rotation: 0, speed: 0.002, img: new Image() 
     },
     { 
         id: 'build',  
         src: 'assets/earth.png', 
-        x: 0.25, y: 0.5, // СЛЕВА от ядра
-        size: 70, 
+        x: 0.22, y: 0.5, // Слева
+        size: 75, 
         rotation: 0, speed: 0.001, img: new Image() 
     },
     { 
         id: 'shop',   
         src: 'assets/mars.png',  
-        x: 0.75, y: 0.5, // СПРАВА от ядра
-        size: 70, 
+        x: 0.78, y: 0.5, // Справа
+        size: 75, 
         rotation: 0, speed: -0.001, img: new Image() 
     }
 ];
@@ -92,7 +92,6 @@ function draw() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Сбрасываем все настройки канваса до "чистых"
     ctx.filter = 'none'; 
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
@@ -101,38 +100,13 @@ function draw() {
         ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
     }
 
-    // Увеличиваем общий угол орбиты
-    orbitAngle += 0.003; 
-
     planets.forEach(p => {
         if (p.img.complete) {
             ctx.save();
-            
-            let posX, posY;
-
-            if (p.id === 'runner') {
-                // Квант-ядро строго в центре
-                posX = 0.5 * canvas.width;
-                posY = 0.5 * canvas.height;
-            } else if (p.id === 'build') {
-                // Земля: радиус чуть меньше (20% от ширины)
-                const radius = canvas.width * 0.22;
-                posX = (0.5 * canvas.width) + Math.cos(orbitAngle) * radius;
-                posY = (0.5 * canvas.height) + Math.sin(orbitAngle) * radius;
-            } else if (p.id === 'shop') {
-                // Марс: радиус чуть больше (30% от ширины) и смещен на пол-круга (Math.PI)
-                const radius = canvas.width * 0.32;
-                posX = (0.5 * canvas.width) + Math.cos(orbitAngle + Math.PI) * radius;
-                posY = (0.5 * canvas.height) + Math.sin(orbitAngle + Math.PI) * radius;
-            }
-
-            ctx.translate(posX, posY);
-            
-            // Вращение самой планеты вокруг своей оси
+            // Просто рисуем по координатам из массива
+            ctx.translate(p.x * canvas.width, p.y * canvas.height);
             p.rotation += p.speed;
             ctx.rotate(p.rotation);
-            
-            // Рисуем строго в размер p.size без эффектов
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
@@ -141,51 +115,25 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-// Функция-обработчик нажатия (вынес отдельно, чтобы не дублировать код)
-function handleInteraction(clientX, clientY) {
+canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
-    const clickX = clientX - rect.left;
-    const clickY = clientY - rect.top;
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
 
     planets.forEach(p => {
-        let posX, posY;
+        const posX = p.x * canvas.width;
+        const posY = p.y * canvas.height;
 
-        // ВЫЧИСЛЯЕМ ТЕКУЩИЕ КООРДИНАТЫ (копия логики из draw)
-        if (p.id === 'runner') {
-            posX = 0.5 * canvas.width;
-            posY = 0.5 * canvas.height;
-        } else if (p.id === 'build') {
-            const radius = canvas.width * 0.22;
-            posX = (0.5 * canvas.width) + Math.cos(orbitAngle) * radius;
-            posY = (0.5 * canvas.height) + Math.sin(orbitAngle) * radius;
-        } else if (p.id === 'shop') {
-            const radius = canvas.width * 0.32;
-            posX = (0.5 * canvas.width) + Math.cos(orbitAngle + Math.PI) * radius;
-            posY = (0.5 * canvas.height) + Math.sin(orbitAngle + Math.PI) * radius;
-        }
-
+        // Расстояние от клика до центра планеты
         const dist = Math.hypot(clickX - posX, clickY - posY);
 
-        // Проверка попадания (+15 пикселей форы для пальца на мобилке)
-        if (dist < (p.size / 2) + 15) { 
-            console.log('Попадание в:', p.id);
-            activatePlanetFunction(p.id); 
+        // Если расстояние меньше радиуса (с запасом в 10 пикселей)
+        if (dist < (p.size / 2) + 10) {
+            console.log('Клик по планете:', p.id);
+            activatePlanetFunction(p.id);
         }
     });
-}
-
-// Обработка клика мышкой (ПК)
-canvas.addEventListener('click', (e) => {
-    handleInteraction(e.clientX, e.clientY);
 });
-
-// Обработка касания пальцем (Телефоны/Telegram)
-canvas.addEventListener('touchstart', (e) => {
-    // Предотвращаем стандартное поведение (скролл/зум), чтобы игра не дергалась
-    e.preventDefault(); 
-    const touch = e.touches[0];
-    handleInteraction(touch.clientX, touch.clientY);
-}, { passive: false });
 
 function handlePress(id) {
     tg.HapticFeedback.impactOccurred('medium');
