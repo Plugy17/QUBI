@@ -141,10 +141,11 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-canvas.addEventListener('click', (e) => {
+// Функция-обработчик нажатия (вынес отдельно, чтобы не дублировать код)
+function handleInteraction(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
+    const clickX = clientX - rect.left;
+    const clickY = clientY - rect.top;
 
     planets.forEach(p => {
         let posX, posY;
@@ -163,15 +164,28 @@ canvas.addEventListener('click', (e) => {
             posY = (0.5 * canvas.height) + Math.sin(orbitAngle + Math.PI) * radius;
         }
 
-        // Проверяем расстояние от клика до центра планеты
         const dist = Math.hypot(clickX - posX, clickY - posY);
 
-        if (dist < p.size / 2) {
-            console.log('Нажали на:', p.id);
-            activatePlanetFunction(p.id); // Твоя функция активации
+        // Проверка попадания (+15 пикселей форы для пальца на мобилке)
+        if (dist < (p.size / 2) + 15) { 
+            console.log('Попадание в:', p.id);
+            activatePlanetFunction(p.id); 
         }
     });
+}
+
+// Обработка клика мышкой (ПК)
+canvas.addEventListener('click', (e) => {
+    handleInteraction(e.clientX, e.clientY);
 });
+
+// Обработка касания пальцем (Телефоны/Telegram)
+canvas.addEventListener('touchstart', (e) => {
+    // Предотвращаем стандартное поведение (скролл/зум), чтобы игра не дергалась
+    e.preventDefault(); 
+    const touch = e.touches[0];
+    handleInteraction(touch.clientX, touch.clientY);
+}, { passive: false });
 
 function handlePress(id) {
     tg.HapticFeedback.impactOccurred('medium');
