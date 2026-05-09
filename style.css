@@ -51,13 +51,13 @@ canvas {
 .wallet {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(10px);
-    padding: 10px 15px;
-    border-radius: 15px;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(15px);
+    padding: 12px 16px;
+    border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 145px;
+    width: 160px; /* Фиксируем ширину кошелька */
     pointer-events: auto;
 }
 
@@ -65,48 +65,42 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 32px; /* Фиксируем высоту всей строки */
+    height: 32px; /* Строгий лимит высоты строки */
 }
 
 .coin-tag {
     display: flex;
     align-items: center;
-    gap: 8px;
-    height: 100%; /* Тег занимает всю высоту строки */
+    gap: 10px;
 }
 
-/* ОБЩИЕ ПРАВИЛА ДЛЯ ИКОНОК */
+/* Настройка иконок: Крупные, но в узде */
 .coin-tag img {
-    object-fit: contain;
-    display: block;
-}
-
-/* СПЕЦИАЛЬНО ДЛЯ QUBI */
-.qubi .coin-tag img {
-    height: 26px !important; /* Жестко ограничиваем высоту */
-    width: 26px !important;  /* И ширину */
-    max-width: 26px;
-    max-height: 26px;
-    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.4));
-}
-
-/* QUANT ЧУТЬ МЕНЬШЕ */
-.quant .coin-tag img {
-    height: 18px !important;
-    width: 18px !important;
+    /* Мы задаем размер через высоту строки, чтобы ничего не поехало */
+    height: 28px !important; 
+    width: 28px !important;
+    min-width: 28px;
+    min-height: 28px;
+    object-fit: contain; /* Сохраняет пропорции, не плющит */
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
 }
 
 .coin-tag span {
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
     font-weight: bold;
+    letter-spacing: 0.5px;
 }
 
 #quant-val, #qubi-val {
-    font-size: 14px;
+    font-size: 16px;
     font-family: 'Courier New', monospace;
-    color: #fff;
+    font-weight: bold;
+    text-align: right;
 }
+
+#quant-val { color: #00e5ff; }
+#qubi-val { color: #ffd700; }
 
 .energy-bar {
     width: 100%;
