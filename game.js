@@ -1,3 +1,5 @@
+let orbitAngle = 0;
+
 // --- 1. ИНИЦИАЛИЗАЦИЯ ---
 const firebaseConfig = {
     apiKey: "AIzaSyABKHaAdlSFq1KzURXmCF5Q-9xMUgE4Ot0",
@@ -23,25 +25,25 @@ bg.src = 'assets/background1.jpg';
 // --- 2. ПЛАНЕТЫ ---
 const planets = [
     { 
+        id: 'runner', 
+        src: 'assets/quant.png', 
+        x: 0.5, y: 0.5, // ЦЕНТР ГАЛАКТИКИ
+        size: 120, 
+        rotation: 0, speed: 0.002, img: new Image() 
+    },
+    { 
         id: 'build',  
         src: 'assets/earth.png', 
-        x: 0.22, y: 0.22, 
-        size: 60, 
+        x: 0.25, y: 0.5, // СЛЕВА от ядра
+        size: 70, 
         rotation: 0, speed: 0.001, img: new Image() 
     },
     { 
         id: 'shop',   
         src: 'assets/mars.png',  
-        x: 0.42, y: 0.2, 
-        size: 60, 
+        x: 0.75, y: 0.5, // СПРАВА от ядра
+        size: 70, 
         rotation: 0, speed: -0.001, img: new Image() 
-    },
-    { 
-        id: 'runner', 
-        src: 'assets/quant.png', 
-        x: 0.5, y: 0.5, // ГЕОМЕТРИЧЕСКИЙ ЦЕНТР
-        size: 110,      // УМЕНЬШЕННЫЙ РАЗМЕР (изящно и в центре)
-        rotation: 0, speed: 0.002, img: new Image() 
     }
 ];
 
@@ -93,18 +95,43 @@ function draw() {
     // Сбрасываем все настройки канваса до "чистых"
     ctx.filter = 'none'; 
     ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 0; // Убираем возможные тени
+    ctx.shadowBlur = 0;
 
     if (bg.complete) {
         ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
     }
 
+    // Увеличиваем общий угол орбиты
+    orbitAngle += 0.003; 
+
     planets.forEach(p => {
         if (p.img.complete) {
             ctx.save();
-            ctx.translate(p.x * canvas.width, p.y * canvas.height);
+            
+            let posX, posY;
+
+            if (p.id === 'runner') {
+                // Квант-ядро строго в центре
+                posX = 0.5 * canvas.width;
+                posY = 0.5 * canvas.height;
+            } else if (p.id === 'build') {
+                // Земля: радиус чуть меньше (20% от ширины)
+                const radius = canvas.width * 0.22;
+                posX = (0.5 * canvas.width) + Math.cos(orbitAngle) * radius;
+                posY = (0.5 * canvas.height) + Math.sin(orbitAngle) * radius;
+            } else if (p.id === 'shop') {
+                // Марс: радиус чуть больше (30% от ширины) и смещен на пол-круга (Math.PI)
+                const radius = canvas.width * 0.32;
+                posX = (0.5 * canvas.width) + Math.cos(orbitAngle + Math.PI) * radius;
+                posY = (0.5 * canvas.height) + Math.sin(orbitAngle + Math.PI) * radius;
+            }
+
+            ctx.translate(posX, posY);
+            
+            // Вращение самой планеты вокруг своей оси
             p.rotation += p.speed;
             ctx.rotate(p.rotation);
+            
             // Рисуем строго в размер p.size без эффектов
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
