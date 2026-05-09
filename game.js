@@ -61,8 +61,8 @@ const planets = [
     { 
         id: 'moon',   
         src: 'assets/moon.png',  
-        x: 0.5, y: 0.2, 
-        size: 60, 
+        x: 0.5, y: 0.72, // Снизу от Ядра, но по центру
+        size: 60,
         rotation: 0, speed: 0.003, img: new Image() 
     }
 ];
