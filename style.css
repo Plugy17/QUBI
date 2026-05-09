@@ -93,7 +93,7 @@ canvas {
 }
 
 #quant-val, #qubi-val {
-    font-size: 16px;
+    font-size: 32px;
     font-family: 'Courier New', monospace;
     font-weight: bold;
     text-align: right;
