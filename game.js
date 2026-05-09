@@ -111,42 +111,38 @@ function hideLoading() {
 }
 
 function draw() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // 1. Узнаем коэффициент (обычно 2.0 или 3.0 на мобилках)
+    const dpr = window.devicePixelRatio || 1;
 
-    // 1. ПОЛНАЯ ОЧИСТКА (убирает наслоение кадров)
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 2. Умножаем размер холста на этот коэффициент
+    // Теперь пикселей на холсте будет столько же, сколько на физическом экране
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
 
-    // 2. ОТКЛЮЧЕНИЕ ЭФФЕКТОВ
-    ctx.filter = 'none'; 
-    ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 0;
-    ctx.shadowColor = 'transparent'; // На всякий случай сбрасываем цвет тени
-    
-    // Отключаем сглаживание, если хочешь максимально четкие края
-    ctx.imageSmoothingEnabled = false; 
+    // 3. Важный момент: масштабируем контекст, 
+    // чтобы нам не пришлось менять математику координат в остальном коде
+    ctx.scale(dpr, dpr);
+
+    // Дальше твоя обычная логика отрисовки...
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
     if (bg.complete) {
-        ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bg, 0, 0, window.innerWidth, window.innerHeight);
     }
 
     planets.forEach(p => {
         if (p.img.complete) {
             ctx.save();
-            
-            // Используем Math.floor, чтобы координаты были целыми числами
-            // Это уберет эффект размытия краев
-            const x = Math.floor(p.x * canvas.width);
-            const y = Math.floor(p.y * canvas.height);
-            
-            ctx.translate(x, y);
+            // Координаты используем обычные (от 0 до window.innerWidth)
+            ctx.translate(p.x * window.innerWidth, p.y * window.innerHeight);
             
             p.rotation += p.speed;
             ctx.rotate(p.rotation);
             
-            // Рисуем планету
-            ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+            // Включаем высокое качество сглаживания
+            ctx.imageSmoothingQuality = 'high';
             
+            ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
     });
