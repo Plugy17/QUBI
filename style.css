@@ -123,13 +123,13 @@ canvas {
 }
 
 .quant .coin-tag img {
-    height: 26px !important; 
-    width: 26px !important;
+    height: 32px !important; 
+    width: 32px !important;
 }
 
 .qubi .coin-tag img {
-    height: 42px !important; /* Оптимально для 160px ширины кошелька */
-    width: 42px !important;
+    height: 48px !important; /* Оптимально для 160px ширины кошелька */
+    width: 48px !important;
     filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
 }
 
