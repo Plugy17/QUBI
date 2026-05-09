@@ -1,10 +1,24 @@
 body, html {
-    margin: 0; padding: 0;
-    width: 100%; height: 100%;
-    overflow: hidden; background: #000;
+    margin: 0; 
+    padding: 0;
+    width: 100%; 
+    height: 100%;
+    overflow: hidden; 
+    background: #000;
     font-family: 'Segoe UI', Roboto, sans-serif;
+    
+    /* Запрещаем выделение текста */
     user-select: none;
+    -webkit-user-select: none;
+
+    /* Убираем синий квадрат при нажатии на мобилках */
     -webkit-tap-highlight-color: transparent;
+
+    /* ГЛАВНОЕ: Убираем лишние жесты браузера (скролл, зум) */
+    touch-action: none; 
+    
+    /* Фиксируем положение, чтобы экран не "гулял" за пальцем */
+    position: fixed;
 }
 
 canvas {
