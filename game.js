@@ -1,4 +1,5 @@
-// --- 1. ИНИЦИАЛИЗАЦИЯ ---
+// --- 1. ИНИЦИАЛИЗАЦИЯ И КОНФИГ ---
+const dpr = window.devicePixelRatio || 1;
 const firebaseConfig = {
     apiKey: "AIzaSyABKHaAdlSFq1KzURXmCF5Q-9xMUgE4Ot0",
     authDomain: "berry-game-4fa9b.firebaseapp.com",
@@ -13,29 +14,19 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const tg = window.Telegram.WebApp;
 
-// 1. Обычное расширение (работает почти везде)
 tg.expand();
 
-// 2. Полный экран — проверяем поддержку, чтобы не было ошибки как на скрине
+// Полный экран и блокировка свайпов
 if (tg.requestFullscreen && typeof tg.requestFullscreen === 'function') {
-    try {
-        tg.requestFullscreen();
-    } catch (e) {
-        console.error("Fullscreen failed:", e);
-    }
+    try { tg.requestFullscreen(); } catch (e) { console.error("Fullscreen failed:", e); }
 }
-
-// 3. Блокировка свайпов — тоже через проверку
 if (tg.disableVerticalSwipes && typeof tg.disableVerticalSwipes === 'function') {
     tg.disableVerticalSwipes();
 }
 
-// 4. Остальные настройки
 tg.isClosingConfirmationEnabled = true;
 tg.setHeaderColor('#000000');
 tg.setBackgroundColor('#000000');
-
-// 5. Сообщаем Telegram, что приложение готово (важно для скрытия лоадера)
 tg.ready();
 
 const canvas = document.getElementById('gameCanvas');
@@ -67,30 +58,32 @@ const planets = [
         size: 75, 
         rotation: 0, speed: -0.001, img: new Image() 
     },
-    // НОВАЯ ПЛАНЕТА: ЛУНА
     { 
         id: 'moon',   
         src: 'assets/moon.png',  
-        x: 0.5, y: 0.2, // Вверху по центру
-        size: 60,       // Чуть меньше остальных
+        x: 0.5, y: 0.2, 
+        size: 60, 
         rotation: 0, speed: 0.003, img: new Image() 
     }
 ];
 
 planets.forEach(p => { p.img.src = p.src; });
 
-// Данные игрока
 const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot" };
 const userRef = db.ref('users/' + tgUser.id);
 let playerData = { quant: 0, qubi: 0, energy: 100, level: 1 };
 
-let mouseX = 0, mouseY = 0;
+// --- 3. ФУНКЦИИ ИНТЕРФЕЙСА И КАНВАСА ---
 
-let stars = Array.from({length: 80}, () => ({
-    x: Math.random() * 100, y: Math.random() * 100, size: Math.random() * 2, blink: 0.02 + Math.random() * 0.03
-}));
+function resizeCanvas() {
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
-// --- 3. ЛОГИКА ---
 function initGame() {
     const nameEl = document.getElementById('player-name');
     if(nameEl) nameEl.innerText = tgUser.first_name;
@@ -107,7 +100,9 @@ function initGame() {
 }
 
 function updateUI() {
-    const q = document.getElementById('quant-val'), b = document.getElementById('qubi-val'), e = document.getElementById('energy-fill');
+    const q = document.getElementById('quant-val'), 
+          b = document.getElementById('qubi-val'), 
+          e = document.getElementById('energy-fill');
     if(q) q.innerText = Math.floor(playerData.quant);
     if(b) b.innerText = Math.floor(playerData.qubi);
     if(e) e.style.width = playerData.energy + "%";
@@ -115,23 +110,16 @@ function updateUI() {
 
 function hideLoading() {
     const loader = document.getElementById('loading-screen');
-    if(loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }
+    if(loader) { 
+        loader.style.opacity = '0'; 
+        setTimeout(() => loader.style.display = 'none', 500); 
+    }
 }
 
 function draw() {
-    // 1. Узнаем коэффициент (обычно 2.0 или 3.0 на мобилках)
-    const dpr = window.devicePixelRatio || 1;
+    ctx.save();
+    ctx.scale(dpr, dpr); // Масштабируем всё под экран один раз
 
-    // 2. Умножаем размер холста на этот коэффициент
-    // Теперь пикселей на холсте будет столько же, сколько на физическом экране
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-
-    // 3. Важный момент: масштабируем контекст, 
-    // чтобы нам не пришлось менять математику координат в остальном коде
-    ctx.scale(dpr, dpr);
-
-    // Дальше твоя обычная логика отрисовки...
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
     if (bg.complete) {
@@ -141,84 +129,25 @@ function draw() {
     planets.forEach(p => {
         if (p.img.complete) {
             ctx.save();
-            // Координаты используем обычные (от 0 до window.innerWidth)
             ctx.translate(p.x * window.innerWidth, p.y * window.innerHeight);
-            
             p.rotation += p.speed;
             ctx.rotate(p.rotation);
-            
-            // Включаем высокое качество сглаживания
             ctx.imageSmoothingQuality = 'high';
-            
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
     });
 
+    ctx.restore();
     requestAnimationFrame(draw);
 }
 
-// --- 1. ЛОГИКА ДЕЙСТВИЙ ПРИ НАЖАТИИ ---
-function activatePlanet(id) {
-    // Проверка на наличие Telegram WebApp для вибрации
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-    }
+// --- 4. ОБРАБОТКА НАЖАТИЙ (ЕДИНЫЙ БЛОК) ---
 
-    if (id === 'runner') {
-        tg.showPopup({
-            title: 'Добыча Кванта',
-            message: 'Вход в режим Runner для сбора ресурсов и переработки их в Квант.',
-            buttons: [{id: 'start', type: 'default', text: 'Запустить'}, {type: 'cancel'}]
-        }, (buttonId) => {
-            if (buttonId === 'start') {
-                console.log("Запуск Раннера...");
-                // window.location.href = 'runner.html'; // Разкомментируй, когда файл будет готов
-            }
-        });
-    } 
-    else if (id === 'build') {
-        tg.showAlert("Режим «Создание планеты» станет доступен в следующем обновлении!");
-    }
-    else if (id === 'shop') {
-        tg.showAlert("Магазин временно на техобслуживании.");
-    }
-}
-
-// Обработка кликов по планетам
-canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    planets.forEach(p => {
-        const px = p.x * canvas.width / (window.devicePixelRatio || 1);
-        const py = p.y * canvas.height / (window.devicePixelRatio || 1);
-        
-        // Проверка: попал ли клик в радиус планеты
-        const dist = Math.sqrt((x - px)**2 + (y - py)**2);
-        
-        if (dist < p.size / 2) {
-            if (p.id === 'moon') openMoonMenu();
-            if (p.id === 'runner') console.log("Запуск раннера...");
-            // Добавь логику для остальных планет здесь
-        }
-    });
-});
-
-function openMoonMenu() {
-    document.getElementById('moon-modal').style.display = 'flex';
-    // Обнови количество ресурсов из своей переменной
-    // document.getElementById('res-amount').innerText = userResources;
-}
-
-function closeMoonMenu() {
-    document.getElementById('moon-modal').style.display = 'none';
-}
-
-// --- 2. ОБРАБОТКА НАЖАТИЯ (КООРДИНАТЫ) ---
 function processInput(e) {
-    // Определяем координаты клика или тапа (поддержка ТГ и ПК)
+    // Останавливаем скролл страницы при тапе
+    if (e.type === 'touchend' && e.cancelable) e.preventDefault();
+
     const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
     const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
 
@@ -227,38 +156,66 @@ function processInput(e) {
     const clickY = clientY - rect.top;
 
     planets.forEach(p => {
-        // Положение планеты на экране
-        const posX = p.x * canvas.width;
-        const posY = p.y * canvas.height;
+        const posX = p.x * window.innerWidth;
+        const posY = p.y * window.innerHeight;
 
-        // Расстояние от точки нажатия до центра планеты
         const dist = Math.hypot(clickX - posX, clickY - posY);
 
-        // Если попали в радиус (+20 пикселей для удобства пальца)
-        if (dist < (p.size / 2) + 20) {
-            console.log('Попадание в планету:', p.id);
-            activatePlanet(p.id); 
+        // Попадание в радиус планеты + небольшой запас
+        if (dist < (p.size / 2) + 15) {
+            console.log('Нажата планета:', p.id);
+            
+            // Вибрация
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+
+            if (p.id === 'moon') {
+                openMoonMenu();
+            } else {
+                activatePlanet(p.id);
+            }
         }
     });
 }
 
-// --- 3. ПРИВЯЗКА СОБЫТИЙ ---
-// Убираем старые клики и ставим эти:
-canvas.addEventListener('click', processInput);
-
-canvas.addEventListener('touchend', (e) => {
-    // ВАЖНО: это предотвращает "двойной клик" и лишние действия в ТГ
-    if (e.cancelable) e.preventDefault();
-    processInput(e);
-}, { passive: false });
-
-function createClickRipple(x, y) {
-    const ripple = document.createElement('div');
-    ripple.className = 'ripple';
-    ripple.style.left = x + 'px'; ripple.style.top = y + 'px';
-    document.body.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 400);
+function activatePlanet(id) {
+    if (id === 'runner') {
+        tg.showPopup({
+            title: 'Добыча Кванта',
+            message: 'Запустить режим Runner?',
+            buttons: [{id: 'start', type: 'default', text: 'Запустить'}, {type: 'cancel'}]
+        }, (buttonId) => {
+            if (buttonId === 'start') console.log("Запуск Раннера...");
+        });
+    } else if (id === 'build') {
+        tg.showAlert("Режим «Создание» скоро!");
+    } else if (id === 'shop') {
+        tg.showAlert("Магазин закрыт на ремонт.");
+    }
 }
 
+function openMoonMenu() {
+    const modal = document.getElementById('moon-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        const resAmt = document.getElementById('res-amount');
+        if (resAmt) resAmt.innerText = Math.floor(playerData.quant);
+    }
+}
+
+function closeMoonMenu() {
+    const modal = document.getElementById('moon-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Привязка событий
+canvas.addEventListener('click', processInput);
+canvas.addEventListener('touchend', processInput, { passive: false });
+
+const closeBtn = document.getElementById('close-moon');
+if (closeBtn) closeBtn.onclick = closeMoonMenu;
+
+// Старт
 bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
