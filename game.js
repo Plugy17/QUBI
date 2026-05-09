@@ -32,6 +32,13 @@ let playerData = {
     level: 1
 };
 
+// --- 1. ПЕРЕМЕННЫЕ И НАСТРОЙКИ ---
+const zones = [
+    { id: 'runner', x: 0.22, y: 0.36, r: 60, color: 'rgba(0, 229, 255, 0.4)' }, // Земля
+    { id: 'planet', x: 0.50, y: 0.52, r: 80, color: 'rgba(255, 255, 255, 0.3)' }, // Центр
+    { id: 'shop',   x: 0.85, y: 0.46, r: 55, color: 'rgba(255, 87, 34, 0.4)' }  // Марс
+];
+
 let stars = [];
 // Создаем 80 мерцающих звезд
 for(let i = 0; i < 80; i++) {
@@ -87,41 +94,40 @@ function draw() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // 1. Рисуем фон с легким масштабированием, чтобы он "дышал"
-    const scale = 1.05 + Math.sin(Date.now() * 0.0005) * 0.02;
-    const w = canvas.width * scale;
-    const h = canvas.height * scale;
-    const x = (canvas.width - w) / 2;
-    const y = (canvas.height - h) / 2;
+    // Эффект "дыхания" фона
+    const breathe = Math.sin(Date.now() * 0.001) * 0.01;
+    const w = canvas.width * (1.02 + breathe);
+    const h = canvas.height * (1.02 + breathe);
+    const offsetX = (canvas.width - w) / 2;
+    const offsetY = (canvas.height - h) / 2;
 
-    ctx.drawImage(bg, x, y, w, h);
+    // Рисуем основной фон
+    ctx.drawImage(bg, offsetX, offsetY, w, h);
 
-    // 2. Рисуем "живые" звезды поверх
+    // Рисуем живые звезды
     ctx.fillStyle = "white";
     stars.forEach(s => {
-        s.opacity += s.speed;
-        if(s.opacity > 1 || s.opacity < 0) s.speed *= -1; // Мерцание
-        
-        ctx.globalAlpha = Math.abs(s.opacity);
+        const opacity = 0.3 + Math.abs(Math.sin(Date.now() * s.blink));
+        ctx.globalAlpha = opacity;
         ctx.beginPath();
-        ctx.arc((s.x / 100) * canvas.width, (s.y / 100) * canvas.height, s.size, 0, Math.PI*2);
+        ctx.arc((s.x/100) * canvas.width, (s.y/100) * canvas.height, s.size, 0, Math.PI*2);
         ctx.fill();
     });
     ctx.globalAlpha = 1.0;
 
-    // 3. Рисуем пульсацию вокруг активных планет
+    // Анимированное свечение планет
     zones.forEach(z => {
-        const pulse = Math.sin(Date.now() * 0.003) * 10;
-        const grad = ctx.createRadialGradient(
-            z.x * canvas.width, z.y * canvas.height, z.r - 10,
-            z.x * canvas.width, z.y * canvas.height, z.r + pulse
-        );
-        grad.addColorStop(0, 'rgba(0, 229, 255, 0)');
-        grad.addColorStop(1, 'rgba(0, 229, 255, 0.2)');
-        
-        ctx.fillStyle = grad;
+        const pulse = Math.sin(Date.now() * 0.004) * 8;
+        const x = z.x * canvas.width;
+        const y = z.y * canvas.height;
+
+        const gradient = ctx.createRadialGradient(x, y, z.r * 0.7, x, y, z.r + pulse);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+        gradient.addColorStop(1, z.color);
+
+        ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(z.x * canvas.width, z.y * canvas.height, z.r + pulse, 0, Math.PI*2);
+        ctx.arc(x, y, z.r + pulse, 0, Math.PI * 2);
         ctx.fill();
     });
 
@@ -171,3 +177,26 @@ bg.onload = () => {
     initGame();
     draw();
 };
+
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    zones.forEach(z => {
+        const dist = Math.sqrt((x - z.x*canvas.width)**2 + (y - z.y*canvas.height)**2);
+        if (dist < z.r) {
+            createClickRipple(x, y); // Эффект круга при клике
+            handlePress(z.id);
+        }
+    });
+});
+
+function createClickRipple(x, y) {
+    const ripple = document.createElement('div');
+    ripple.className = 'ripple';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    document.body.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+}
