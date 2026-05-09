@@ -25,22 +25,22 @@ const planets = [
     { 
         id: 'build',  
         src: 'assets/earth.png', 
-        x: 0.22, y: 0.25, // Позиция Земли
-        size: 80, 
+        x: 0.2, y: 0.25, 
+        size: 70, 
         rotation: 0, speed: 0.001, img: new Image() 
     },
     { 
         id: 'shop',   
         src: 'assets/mars.png',  
-        x: 0.45, y: 0.22, // Сместили Марс ВВЕРХ и ВЛЕВО, ближе к Земле
-        size: 75, 
-        rotation: 0, speed: -0.0012, img: new Image() 
+        x: 0.38, y: 0.25, // Марс встал рядом с Землей (на одной линии Y)
+        size: 70, 
+        rotation: 0, speed: -0.001, img: new Image() 
     },
     { 
         id: 'runner', 
         src: 'assets/quant.png', 
-        x: 0.5, y: 0.6, // Квант чуть ниже центра, чтобы освободить верх для планет
-        size: 190, 
+        x: 0.5, y: 0.55, 
+        size: 170, 
         rotation: 0, speed: 0.002, img: new Image() 
     }
 ];
