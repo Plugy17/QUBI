@@ -14,6 +14,13 @@ const db = firebase.database();
 const tg = window.Telegram.WebApp;
 tg.expand();
 
+// 2. Включаем подтверждение закрытия
+// Теперь при свайпе вниз Telegram спросит: "Вы уверены, что хотите закрыть?"
+tg.isClosingConfirmationEnabled = true;
+
+// 3. Устанавливаем высоту (опционально, для фиксации)
+if (tg.setHeaderColor) tg.setHeaderColor('#000000'); // Цвет шапки
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
