@@ -12,6 +12,9 @@ canvas {
     position: fixed;
     top: 0; left: 0;
     z-index: 1;
+    /* Убираем все фильтры, чтобы видеть чистую графику планет */
+    filter: none;
+    image-rendering: -webkit-optimize-contrast; /* Делает PNG чуть четче на мобилках */
 }
 
 #ui-layer {
