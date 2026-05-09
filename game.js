@@ -35,11 +35,6 @@ const userRef = db.ref('users/' + tgUser.id);
 let playerData = { quant: 0, qubi: 0, energy: 100, level: 1 };
 
 let mouseX = 0, mouseY = 0;
-// Ослабил параллакс для мобилок (коэффициент 5 вместо 15)
-window.addEventListener('mousemove', (e) => {
-    mouseX = (e.clientX / window.innerWidth - 0.5) * 5;
-    mouseY = (e.clientY / window.innerHeight - 0.5) * 5;
-});
 
 let stars = Array.from({length: 80}, () => ({
     x: Math.random() * 100, y: Math.random() * 100, size: Math.random() * 2, blink: 0.02 + Math.random() * 0.03
