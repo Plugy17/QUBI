@@ -246,3 +246,41 @@ canvas {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.leaderboard-card {
+    max-height: 80vh; /* Ограничиваем высоту окна */
+    display: flex;
+    flex-direction: column;
+}
+
+.leaderboard-list {
+    margin-top: 20px;
+    overflow-y: auto; /* Включаем прокрутку списка */
+    max-height: 400px;
+    padding-right: 10px;
+    text-align: left;
+}
+
+/* Стилизация полосы прокрутки для мобилок */
+.leaderboard-list::-webkit-scrollbar {
+    width: 4px;
+}
+.leaderboard-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 255, 0.3);
+    border-radius: 10px;
+}
+
+.player-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 14px;
+    color: #eee;
+}
+
+.player-row .score {
+    color: #ffd700; /* Золотой цвет для QUBI */
+    font-weight: bold;
+    font-family: monospace;
+}
