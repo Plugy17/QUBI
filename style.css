@@ -311,12 +311,13 @@ canvas {
     top: 0;
     left: 0;
     width: 100%;
-    /* Увеличиваем отступ: 60px обычно достаточно, чтобы опустить UI ниже кнопок ТГ */
-    padding: 60px 20px 0 20px; 
+    /* Увеличиваем до 70px или даже 80px, чтобы точно выйти из-под кнопок */
+    padding: 80px 20px 0 20px; 
     box-sizing: border-box;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    /* МЕНЯЕМ center на flex-start, чтобы элементы "висели" на линии padding */
+    align-items: flex-start; 
     z-index: 1010;
     pointer-events: none;
 }
