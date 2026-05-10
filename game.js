@@ -47,9 +47,17 @@ tg.ready();
 // --- 2.2 СИНХРОНИЗАЦИЯ ЛИДЕРБОРДА ---
 // Эта функция должна быть здесь, чтобы она была доступна при загрузке
 function syncWithLeaderboard() {
-    db.ref('leaderboard/' + tgUser.id).set({
+    if (!playerData) return;
+    
+    const lbRef = db.ref('leaderboard/' + tgUser.id);
+    lbRef.set({
         name: tgUser.first_name || "Unknown Pilot",
-        qubi: playerData.qubi || 0
+        qubi: playerData.qubi || 0,
+        lastUpdate: Date.now() // Добавляем время, чтобы база видела обновление
+    }).then(() => {
+        console.log("Лидерборд успешно обновлен для:", tgUser.first_name);
+    }).catch((error) => {
+        console.error("Ошибка обновления лидерборда:", error);
     });
 }
 
