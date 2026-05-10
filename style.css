@@ -327,16 +327,6 @@ canvas {
     pointer-events: auto !important;
 }
 
-.score-display {
-    background: rgba(0, 0, 0, 0.5);
-    padding: 8px 15px;
-    border-radius: 20px;
-    color: #fff;
-    font-weight: bold;
-    font-size: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
 .exit-btn {
     background: rgba(255, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -354,11 +344,41 @@ canvas {
 }
 
 .score-display {
+    /* Твои базовые стили */
     background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(0, 229, 255, 0.4); /* Добавим неоновое свечение в цвет Кванта */
+    border: 1px solid rgba(0, 229, 255, 0.4); 
     color: #00e5ff;
     padding: 8px 16px;
     border-radius: 10px;
     font-weight: bold;
     font-family: sans-serif;
+
+    /* Новые правила для двух строк */
+    display: flex;
+    flex-direction: column; /* Ставим QUANT и QUBI друг под другом */
+    gap: 4px;               /* Расстояние между ними */
+    min-width: 100px;
+    position: absolute;     /* Фиксируем в углу раннера */
+    top: 20px;
+    left: 20px;
+}
+
+/* Стиль для иконок внутри */
+.run-icon {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+/* Строка внутри счетчика */
+.score-row {
+    display: flex;
+    align-items: center;
+    font-size: 18px;
+}
+
+/* Цвет для текста QUBI */
+.qubi-color {
+    color: #00e5ff;
 }
