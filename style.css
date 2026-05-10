@@ -567,3 +567,7 @@ canvas {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px); }
 }
+
+.modal-overlay {
+    pointer-events: auto !important;
+}
