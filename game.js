@@ -99,7 +99,7 @@ planets.forEach(p => { p.img.src = p.src; });
 
 let runnerShip = {
     x: window.innerWidth / 2,
-    y: window.innerHeight - 150,
+    y: window.innerHeight - 200,
     w: 80, h: 80,
     targetX: window.innerWidth / 2,
     lerpSpeed: 0.2
@@ -115,7 +115,7 @@ function resizeCanvas() {
         c.style.width = window.innerWidth + 'px';
         c.style.height = window.innerHeight + 'px';
     });
-    runnerShip.y = window.innerHeight - 150;
+    runnerShip.y = window.innerHeight - 200;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
