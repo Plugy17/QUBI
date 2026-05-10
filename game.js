@@ -323,7 +323,7 @@ function spawnRunnerObject() {
         y: -newSize, // Появляется чуть выше экрана, чтобы вход был плавным
         size: newSize,
         // Скорость можно оставить прежней или чуть замедлить, так как объекты крупные
-        speed: 2.5 + Math.random() * 3.5,
+        speed: 3.5 + Math.random() * 3.5,
         type: type
     });
 
