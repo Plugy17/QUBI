@@ -458,77 +458,133 @@ function openMoonMenu() {
 }
 
 // Функция самой переработки (логика)
-function startRefining() {
-    const today = new Date().toLocaleDateString();
-    const amountToProcess = 5;
-
-    // Инициализируем лимит, если его еще нет в профиле
-    if (!playerData.factoryLimit) {
-        playerData.factoryLimit = { date: today, processedToday: 0 };
+function exchangeEnergy(type) {
+    const today = new Date().toDateString();
+    
+    // Проверка смены дня (сброс лимитов)
+    if (!playerData.lastExchangeDate || playerData.lastExchangeDate !== today) {
+        playerData.lastExchangeDate = today;
+        playerData.dailyExchangeQuant = 0;
+        playerData.dailyExchangeQubi = 0;
     }
 
-    // Сброс лимита, если наступил новый день
-    if (playerData.factoryLimit.date !== today) {
-        playerData.factoryLimit.date = today;
-        playerData.factoryLimit.processedToday = 0;
+    let cost = 0;
+    let reward = 10;
+    let limitMax = 0;
+    let currentProcessed = 0;
+
+    // Настраиваем условия в зависимости от типа ресурса
+    if (type === 'quant') {
+        cost = 50;
+        limitMax = 500;
+        currentProcessed = playerData.dailyExchangeQuant || 0;
+        
+        if (playerData.quant < cost) {
+            alert("Недостаточно QUANT!");
+            return;
+        }
+    } else if (type === 'qubi') {
+        cost = 5;
+        limitMax = 50;
+        currentProcessed = playerData.dailyExchangeQubi || 0;
+
+        if (playerData.qubi < cost) {
+            alert("Недостаточно QUBI!");
+            return;
+        }
     }
 
-    const remainingLimit = 50 - playerData.factoryLimit.processedToday;
-
-    if (remainingLimit <= 0) {
-        tg.showAlert("Лимит 50 QUANT на сегодня исчерпан!");
+    // Общие проверки
+    if (currentProcessed + cost > limitMax) {
+        alert("Дневной лимит переработки исчерпан!");
+        return;
+    }
+    if (playerData.energy >= 100) {
+        alert("Энергия уже на максимуме!");
         return;
     }
 
-    if (playerData.quant >= amountToProcess) {
-        playerData.quant -= amountToProcess;
-        playerData.energy = Math.min(MAX_ENERGY, (playerData.energy || 0) + 10);
-        playerData.factoryLimit.processedToday += amountToProcess;
-
-        // Сохраняем ВСЁ в Firebase, включая обновленный лимит
-        userRef.update({
-            quant: playerData.quant,
-            energy: playerData.energy,
-            factoryLimit: playerData.factoryLimit // ТЕПЕРЬ ЛИМИТ В БАЗЕ!
-        }).then(() => {
-            updateUI();
-            updateMoonUI();
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('success');
-        });
+    // Выполнение обмена
+    if (type === 'quant') {
+        playerData.quant -= cost;
+        playerData.dailyExchangeQuant = currentProcessed + cost;
     } else {
-        tg.showAlert("Недостаточно QUANT!");
+        playerData.qubi -= cost;
+        playerData.dailyExchangeQubi = currentProcessed + cost;
     }
+
+    playerData.energy = Math.min(100, (playerData.energy || 0) + reward);
+
+    // Сохранение в Firebase
+    userRef.update({
+        quant: playerData.quant,
+        qubi: playerData.qubi,
+        energy: playerData.energy,
+        dailyExchangeQuant: playerData.dailyExchangeQuant,
+        dailyExchangeQubi: playerData.dailyExchangeQubi,
+        lastExchangeDate: playerData.lastExchangeDate
+    }).then(() => {
+        if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        }
+        
+        // ВАЖНО: Обновляем интерфейс после обмена
+        updateMoonUI(); 
+        updateUI(); // Обновляем статы на главном экране (энергию)
+    }).catch(err => {
+        console.error("Ошибка обмена:", err);
+    });
 }
 
 // Функция обновления текста в модалке (чтобы цифры менялись на глазах)
 function updateMoonUI() {
-    const resAmt = document.getElementById('res-amount');
-    const limitText = document.getElementById('factory-limit-text');
-    const limitFill = document.getElementById('limit-bar-fill');
-    
-    if (resAmt) resAmt.innerText = Math.floor(playerData.quant || 0);
-    
-    if (playerData.factoryLimit) {
-        const today = new Date().toLocaleDateString();
-        // Если день сменился, считаем, что потрачено 0
-        const processed = (playerData.factoryLimit.date === today) ? playerData.factoryLimit.processedToday : 0;
-        const totalLimit = 50;
-        
-        // Обновляем текст (например: "25 / 50")
-        if (limitText) limitText.innerText = `${processed} / ${totalLimit}`;
-        
-        // Обновляем полоску (в процентах)
-        if (limitFill) {
-            const percentage = (processed / totalLimit) * 100;
-            limitFill.style.width = `${percentage}%`;
-            
-            // Если лимит исчерпан, можно подсветить красным
-            if (percentage >= 100) {
-                limitFill.style.background = '#ff4444';
-            } else {
-                limitFill.style.background = 'linear-gradient(90deg, #00e5ff, #007bff)';
-            }
-        }
+    const today = new Date().toDateString();
+
+    // 1. Проверяем/сбрасываем лимиты, если наступил новый день
+    if (!playerData.lastExchangeDate || playerData.lastExchangeDate !== today) {
+        playerData.lastExchangeDate = today;
+        playerData.dailyExchangeQuant = 0;
+        playerData.dailyExchangeQubi = 0;
+    }
+
+    // 2. Обновляем запасы игрока в нижней части окна
+    const resQuantEl = document.getElementById('res-amount-quant');
+    const resQubiEl = document.getElementById('res-amount-qubi');
+    if (resQuantEl) resQuantEl.innerText = Math.floor(playerData.quant || 0) + " QNT";
+    if (resQubiEl) resQubiEl.innerText = Math.floor(playerData.qubi || 0) + " QUB";
+
+    // --- ЛИНИЯ QUANT (Лимит 500) ---
+    const qProcessed = playerData.dailyExchangeQuant || 0;
+    const qTotal = 500;
+    const qPercent = Math.min(100, (qProcessed / qTotal) * 100);
+
+    const qText = document.getElementById('limit-quant-text');
+    const qFill = document.getElementById('limit-quant-fill');
+    const qPercText = document.getElementById('limit-quant-percent');
+
+    if (qText) qText.innerText = qProcessed;
+    if (qPercText) qPercText.innerText = Math.floor(qPercent) + "%";
+    if (qFill) {
+        qFill.style.width = qPercent + "%";
+        // Красный цвет, если лимит исчерпан
+        qFill.style.background = (qPercent >= 100) ? '#ff4444' : 'linear-gradient(90deg, #00e5ff, #007bff)';
+    }
+
+    // --- ЛИНИЯ QUBI (Лимит 50) ---
+    const bProcessed = playerData.dailyExchangeQubi || 0;
+    const bTotal = 50;
+    const bPercent = Math.min(100, (bProcessed / bTotal) * 100);
+
+    const bText = document.getElementById('limit-qubi-text');
+    const bFill = document.getElementById('limit-qubi-fill');
+    const bPercText = document.getElementById('limit-qubi-percent');
+
+    if (bText) bText.innerText = bProcessed;
+    if (bPercText) bPercText.innerText = Math.floor(bPercent) + "%";
+    if (bFill) {
+        bFill.style.width = bPercent + "%";
+        // Красный цвет, если лимит исчерпан
+        bFill.style.background = (bPercent >= 100) ? '#ff4444' : 'linear-gradient(90deg, #a855f7, #6b21a8)';
     }
 }
 
