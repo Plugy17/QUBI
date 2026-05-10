@@ -351,18 +351,30 @@ function handleMove(clientX) {
     runnerShip.targetX = clientX;
 }
 
-// Слушаем события ПРЯМО НА ОКНЕ, а не только на канвасе
+// Слушаем события ПРЯМО НА ОКНЕ
 const runnerWin = document.getElementById('runner-window');
 
+// Вспомогательная функция, чтобы не дублировать код
+function isUiElement(target) {
+    // Проверяем, нажали ли мы на кнопку или счетчик
+    return target.closest('.exit-btn') || target.closest('.score-display');
+}
+
 runnerWin.addEventListener('touchstart', (e) => {
-    if (!isRunnerActive) return;
+    // Если игра не активна ИЛИ мы нажали на кнопку — ничего не делаем
+    if (!isRunnerActive || isUiElement(e.target)) return;
+    
     handleMove(e.touches[0].clientX);
 }, { passive: false });
 
 runnerWin.addEventListener('touchmove', (e) => {
-    if (!isRunnerActive) return;
+    // То же самое для движения: если палец на кнопке, не двигаем самолет
+    if (!isRunnerActive || isUiElement(e.target)) return;
+    
     handleMove(e.touches[0].clientX);
-    if (e.cancelable) e.preventDefault(); // Запрет свайпа назад в ТГ
+    
+    // Блокируем системный свайп Telegram только если мы играем, а не жмем на выход
+    if (e.cancelable) e.preventDefault(); 
 }, { passive: false });
 
 // Для теста мышкой в браузере
