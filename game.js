@@ -85,7 +85,6 @@ const quantImg = new Image(); quantImg.src = 'assets/quant-icon.png';
 const qubiImg = new Image(); qubiImg.src = 'assets/qubi-icon.png';
 const meteorImg = new Image(); meteorImg.src = 'assets/meteor.png'; // Убедись, что файл лежит по этому пути
 
-const dpr = window.devicePixelRatio || 1;
 const planets = [
     { id: 'runner', src: 'assets/quant.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, size: 120, rotation: 0, speed: 0.002, img: new Image() },
     { id: 'build', src: 'assets/earth.png', x: window.innerWidth * 0.22, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: 0.001, img: new Image() },
@@ -567,36 +566,35 @@ function gameOver() {
 // --- 8. СОБЫТИЯ УПРАВЛЕНИЯ ---
 function isUiHit(target) { return target.closest('.exit-btn') || target.closest('.score-display'); }
 
-// Универсальная функция обработки клика по планетам и станции
 function handleCanvasClick(e) {
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-
-    // Получаем координаты (поддержка и мыши, и тача)
+    
+    // Получаем координаты тача или мыши
     const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
     const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
 
-    // Вычисляем координаты клика, СТРОГО умножая на DPR
-    const clickX = (clientX - rect.left) * dpr;
-    const clickY = (clientY - rect.top) * dpr;
+    // Считаем клик БЕЗ умножения на dpr
+    const clickX = clientX - rect.left;
+    const clickY = clientY - rect.top;
 
-    planets.forEach(planet => {
-        // Проверяем расстояние. planet.x и planet.y уже должны быть в DPR пикселях
-        const dist = Math.hypot(clickX - planet.x, clickY - planet.y);
+    planets.forEach(p => {
+        // Считаем дистанцию между логическим кликом и логической планетой
+        const dist = Math.hypot(clickX - p.x, clickY - p.y);
         
-        // Зона клика = размер объекта + небольшой запас для пальца
-        if (dist < planet.size * 0.8) { 
+        // Зона клика (размер планеты)
+        if (dist < p.size * 0.8) { 
             if (window.Telegram && Telegram.WebApp.HapticFeedback) {
                 Telegram.WebApp.HapticFeedback.impactOccurred('medium');
             }
 
-            // Если есть специальное действие (Станция)
-            if (planet.action) {
-                planet.action();
-            } 
-            // Иначе стандартная логика переключения планет
-            else if (typeof activatePlanet === 'function') {
-                activatePlanet(planet.id);
+            if (p.action) {
+                p.action(); // Откроет станцию
+            } else if (p.id === 'leaderboard') {
+                openLeaderboard();
+            } else if (p.id === 'moon') {
+                openMoonMenu();
+            } else {
+                activatePlanet(p.id);
             }
         }
     });
