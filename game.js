@@ -310,11 +310,12 @@ function openMoonMenu() {
     }
 }
 
-function processQuantsAtFactory() {
+// Функция самой переработки (логика)
+function startRefining() {
     const today = new Date().toLocaleDateString();
-    const amountToProcess = 5; // Фиксированная порция переработки
+    const amountToProcess = 5; 
 
-    // 1. Проверка и сброс лимита, если наступил новый день
+    // 1. Сброс лимита для нового дня
     if (factoryLimit.date !== today) {
         factoryLimit.date = today;
         factoryLimit.processedToday = 0;
@@ -322,27 +323,29 @@ function processQuantsAtFactory() {
 
     const remainingLimit = 50 - factoryLimit.processedToday;
 
-    // 2. Проверка лимита
+    // 2. Проверка лимита (50 QUANT в день)
     if (remainingLimit <= 0) {
         tg.showAlert("Завод перегружен! Лимит 50 QUANT в день исчерпан. Приходи завтра!");
         return;
     }
 
-    // 3. Проверка наличия квантов у игрока
+    // 3. Проверка наличия ресурсов
     if (playerData.quant >= amountToProcess) {
-        // Математика: -5 квантов = +10 энергии
         playerData.quant -= amountToProcess;
+        // Даем 10 энергии, но не выше максимума
         playerData.energy = Math.min(MAX_ENERGY, (playerData.energy || 0) + 10);
         factoryLimit.processedToday += amountToProcess;
 
-        // 4. Сохранение в Firebase
+        // 4. Запись в базу
         userRef.update({
             quant: playerData.quant,
             energy: playerData.energy
         }).then(() => {
-            updateUI(); // Обновляем полоски на главном экране
-            updateMoonUI(); // Обновляем цифры в самом окне Луны
-            tg.HapticFeedback.impactOccurred('success');
+            updateUI();      // Обновили полоски на главном экране
+            updateMoonUI();  // Обновили цифры в окне Луны
+            
+            // Вибрация и уведомление
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('success');
             tg.showAlert(`Успешно! Потрачено 5 QUANT, получено 10⚡`);
         });
     } else {
@@ -350,12 +353,12 @@ function processQuantsAtFactory() {
     }
 }
 
-// Вспомогательная функция для обновления текста ВНУТРИ модалки Луны
+// Функция обновления текста в модалке (чтобы цифры менялись на глазах)
 function updateMoonUI() {
     const resAmt = document.getElementById('res-amount');
     const limitAmt = document.getElementById('factory-limit-val');
     
-    if (resAmt) resAmt.innerText = Math.floor(playerData.quant);
+    if (resAmt) resAmt.innerText = Math.floor(playerData.quant || 0);
     if (limitAmt) limitAmt.innerText = 50 - factoryLimit.processedToday;
 }
 
