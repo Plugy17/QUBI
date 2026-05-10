@@ -315,7 +315,7 @@ function spawnRunnerObject() {
     let type = (Math.random() * 100 < 5) ? 'qubi' : 'quant';
 
     // НОВЫЕ РАЗМЕРЫ: Увеличили в 2 раза
-    let newSize = type === 'qubi' ? 90 : 70;
+    let newSize = type === 'qubi' ? 70 : 50;
 
     quants.push({
         // Центрируем рандом по X с учетом нового большого размера
