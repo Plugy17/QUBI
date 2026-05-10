@@ -292,17 +292,22 @@ canvas {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: #000; /* Черный фон пока грузится картинка */
-    z-index: 1000; /* Поверх всего основного интерфейса */
-    display: none; /* Скрыто */
+    background: #000;
+    z-index: 1000;
+    display: none;
     overflow: hidden;
+    /* ГАРАНТИРУЕМ ПРИЕМ КЛИКОВ */
+    pointer-events: auto !important; 
+    /* ЗАПРЕЩАЕМ СИСТЕМНЫЕ ЖЕСТЫ БРАУЗЕРА */
+    touch-action: none; 
 }
 
-/* Канвас внутри раннера */
 #runnerCanvas {
     width: 100%;
     height: 100%;
     display: block;
+    /* На всякий случай дублируем тут */
+    touch-action: none; 
 }
 
 /* Интерфейс поверх игрового канваса */
