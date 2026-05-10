@@ -388,3 +388,11 @@ canvas {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 8px;
 }
+
+/* Увеличиваем конкретно иконку QUBI */
+.qubi-color .run-icon {
+    width: 48px;  /* Было 36px, делаем еще больше */
+    height: 48px;
+    filter: drop-shadow(0 0 8px #ffcc00); /* Добавим золотистое свечение для эффекта редкости */
+    margin-right: 12px;
+}
