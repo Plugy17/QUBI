@@ -30,6 +30,29 @@ const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot
 const userRef = db.ref('users/' + tgUser.id);
 let playerData = { quant: 0, qubi: 0, energy: 100, level: 1 };
 
+// --- 2.1 НАСТРОЙКИ TG (ВОЗВРАТ УДАЛЕННОГО) ---
+tg.expand();
+if (tg.requestFullscreen && typeof tg.requestFullscreen === 'function') {
+    try { tg.requestFullscreen(); } catch (e) { console.error("Fullscreen failed:", e); }
+}
+if (tg.disableVerticalSwipes && typeof tg.disableVerticalSwipes === 'function') {
+    tg.disableVerticalSwipes();
+}
+
+tg.isClosingConfirmationEnabled = true;
+tg.setHeaderColor('#000000');
+tg.setBackgroundColor('#000000');
+tg.ready();
+
+// --- 2.2 СИНХРОНИЗАЦИЯ ЛИДЕРБОРДА ---
+// Эта функция должна быть здесь, чтобы она была доступна при загрузке
+function syncWithLeaderboard() {
+    db.ref('leaderboard/' + tgUser.id).set({
+        name: tgUser.first_name || "Unknown Pilot",
+        qubi: playerData.qubi || 0
+    });
+}
+
 // --- 3. РЕСУРСЫ (КАРТИНКИ И КАНВАС) ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -83,13 +106,13 @@ function initGame() {
         if (snapshot.exists()) {
             playerData = snapshot.val();
             updateUI();
-            syncWithLeaderboard();
+            // ПРИНУДИТЕЛЬНО обновляем тебя в лидерборде при каждом чихе
+            syncWithLeaderboard(); 
         } else {
             userRef.set(playerData);
         }
         hideLoading();
     });
-    setInterval(regenerateEnergy, 60000); // Проверка регена каждую минуту
 }
 
 function updateUI() {
