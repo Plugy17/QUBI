@@ -318,65 +318,102 @@ function syncWithLeaderboard() {
     });
 }
 
+// --- ЛОГИКА РАННЕРА: ОБЪЕКТЫ И УПРАВЛЕНИЕ ---
+let runnerShip = {
+    x: window.innerWidth / 2,
+    y: window.innerHeight - 120,
+    w: 80,
+    h: 80,
+    targetX: window.innerWidth / 2,
+    lerpSpeed: 0.15 // Плавность хода
+};
+
+// Слушатель движения пальца (только по горизонтали)
+runnerCanvas.addEventListener('touchmove', (e) => {
+    if (!isRunnerActive) return;
+    const touch = e.touches[0];
+    const rect = runnerCanvas.getBoundingClientRect();
+    runnerShip.targetX = touch.clientX - rect.left;
+    if (e.cancelable) e.preventDefault();
+}, { passive: false });
+
+// Прыжок в точку при касании
+runnerCanvas.addEventListener('touchstart', (e) => {
+    if (!isRunnerActive) return;
+    const rect = runnerCanvas.getBoundingClientRect();
+    runnerShip.targetX = e.touches[0].clientX - rect.left;
+}, { passive: false });
+
+// --- ФУНКЦИИ ОКНА И ЦИКЛА ---
+
 function openRunnerWindow() {
     isRunnerActive = true;
     document.getElementById('runner-window').style.display = 'block';
     
-    // Подстраиваем размер второго канваса
     resizeRunnerCanvas();
     
-    // ЗДЕСЬ ПОЗЖЕ БУДЕТ СТАРТ ИГРОВОГО ЦИКЛА РАННЕРА (startRunnerLoop)
-    console.log("Окно Раннера открыто. Готовы загружать самолет.");
-    
-    // Временно рисуем фон2 и самолет, чтобы убедиться, что они грузятся
-    setTimeout(debugDrawRunner, 100); // Небольшая задержка для загрузки картинок
+    // Начальная позиция
+    runnerShip.x = window.innerWidth / 2;
+    runnerShip.targetX = window.innerWidth / 2;
+    runnerShip.y = window.innerHeight - 120;
+
+    // Запуск игрового цикла
+    requestAnimationFrame(runnerLoop);
 }
 
 function closeRunnerWindow() {
     isRunnerActive = false;
     document.getElementById('runner-window').style.display = 'none';
-    // ЗДЕСЬ ПОЗЖЕ БУДЕТ ОСТАНОВКА ИГРОВОГО ЦИКЛА (stopRunnerLoop)
 }
 
 function resizeRunnerCanvas() {
-    // Используем DPR для четкости, как и в основном канвасе
-    const dprLB = window.devicePixelRatio || 1;
-    runnerCanvas.width = window.innerWidth * dprLB;
-    runnerCanvas.height = window.innerHeight * dprLB;
-    // Стили оставляем 100% в CSS
+    const dprR = window.devicePixelRatio || 1;
+    runnerCanvas.width = window.innerWidth * dprR;
+    runnerCanvas.height = window.innerHeight * dprR;
+    runnerShip.y = window.innerHeight - 120;
 }
 
-// Привязка кнопки выхода
-const exitBtn = document.getElementById('exit-runner');
-if (exitBtn) exitBtn.onclick = closeRunnerWindow;
-
-// Обработка ресайза для второго канваса
-window.addEventListener('resize', () => {
-    if (isRunnerActive) resizeRunnerCanvas();
-});
-
-// ЧИСТО ДЛЯ ТЕСТА: Простая отрисовка, чтобы проверить, что ассеты на месте
-function debugDrawRunner() {
+function runnerLoop() {
     if (!isRunnerActive) return;
-    
-    const dprLB = window.devicePixelRatio || 1;
-    runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
-    runnerCtx.save();
-    runnerCtx.scale(dprLB, dprLB);
 
-    // Рисуем фон2
+    const dpr = window.devicePixelRatio || 1;
+    runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+    
+    runnerCtx.save();
+    runnerCtx.scale(dpr, dpr);
+
+    // 1. Отрисовка фона
     if (runnerBg.complete) {
         runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
-    } else {
-        runnerCtx.fillStyle = '#111'; // Темный фон если картинка не прогрузилась
-        runnerCtx.fillRect(0, 0, window.innerWidth, window.innerHeight);
     }
 
-    // Рисуем самолет в центре
+    // 2. Расчет движения (Lerp)
+    let dx = runnerShip.targetX - runnerShip.x;
+    runnerShip.x += dx * runnerShip.lerpSpeed;
+
+    // Ограничение по краям экрана
+    if (runnerShip.x < runnerShip.w / 2) runnerShip.x = runnerShip.w / 2;
+    if (runnerShip.x > window.innerWidth - runnerShip.w / 2) runnerShip.x = window.innerWidth - runnerShip.w / 2;
+
+    // 3. Отрисовка самолета с наклоном
     if (shipImg.complete) {
-        const shipSize = 80;
-        runnerCtx.drawImage(shipImg, (window.innerWidth/2) - shipSize/2, (window.innerHeight/2) - shipSize/2, shipSize, shipSize);
+        let tilt = dx * 0.015; // Эффект крена
+        runnerCtx.save();
+        runnerCtx.translate(runnerShip.x, runnerShip.y);
+        runnerCtx.rotate(tilt);
+        // Центрируем картинку относительно x, y
+        runnerCtx.drawImage(shipImg, -runnerShip.w / 2, -runnerShip.h / 2, runnerShip.w, runnerShip.h);
+        runnerCtx.restore();
     }
 
     runnerCtx.restore();
+    requestAnimationFrame(runnerLoop);
 }
+
+// Привязка кнопок и событий
+const exitBtn = document.getElementById('exit-runner');
+if (exitBtn) exitBtn.onclick = closeRunnerWindow;
+
+window.addEventListener('resize', () => {
+    if (isRunnerActive) resizeRunnerCanvas();
+});
