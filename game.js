@@ -457,6 +457,13 @@ function openMoonMenu() {
     }
 }
 
+function closeMoon() {
+    const modal = document.getElementById('moon-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 // Функция самой переработки (логика)
 function exchangeEnergy(type) {
     const today = new Date().toDateString();
@@ -742,10 +749,6 @@ runnerWin.addEventListener('touchmove', (e) => {
 
 // Кнопки интерфейса
 document.getElementById('exit-runner').onclick = closeRunnerWindow;
-
-document.getElementById('close-moon').onclick = () => {
-    document.getElementById('moon-modal').style.display = 'none';
-};
 
 document.getElementById('close-leaderboard').onclick = () => {
     document.getElementById('leaderboard-modal').style.display = 'none';
