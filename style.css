@@ -396,39 +396,46 @@ canvas {
     margin-right: 12px;
 }
 
-/* --- СТАНЦИЯ НА ГЛАВНОЙ КАРТЕ --- */
+/* Контейнер станции теперь ведет себя как планета */
 .station-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: transform 0.3s ease;
-    /* Позиционирование (можно менять) */
-    position: absolute; 
-    bottom: 120px;
-    right: 25px;
-    z-index: 5;
+    
+    /* Убираем абсолютное позиционирование, чтобы она была в ряду */
+    margin: 20px; 
+    
+    /* Смещение в левый угол обеспечим через self-align или просто порядком в HTML */
 }
 
 .station-wrapper:hover {
     transform: scale(1.1);
 }
 
+/* Уменьшаем до масштаба ядра (обычно это около 60-80px) */
 .station-img {
-    width: 100px; /* Ограничили гигантский размер 1024x1333 до компактного */
+    width: 70px; /* Тот самый размер "ядра" */
     height: auto;
     filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.5));
     animation: station-float 4s ease-in-out infinite;
 }
 
 .station-label {
-    margin-top: 8px;
+    margin-top: 10px;
     color: #00e5ff;
     font-family: 'Orbitron', sans-serif;
-    font-size: 12px;
-    font-weight: bold;
-    letter-spacing: 2px;
-    text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+    font-size: 11px; /* Чуть меньше шрифт, чтобы подходил под масштаб */
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px rgba(0, 229, 255, 0.8);
+    text-transform: uppercase;
+}
+
+@keyframes station-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
 }
 
 /* --- МОДАЛЬНОЕ ОКНО АНГАР СТАНЦИИ --- */
