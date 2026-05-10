@@ -70,38 +70,41 @@
         </div>
 
         <div id="station-modal" class="modal-overlay" style="display: none;">
-            <div class="moon-card station-card">
-                <button class="close-btn" onclick="closeStation()">×</button>
-                <div class="moon-header">
-                    <img src="assets/station.png" alt="Station">
-                    <h2>ОРБИТАЛЬНЫЙ АНГАР</h2>
-                </div>
-                <div class="station-body">
-                    <p class="station-desc">Хранилище модулей и пассивных улучшений</p>
-                    
-                    <div class="inventory-grid" id="inventory-container">
-                        <div class="inv-slot empty">
-                            <div class="slot-frame"></div>
-                            <span>Пусто</span>
-                        </div>
-                        <div class="inv-slot empty"><div class="slot-frame"></div></div>
-                        <div class="inv-slot empty"><div class="slot-frame"></div></div>
-                        <div class="inv-slot empty"><div class="slot-frame"></div></div>
-                    </div>
+    <div class="moon-card station-card">
+        <button class="close-btn" onclick="closeStation()">×</button>
+        
+        <div class="moon-header">
+            <img src="assets/station.png" alt="Station">
+            <h2>ОРБИТАЛЬНЫЙ АНГАР</h2>
+        </div>
 
-                    <div class="passive-stats">
-                        <div class="stat-item">
-                            <span>МАГНИТ:</span>
-                            <b id="stat-magnet">0%</b>
-                        </div>
-                        <div class="stat-item">
-                            <span>ЗАЩИТА:</span>
-                            <b id="stat-armor">0%</b>
-                        </div>
-                    </div>
+        <div class="station-body">
+            <div class="ship-stats-grid">
+                <div class="stat-box">❤️ ЖИЗНЬ: <b id="stat-hp">100</b></div>
+                <div class="stat-box">🛡️ БАРЬЕР: <b id="stat-barrier">0</b></div>
+                <div class="stat-box">⚡ ЭНЕРГИЯ: <b id="stat-energy">100%</b></div>
+                <div class="stat-box">💰 QUANT/ч: <b id="stat-income-quant">0</b></div>
+                <div class="stat-box">💎 QUBI/ч: <b id="stat-income-qubi">0</b></div>
+            </div>
+
+            <p class="section-label">АКТИВНЫЕ МОДУЛИ (MAX 5)</p>
+            <div class="active-slots-row" id="active-slots-container">
+                <div class="slot-mini empty"></div>
+                <div class="slot-mini empty"></div>
+                <div class="slot-mini empty"></div>
+                <div class="slot-mini empty"></div>
+                <div class="slot-mini empty"></div>
+            </div>
+
+            <p class="section-label">ВАШИ МОДУЛИ (ИНВЕНТАРЬ)</p>
+            <div class="inventory-scroll-wrapper">
+                <div id="inventory-scroll-list" class="inventory-scroll">
+                    <div class="no-modules">Магазин пуст</div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
         <div id="leaderboard-modal" class="modal-overlay" style="display: none;">
             <div class="moon-card leaderboard-card">
