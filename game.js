@@ -354,29 +354,29 @@ let runnerShip = {
     lerpSpeed: 0.2 // Чуть ускорим отзывчивость
 };
 
-// Функция для обработки перемещения
+// --- ЛОГИКА УПРАВЛЕНИЯ ---
 function handleMove(clientX) {
     if (!isRunnerActive) return;
-    const rect = runnerCanvas.getBoundingClientRect();
-    // Рассчитываем X относительно левого края канваса
-    runnerShip.targetX = clientX - rect.left;
+    // Используем напрямую window.innerWidth, так как канвас на весь экран
+    runnerShip.targetX = clientX;
 }
 
-// 1. Слушатель касания (Touch) - для телефонов
-runnerCanvas.addEventListener('touchstart', (e) => {
+// Слушаем события ПРЯМО НА ОКНЕ, а не только на канвасе
+const runnerWin = document.getElementById('runner-window');
+
+runnerWin.addEventListener('touchstart', (e) => {
     if (!isRunnerActive) return;
     handleMove(e.touches[0].clientX);
 }, { passive: false });
 
-runnerCanvas.addEventListener('touchmove', (e) => {
+runnerWin.addEventListener('touchmove', (e) => {
     if (!isRunnerActive) return;
     handleMove(e.touches[0].clientX);
-    // Блокируем скролл Telegram, чтобы страница не дергалась
-    if (e.cancelable) e.preventDefault();
+    if (e.cancelable) e.preventDefault(); // Запрет свайпа назад в ТГ
 }, { passive: false });
 
-// 2. Слушатель мыши (Mouse) - для тестов в браузере
-runnerCanvas.addEventListener('mousemove', (e) => {
+// Для теста мышкой в браузере
+runnerWin.addEventListener('mousemove', (e) => {
     if (isRunnerActive) handleMove(e.clientX);
 });
 
@@ -384,10 +384,14 @@ runnerCanvas.addEventListener('mousemove', (e) => {
 
 function openRunnerWindow() {
     isRunnerActive = true;
-    document.getElementById('runner-window').style.display = 'block';
+    const windowEl = document.getElementById('runner-window');
+    windowEl.style.display = 'block';
     
-    // Сброс позиций при каждом входе
+    // Принудительно ставим фокус, чтобы события ловились лучше
+    windowEl.focus(); 
+
     resizeRunnerCanvas();
+    
     runnerShip.x = window.innerWidth / 2;
     runnerShip.targetX = window.innerWidth / 2;
 
@@ -415,23 +419,21 @@ function runnerLoop() {
     runnerCtx.save();
     runnerCtx.scale(dpr, dpr);
 
-    // Рисуем фон
     if (runnerBg.complete) {
         runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
     }
 
-    // Логика движения (Lerp)
+    // Плавное движение
     let dx = runnerShip.targetX - runnerShip.x;
     runnerShip.x += dx * runnerShip.lerpSpeed;
 
-    // Ограничения (чтобы не уходил за экран)
+    // Ограничители
     const margin = runnerShip.w / 2;
     if (runnerShip.x < margin) runnerShip.x = margin;
     if (runnerShip.x > window.innerWidth - margin) runnerShip.x = window.innerWidth - margin;
 
-    // Рисуем самолет
     if (shipImg.complete) {
-        let tilt = dx * 0.02; // Эффект наклона
+        let tilt = dx * 0.02;
         runnerCtx.save();
         runnerCtx.translate(runnerShip.x, runnerShip.y);
         runnerCtx.rotate(tilt);
