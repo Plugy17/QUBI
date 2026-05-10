@@ -602,13 +602,11 @@ function handleCanvasClick(e) {
     });
 }
 
-// Удаляем старые слушатели и ставим новые чистые
-canvas.removeEventListener('click', processInput); // на всякий случай
+// 2. Привязываем новую функцию к кликам
 canvas.addEventListener('click', handleCanvasClick);
 canvas.addEventListener('touchstart', (e) => {
     handleCanvasClick(e);
-    // Это важно, чтобы не срабатывал "фантомный" клик после тача
-    if (e.cancelable) e.preventDefault(); 
+    if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
 // Оставляем управление кораблем (оно у тебя верное)
