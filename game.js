@@ -28,7 +28,17 @@ const tg = window.Telegram.WebApp;
 
 const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot" };
 const userRef = db.ref('users/' + tgUser.id);
-let playerData = { quant: 0, qubi: 0, energy: 100, level: 1 };
+let playerData = { 
+    quant: 0, 
+    qubi: 0, 
+    energy: 100, 
+    level: 1,
+    // Добавляем объект лимита прямо сюда
+    factoryLimit: {
+        date: new Date().toLocaleDateString(),
+        processedToday: 0
+    }
+};
 
 // --- 2.1 НАСТРОЙКИ TG (ВОЗВРАТ УДАЛЕННОГО) ---
 tg.expand();
@@ -313,43 +323,43 @@ function openMoonMenu() {
 // Функция самой переработки (логика)
 function startRefining() {
     const today = new Date().toLocaleDateString();
-    const amountToProcess = 5; 
+    const amountToProcess = 5;
 
-    // 1. Сброс лимита для нового дня
-    if (factoryLimit.date !== today) {
-        factoryLimit.date = today;
-        factoryLimit.processedToday = 0;
+    // Инициализируем лимит, если его еще нет в профиле
+    if (!playerData.factoryLimit) {
+        playerData.factoryLimit = { date: today, processedToday: 0 };
     }
 
-    const remainingLimit = 50 - factoryLimit.processedToday;
+    // Сброс лимита, если наступил новый день
+    if (playerData.factoryLimit.date !== today) {
+        playerData.factoryLimit.date = today;
+        playerData.factoryLimit.processedToday = 0;
+    }
 
-    // 2. Проверка лимита (50 QUANT в день)
+    const remainingLimit = 50 - playerData.factoryLimit.processedToday;
+
     if (remainingLimit <= 0) {
-        tg.showAlert("Завод перегружен! Лимит 50 QUANT в день исчерпан. Приходи завтра!");
+        tg.showAlert("Лимит 50 QUANT на сегодня исчерпан!");
         return;
     }
 
-    // 3. Проверка наличия ресурсов
     if (playerData.quant >= amountToProcess) {
         playerData.quant -= amountToProcess;
-        // Даем 10 энергии, но не выше максимума
         playerData.energy = Math.min(MAX_ENERGY, (playerData.energy || 0) + 10);
-        factoryLimit.processedToday += amountToProcess;
+        playerData.factoryLimit.processedToday += amountToProcess;
 
-        // 4. Запись в базу
+        // Сохраняем ВСЁ в Firebase, включая обновленный лимит
         userRef.update({
             quant: playerData.quant,
-            energy: playerData.energy
+            energy: playerData.energy,
+            factoryLimit: playerData.factoryLimit // ТЕПЕРЬ ЛИМИТ В БАЗЕ!
         }).then(() => {
-            updateUI();      // Обновили полоски на главном экране
-            updateMoonUI();  // Обновили цифры в окне Луны
-            
-            // Вибрация и уведомление
+            updateUI();
+            updateMoonUI();
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('success');
-            tg.showAlert(`Успешно! Потрачено 5 QUANT, получено 10⚡`);
         });
     } else {
-        tg.showAlert("Недостаточно QUANT для запуска реактора!");
+        tg.showAlert("Недостаточно QUANT!");
     }
 }
 
@@ -359,7 +369,13 @@ function updateMoonUI() {
     const limitAmt = document.getElementById('factory-limit-val');
     
     if (resAmt) resAmt.innerText = Math.floor(playerData.quant || 0);
-    if (limitAmt) limitAmt.innerText = 50 - factoryLimit.processedToday;
+    
+    if (limitAmt && playerData.factoryLimit) {
+        const today = new Date().toLocaleDateString();
+        // Если день сменился, визуально показываем полный лимит
+        const processed = (playerData.factoryLimit.date === today) ? playerData.factoryLimit.processedToday : 0;
+        limitAmt.innerText = 50 - processed;
+    }
 }
 
 function openLeaderboard() {
