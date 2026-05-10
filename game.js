@@ -457,11 +457,10 @@ function openMoonMenu() {
     }
 }
 
+// Закрытие Луны
 function closeMoon() {
     const modal = document.getElementById('moon-modal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.style.display = 'none';
 }
 
 // Функция самой переработки (логика)
@@ -728,14 +727,28 @@ function handleCanvasClick(e) {
     });
 }
 
-// 2. Привязываем новую функцию к кликам
-canvas.addEventListener('click', handleCanvasClick);
+// Функция для блокировки кликов сквозь окна
+function isAnyModalOpen() {
+    const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal'];
+    return modals.some(id => {
+        const el = document.getElementById(id);
+        return el && el.style.display !== 'none' && el.style.display !== '';
+    });
+}
+
+// 2. Привязываем клики к канвасу с проверкой на открытые окна
+canvas.addEventListener('click', (e) => {
+    if (isAnyModalOpen()) return; // Если окно открыто, планеты не реагируют
+    handleCanvasClick(e);
+});
+
 canvas.addEventListener('touchstart', (e) => {
+    if (isAnyModalOpen()) return; // Блокируем тач, если открыто окно
     handleCanvasClick(e);
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
-// Оставляем управление кораблем (оно у тебя верное)
+// Управление кораблем (оставляем, оно работает хорошо)
 runnerWin.addEventListener('touchstart', (e) => {
     if (!isRunnerActive || isUiHit(e.target)) return;
     runnerShip.targetX = e.touches[0].clientX;
@@ -747,12 +760,10 @@ runnerWin.addEventListener('touchmove', (e) => {
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
-// Кнопки интерфейса
-document.getElementById('exit-runner').onclick = closeRunnerWindow;
-
-document.getElementById('close-leaderboard').onclick = () => {
-    document.getElementById('leaderboard-modal').style.display = 'none';
-};
+// Кнопки интерфейса (убрали лишние привязки, теперь работаем через функции ниже)
+if (document.getElementById('exit-runner')) {
+    document.getElementById('exit-runner').onclick = closeRunnerWindow;
+}
 
 // ЗАПУСК
 bg.onload = () => { initGame(); draw(); };
@@ -902,13 +913,13 @@ function toggleModule(modId) {
     });
 }
 
+// Твоя расширенная функция для Станции (Ангара)
 function closeStation() {
     // 1. Скрываем окно
     const modal = document.getElementById('station-modal');
     if (modal) modal.style.display = 'none';
 
-    // 2. На всякий случай сохраняем текущий набор модулей в Firebase
-    // Это гарантирует, что выбор игрока не пропадет при перезагрузке
+    // 2. Сохраняем экипировку в Firebase
     if (playerData.equipped) {
         userRef.update({ 
             equipped: playerData.equipped 
@@ -919,9 +930,14 @@ function closeStation() {
         });
     }
 
-    // 3. (Опционально) Если ты хочешь, чтобы статы на главном экране 
-    // тоже обновились после смены модулей:
+    // 3. Обновляем главный экран
     if (typeof updateUI === "function") {
         updateUI();
     }
+}
+
+// Закрытие Лидерборда
+function closeLeaderboard() {
+    const modal = document.getElementById('leaderboard-modal');
+    if (modal) modal.style.display = 'none';
 }
