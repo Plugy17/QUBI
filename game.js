@@ -272,7 +272,7 @@ function runnerLoop() {
         if (currentImg.complete) runnerCtx.drawImage(currentImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
 
         // Проверка столкновения
-        if (Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w/3 + q.size/2)) {
+       if (Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w/3 + q.size/2)) {
             if (q.type === 'qubi') {
                 sessionQubi++;
                 // Обновляем счетчик QUBI
@@ -314,13 +314,15 @@ function spawnRunnerObject() {
     // Шанс 5% на QUBI, остальные 95% — QUANT
     let type = (Math.random() * 100 < 5) ? 'qubi' : 'quant';
 
+    // НОВЫЕ РАЗМЕРЫ: Увеличили в 2 раза
+    let newSize = type === 'qubi' ? 90 : 70;
+
     quants.push({
-        // Рандом по горизонтали с учетом отступов от краев
-        x: Math.random() * (window.innerWidth - 60) + 30,
-        y: -50,
-        // QUBI чуть крупнее (45), QUANT поменьше (35)
-        size: type === 'qubi' ? 45 : 35,
-        // Рандомная скорость падения
+        // Центрируем рандом по X с учетом нового большого размера
+        x: Math.random() * (window.innerWidth - newSize) + newSize / 2,
+        y: -newSize, // Появляется чуть выше экрана, чтобы вход был плавным
+        size: newSize,
+        // Скорость можно оставить прежней или чуть замедлить, так как объекты крупные
         speed: 2.5 + Math.random() * 3.5,
         type: type
     });
@@ -328,7 +330,8 @@ function spawnRunnerObject() {
     // Следующий объект появится через 0.9 - 1.5 секунды
     let nextSpawn = 900 + Math.random() * 600;
     
-    // Сохраняем ID таймера, чтобы если игра закроется, он не спавнил объекты в фоне
+    // Очищаем старый таймер перед созданием нового (на всякий случай)
+    if (this.spawnTimer) clearTimeout(this.spawnTimer);
     this.spawnTimer = setTimeout(spawnRunnerObject, nextSpawn);
 }
 
