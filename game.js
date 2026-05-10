@@ -1,7 +1,16 @@
+let lastEnergyUpdate = Date.now(); // Время последнего обновления (сохраняй в localStorage!)
+let userEnergy = 100;
+const MAX_ENERGY = 100;
+
 let quants = []; 
 // Счетчики за текущий забег
 let sessionQuants = 0;
 let sessionQubi = 0;
+
+let factoryLimit = {
+    date: new Date().toLocaleDateString(), // Текущая дата строкой
+    processedToday: 0
+};
 
 const quantImg = new Image();
 quantImg.src = 'assets/quant-icon.png'; 
@@ -329,6 +338,22 @@ function syncWithLeaderboard() {
     });
 }
 
+function regenerateEnergy() {
+    const now = Date.now();
+    const diffInMs = now - lastEnergyUpdate;
+    const hoursPassed = diffInMs / (1000 * 60 * 60); // Переводим мс в часы
+
+    if (hoursPassed >= 1) {
+        const energyToAdd = Math.floor(hoursPassed) * 10;
+        userEnergy = Math.min(MAX_ENERGY, userEnergy + energyToAdd);
+        lastEnergyUpdate = now; // Обновляем время
+        
+        // Тут сохрани новые значения в localStorage или базу
+        savePlayerData(); 
+        console.log(`Реген: добавлено ${energyToAdd} энергии`);
+    }
+}
+
 const runnerWin = document.getElementById('runner-window');
 
 // Функция, которая проверяет: нажали на кнопку или на игру?
@@ -530,4 +555,37 @@ function spawnRunnerObject() {
     // Частота появления: в среднем раз в 1.2 сек
     let nextSpawn = 900 + Math.random() * 600;
     setTimeout(spawnRunnerObject, nextSpawn);
+}
+
+function processQuantsAtFactory(amount) {
+    const today = new Date().toLocaleDateString();
+
+    // Если наступил новый день — сбрасываем счетчик
+    if (factoryLimit.date !== today) {
+        factoryLimit.date = today;
+        factoryLimit.processedToday = 0;
+    }
+
+    const remainingLimit = 50 - factoryLimit.processedToday;
+
+    if (remainingLimit <= 0) {
+        tg.showAlert("Завод перегружен! Приходите завтра.");
+        return;
+    }
+
+    // Берем либо столько, сколько хочет игрок, либо сколько осталось по лимиту
+    const toProcess = Math.min(amount, remainingLimit);
+    
+    // Математика: 5 квантов = 10 энергии
+    const energyGain = (toProcess / 5) * 10;
+
+    if (userQuants >= toProcess) {
+        userQuants -= toProcess;
+        userEnergy = Math.min(MAX_ENERGY, userEnergy + energyGain);
+        factoryLimit.processedToday += toProcess;
+        
+        tg.showScanqrPopup({ text: `Переработано ${toProcess} QUANT. Получено ${energyGain} энергии!` });
+    } else {
+        tg.showAlert("Недостаточно квантов для переработки!");
+    }
 }
