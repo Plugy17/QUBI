@@ -308,27 +308,40 @@ function processQuantsAtFactory(amount) {
 function openLeaderboard() {
     const modal = document.getElementById('leaderboard-modal');
     const container = document.getElementById('leaderboard-container');
+    
     if (modal) modal.style.display = 'flex';
+    if (container) container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка...</div>';
+
+    // Сначала принудительно обновляем твои данные в базе перед открытием топа
+    syncWithLeaderboard();
+
     db.ref('leaderboard').orderByChild('qubi').limitToLast(100).once('value', (snap) => {
         if (container) {
             container.innerHTML = '';
             let players = [];
-            snap.forEach(c => players.push(c.val()));
+            
+            // Собираем данные и добавляем ID игрока для точной проверки
+            snap.forEach(child => {
+                let data = child.val();
+                data.uid = child.key; // Сохраняем ID из ключа Firebase
+                players.push(data);
+            });
+
+            // Сортируем: самые богатые сверху
             players.reverse().forEach((p, i) => {
                 const row = document.createElement('div');
                 row.className = 'player-row';
-                const isMe = p.name === tgUser.first_name ? 'style="color: #00e5ff;"' : '';
-                row.innerHTML = `<span ${isMe}>${i+1}. ${p.name}</span><span>${Math.floor(p.qubi)} QUBI</span>`;
+                
+                // СРАВНИВАЕМ ПО ID (это 100% точность), а не по имени
+                const isMe = p.uid === String(tgUser.id) ? 'style="color: #00e5ff; font-weight: bold; background: rgba(0,229,255,0.1);"' : '';
+                
+                row.innerHTML = `
+                    <span ${isMe}>${i + 1}. ${p.name || 'Unknown'}</span>
+                    <span class="score" ${isMe}>${Math.floor(p.qubi || 0)} QUBI</span>
+                `;
                 container.appendChild(row);
             });
         }
-    });
-}
-
-function syncWithLeaderboard() {
-    db.ref('leaderboard/' + tgUser.id).set({
-        name: tgUser.first_name || "Pilot",
-        qubi: playerData.qubi || 0
     });
 }
 
