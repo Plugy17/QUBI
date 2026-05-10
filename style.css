@@ -345,40 +345,46 @@ canvas {
 
 .score-display {
     /* Твои базовые стили */
-    background: rgba(0, 0, 0, 0.6);
+   background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(0, 229, 255, 0.4); 
-    color: #00e5ff;
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-weight: bold;
-    font-family: sans-serif;
-
-    /* Новые правила для двух строк */
-    display: flex;
-    flex-direction: column; /* Ставим QUANT и QUBI друг под другом */
-    gap: 4px;               /* Расстояние между ними */
-    min-width: 100px;
-    position: absolute;     /* Фиксируем в углу раннера */
+    padding: 12px 20px; /* Увеличил внутренние отступы */
+    border-radius: 12px;
+    backdrop-filter: blur(5px);
+    position: absolute;
     top: 20px;
     left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Увеличил расстояние между строками */
+    min-width: 130px; /* Увеличил ширину панели */
+    z-index: 10;
 }
 
-/* Стиль для иконок внутри */
+/* Иконки валют */
 .run-icon {
-    width: 18px;
-    height: 18px;
-    vertical-align: middle;
-    margin-right: 8px;
+    width: 36px;  /* УВЕЛИЧИЛ ИКОНКИ В 2 РАЗА (было 18-20px) */
+    height: 36px;
+    margin-right: 15px;
+    object-fit: contain;
 }
 
-/* Строка внутри счетчика */
+/* Общий стиль для строк (Квант и Куби) */
 .score-row {
     display: flex;
     align-items: center;
-    font-size: 18px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    font-size: 28px; /* УВЕЛИЧИЛ ТЕКСТ В 2 РАЗА (было 18px) */
 }
 
-/* Цвет для текста QUBI */
+/* Цвет для QUANT — теперь Голубой */
+.quant-color {
+    color: #00e5ff; 
+}
+
+/* Цвет для QUBI — теперь Желто-Оранжевый */
 .qubi-color {
-    color: #00e5ff;
+    color: #ffcc00; /* Яркий золотистый цвет */
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 8px;
 }
