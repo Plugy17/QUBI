@@ -395,3 +395,37 @@ canvas {
     height: 54px;
     margin-right: 12px;
 }
+
+.station-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    margin: 20px;
+}
+
+.station-wrapper:hover {
+    transform: scale(1.1);
+}
+
+.station-img {
+    width: 120px; /* Сделай чуть больше или меньше планет для акцента */
+    height: auto;
+    filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.5));
+    animation: station-float 4s ease-in-out infinite;
+}
+
+.station-label {
+    margin-top: 10px;
+    color: #00e5ff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 5px rgba(0, 229, 255, 0.8);
+}
+
+@keyframes station-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
