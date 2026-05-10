@@ -318,16 +318,6 @@ function syncWithLeaderboard() {
     });
 }
 
-// --- ЛОГИКА РАННЕРА: ОБЪЕКТЫ И УПРАВЛЕНИЕ ---
-let runnerShip = {
-    x: window.innerWidth / 2,
-    y: window.innerHeight - 120,
-    w: 80,
-    h: 80,
-    targetX: window.innerWidth / 2,
-    lerpSpeed: 0.15 // Плавность хода
-};
-
 // Слушатель движения пальца (только по горизонтали)
 runnerCanvas.addEventListener('touchmove', (e) => {
     if (!isRunnerActive) return;
