@@ -597,3 +597,10 @@ document.getElementById('close-leaderboard').onclick = () => {
 // ЗАПУСК
 bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
+
+function openStation() {
+    document.getElementById('station-modal').style.display = 'flex';
+}
+function closeStation() {
+    document.getElementById('station-modal').style.display = 'none';
+}
