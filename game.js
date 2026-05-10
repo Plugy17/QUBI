@@ -742,7 +742,6 @@ runnerWin.addEventListener('touchmove', (e) => {
 
 // Кнопки интерфейса
 document.getElementById('exit-runner').onclick = closeRunnerWindow;
-document.getElementById('process-btn').onclick = exchangeEnergy; 
 
 document.getElementById('close-moon').onclick = () => {
     document.getElementById('moon-modal').style.display = 'none';
