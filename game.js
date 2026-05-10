@@ -348,9 +348,9 @@ function spawnRunnerObject() {
     if (!isRunnerActive) return;
 
     // Сначала определяем, ЧТО заспавнить: монетку (85%) или метеор (15%)
-    if (Math.random() * 100 < 15) {
+    if (Math.random() * 100 < 35) {
         // СПАВНИМ МЕТЕОР
-        let size = 80; // Метеор должен быть заметным и опасным
+        let size = 90; // Метеор должен быть заметным и опасным
         quants.push({
             x: Math.random() * (window.innerWidth - size) + size / 2,
             y: -size,
