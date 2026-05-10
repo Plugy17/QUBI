@@ -162,15 +162,28 @@ function draw() {
     if (bg.complete) ctx.drawImage(bg, 0, 0, window.innerWidth, window.innerHeight);
 
     planets.forEach(p => {
-        if (p.img.complete) {
+        // Проверяем, загружена ли картинка (если p.img это объект Image)
+        if (p.img && p.img.complete) {
             ctx.save();
-            ctx.translate(p.x * window.innerWidth, p.y * window.innerHeight);
-            p.rotation += p.speed;
-            ctx.rotate(p.rotation);
-            ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+            // Используем относительные координаты из массива
+            ctx.translate(p.x, p.y); 
+
+            if (p.id === 'station') {
+                // ЭФФЕКТ ДЛЯ СТАНЦИИ: Плавное покачивание вместо вращения
+                const floatY = Math.sin(Date.now() * 0.002) * 5; 
+                ctx.translate(0, floatY); 
+                ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+            } else {
+                // ЛОГИКА ДЛЯ ПЛАНЕТ: Вращение
+                p.rotation += p.speed;
+                ctx.rotate(p.rotation);
+                ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+            }
+            
             ctx.restore();
         }
     });
+    
     ctx.restore();
     requestAnimationFrame(draw);
 }
@@ -625,8 +638,17 @@ bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
 
 function openStation() {
+    // Показываем окно
     document.getElementById('station-modal').style.display = 'flex';
+    
+    // Блокируем движение игрока или планет на фоне, если нужно
+    // isPaused = true; 
+
+    // Обновляем статы из playerData
+    document.getElementById('stat-magnet').innerText = (playerData.inventory?.magnetBonus || 0) + '%';
+    document.getElementById('stat-armor').innerText = (playerData.inventory?.armorBonus || 0) + '%';
 }
+
 function closeStation() {
     document.getElementById('station-modal').style.display = 'none';
 }
