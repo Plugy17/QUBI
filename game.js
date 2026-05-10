@@ -306,30 +306,57 @@ function openMoonMenu() {
     const modal = document.getElementById('moon-modal');
     if (modal) {
         modal.style.display = 'flex';
-        document.getElementById('res-amount').innerText = Math.floor(playerData.quant);
+        updateMoonUI(); // Чтобы сразу видеть актуальный лимит
     }
 }
 
-function processQuantsAtFactory(amount) {
+function processQuantsAtFactory() {
     const today = new Date().toLocaleDateString();
+    const amountToProcess = 5; // Фиксированная порция переработки
+
+    // 1. Проверка и сброс лимита, если наступил новый день
     if (factoryLimit.date !== today) {
         factoryLimit.date = today;
         factoryLimit.processedToday = 0;
     }
+
     const remainingLimit = 50 - factoryLimit.processedToday;
-    const toProcess = Math.min(amount, remainingLimit);
-    if (toProcess <= 0) {
-        tg.showAlert("Лимит завода исчерпан!"); return;
+
+    // 2. Проверка лимита
+    if (remainingLimit <= 0) {
+        tg.showAlert("Завод перегружен! Лимит 50 QUANT в день исчерпан. Приходи завтра!");
+        return;
     }
-    const energyGain = (toProcess / 5) * 10;
-    if (playerData.quant >= toProcess) {
-        playerData.quant -= toProcess;
-        playerData.energy = Math.min(MAX_ENERGY, (playerData.energy || 0) + energyGain);
-        factoryLimit.processedToday += toProcess;
-        userRef.update({ quant: playerData.quant, energy: playerData.energy });
-        updateUI();
-        tg.showAlert(`Получено ${energyGain} энергии!`);
+
+    // 3. Проверка наличия квантов у игрока
+    if (playerData.quant >= amountToProcess) {
+        // Математика: -5 квантов = +10 энергии
+        playerData.quant -= amountToProcess;
+        playerData.energy = Math.min(MAX_ENERGY, (playerData.energy || 0) + 10);
+        factoryLimit.processedToday += amountToProcess;
+
+        // 4. Сохранение в Firebase
+        userRef.update({
+            quant: playerData.quant,
+            energy: playerData.energy
+        }).then(() => {
+            updateUI(); // Обновляем полоски на главном экране
+            updateMoonUI(); // Обновляем цифры в самом окне Луны
+            tg.HapticFeedback.impactOccurred('success');
+            tg.showAlert(`Успешно! Потрачено 5 QUANT, получено 10⚡`);
+        });
+    } else {
+        tg.showAlert("Недостаточно QUANT для запуска реактора!");
     }
+}
+
+// Вспомогательная функция для обновления текста ВНУТРИ модалки Луны
+function updateMoonUI() {
+    const resAmt = document.getElementById('res-amount');
+    const limitAmt = document.getElementById('factory-limit-val');
+    
+    if (resAmt) resAmt.innerText = Math.floor(playerData.quant);
+    if (limitAmt) limitAmt.innerText = 50 - factoryLimit.processedToday;
 }
 
 function openLeaderboard() {
