@@ -26,6 +26,11 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const tg = window.Telegram.WebApp;
 
+if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand(); // Разворачивает окно на максимум
+}
+
 const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot" };
 const userRef = db.ref('users/' + tgUser.id);
 let playerData = { 
@@ -111,17 +116,42 @@ let runnerShip = {
 // --- 4. СИСТЕМНЫЕ ФУНКЦИИ (RESIZE, UI, START) ---
 function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
     [canvas, runnerCanvas].forEach(c => {
         if (!c) return;
-        c.width = window.innerWidth * dpr;
-        c.height = window.innerHeight * dpr;
-        c.style.width = window.innerWidth + 'px';
-        c.style.height = window.innerHeight + 'px';
+        
+        // Устанавливаем внутреннее разрешение
+        c.width = width * dpr;
+        c.height = height * dpr;
+        
+        // Устанавливаем физический размер в браузере
+        c.style.width = width + 'px';
+        c.style.height = height + 'px';
+
+        // Важно: масштабируем контекст рисования под DPR
+        const ctx = c.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // Сброс трансформации перед масштабированием
+        ctx.scale(dpr, dpr);
     });
-    runnerShip.y = window.innerHeight - 200;
+
+    // Обновляем позицию корабля в раннере относительно новой высоты
+    if (typeof runnerShip !== 'undefined') {
+        runnerShip.y = height - 200;
+    }
 }
+
+// Слушатель событий
 window.addEventListener('resize', resizeCanvas);
+
+// --- ГЛАВНЫЙ ФИКС ДЛЯ TELEGRAM ---
+// Вызываем сразу
 resizeCanvas();
+
+// И вызываем повторно через короткие паузы, когда WebView стабилизируется
+setTimeout(resizeCanvas, 100);
+setTimeout(resizeCanvas, 300);
 
 function initGame() {
     const nameEl = document.getElementById('player-name');
