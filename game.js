@@ -700,20 +700,42 @@ document.getElementById('close-leaderboard').onclick = () => {
 bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
 
-function buyModule(id, name, type, power) {
-    // id: 'm1', name: 'Ядро жизни V1', type: 'hp', power: 50
+function buyModule(moduleId, priceQuant, priceQubi, name, type, power) {
+    // 1. Проверяем баланс игрока
+    if (playerData.quant < priceQuant || playerData.qubi < priceQubi) {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        alert("Недостаточно ресурсов для покупки!");
+        return;
+    }
+
+    // 2. Списываем валюту
+    playerData.quant -= priceQuant;
+    playerData.qubi -= priceQubi;
+
+    // 3. Создаем объект модуля
     if (!playerData.inventory) playerData.inventory = [];
-
-    // Добавляем новый модуль в список купленных
-    playerData.inventory.push({
-        id: id + "_" + Date.now(), // Уникальный ID для каждого экземпляра
-        baseId: id,
+    
+    const newModule = {
+        id: moduleId + "_" + Date.now(), // Уникальный ID, чтобы можно было купить 2 одинаковых модуля
         name: name,
-        type: type,   // 'hp', 'barrier', 'energy', 'income'
-        power: power  // на сколько улучшает
-    });
+        type: type,   // 'hp', 'barrier', 'income_quant', 'income_qubi'
+        power: power
+    };
 
-    userRef.update({ inventory: playerData.inventory });
+    playerData.inventory.push(newModule);
+
+    // 4. Сохраняем всё в Firebase
+    userRef.update({
+        quant: playerData.quant,
+        qubi: playerData.qubi,
+        inventory: playerData.inventory
+    }).then(() => {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        console.log("Покупка успешна!");
+        updateUI(); // Обновляем баланс на главном экране
+    }).catch(err => {
+        console.error("Ошибка при покупке:", err);
+    });
 }
 
 function calculateCurrentStats() {
