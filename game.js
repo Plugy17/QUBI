@@ -366,15 +366,32 @@ function startRefining() {
 // Функция обновления текста в модалке (чтобы цифры менялись на глазах)
 function updateMoonUI() {
     const resAmt = document.getElementById('res-amount');
-    const limitAmt = document.getElementById('factory-limit-val');
+    const limitText = document.getElementById('factory-limit-text');
+    const limitFill = document.getElementById('limit-bar-fill');
     
     if (resAmt) resAmt.innerText = Math.floor(playerData.quant || 0);
     
-    if (limitAmt && playerData.factoryLimit) {
+    if (playerData.factoryLimit) {
         const today = new Date().toLocaleDateString();
-        // Если день сменился, визуально показываем полный лимит
+        // Если день сменился, считаем, что потрачено 0
         const processed = (playerData.factoryLimit.date === today) ? playerData.factoryLimit.processedToday : 0;
-        limitAmt.innerText = 50 - processed;
+        const totalLimit = 50;
+        
+        // Обновляем текст (например: "25 / 50")
+        if (limitText) limitText.innerText = `${processed} / ${totalLimit}`;
+        
+        // Обновляем полоску (в процентах)
+        if (limitFill) {
+            const percentage = (processed / totalLimit) * 100;
+            limitFill.style.width = `${percentage}%`;
+            
+            // Если лимит исчерпан, можно подсветить красным
+            if (percentage >= 100) {
+                limitFill.style.background = '#ff4444';
+            } else {
+                limitFill.style.background = 'linear-gradient(90deg, #00e5ff, #007bff)';
+            }
+        }
     }
 }
 
