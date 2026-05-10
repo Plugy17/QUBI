@@ -213,10 +213,26 @@ function openRunnerWindow() {
 
 function closeRunnerWindow() {
     isRunnerActive = false;
+    
+    // Прибавляем собранное за забег
     playerData.quant += sessionQuants;
     playerData.qubi += sessionQubi;
-    userRef.update({ quant: playerData.quant, qubi: playerData.qubi });
+    
+    // 1. Обновляем личный профиль игрока
+    userRef.update({ 
+        quant: playerData.quant, 
+        qubi: playerData.qubi 
+    }).then(() => {
+        // 2. СРАЗУ ПОСЛЕ этого обновляем данные в глобальном лидерборде
+        syncWithLeaderboard();
+        console.log("Данные сохранены и отправлены в ТОП");
+    }).catch((err) => {
+        console.error("Ошибка сохранения:", err);
+    });
+    
+    // Закрываем окно и очищаем мусор
     runnerWin.style.display = 'none';
+    quants = []; 
 }
 
 function runnerLoop() {
@@ -263,15 +279,26 @@ function runnerLoop() {
 
 function spawnRunnerObject() {
     if (!isRunnerActive) return;
+
+    // Шанс 5% на QUBI, остальные 95% — QUANT
     let type = (Math.random() * 100 < 5) ? 'qubi' : 'quant';
+
     quants.push({
+        // Рандом по горизонтали с учетом отступов от краев
         x: Math.random() * (window.innerWidth - 60) + 30,
         y: -50,
+        // QUBI чуть крупнее (45), QUANT поменьше (35)
         size: type === 'qubi' ? 45 : 35,
+        // Рандомная скорость падения
         speed: 2.5 + Math.random() * 3.5,
         type: type
     });
-    setTimeout(spawnRunnerObject, 900 + Math.random() * 600);
+
+    // Следующий объект появится через 0.9 - 1.5 секунды
+    let nextSpawn = 900 + Math.random() * 600;
+    
+    // Сохраняем ID таймера, чтобы если игра закроется, он не спавнил объекты в фоне
+    this.spawnTimer = setTimeout(spawnRunnerObject, nextSpawn);
 }
 
 // --- 7. ЛУНА, ЛИДЕРЫ И РЕГЕН ---
