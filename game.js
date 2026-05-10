@@ -85,6 +85,7 @@ const quantImg = new Image(); quantImg.src = 'assets/quant-icon.png';
 const qubiImg = new Image(); qubiImg.src = 'assets/qubi-icon.png';
 const meteorImg = new Image(); meteorImg.src = 'assets/meteor.png'; // Убедись, что файл лежит по этому пути
 
+const dpr = window.devicePixelRatio || 1;
 const planets = [
     { id: 'runner', src: 'assets/quant.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, size: 120, rotation: 0, speed: 0.002, img: new Image() },
     { id: 'build', src: 'assets/earth.png', x: window.innerWidth * 0.22, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: 0.001, img: new Image() },
@@ -196,20 +197,35 @@ function processInput(e) {
     const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
     const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
     const rect = canvas.getBoundingClientRect();
-    const clickX = clientX - rect.left;
-    const clickY = clientY - rect.top;
+    
+    // Учитываем коэффициент пикселей устройства (DPR)
+    const dpr = window.devicePixelRatio || 1;
+    
+    // Вычисляем координаты клика и масштабируем их под канвас
+    const clickX = (clientX - rect.left) * dpr;
+    const clickY = (clientY - rect.top) * dpr;
 
     planets.forEach(p => {
-        // Теперь p.x и p.y — это уже готовые координаты в пикселях
+        // Теперь дистанция будет считаться корректно относительно масштаба отрисовки
         const dist = Math.hypot(clickX - p.x, clickY - p.y);
         
-        if (dist < (p.size / 2) + 10) {
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        // Увеличим радиус клика до p.size, чтобы легче было попадать пальцем
+        if (dist < p.size) { 
+            if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+                Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+            }
             
-            if (p.action) p.action(); // Вызов openStation()
-            else if (p.id === 'leaderboard') openLeaderboard();
-            else if (p.id === 'moon') openMoonMenu();
-            else activatePlanet(p.id);
+            if (p.action) {
+                p.action(); 
+            } else if (p.id === 'leaderboard') {
+                openLeaderboard();
+            } else if (p.id === 'moon') {
+                // Если функция называется openMoonModal или openMoonMenu, проверь имя!
+                if (typeof openMoonModal === 'function') openMoonModal();
+                else openMoonMenu();
+            } else {
+                activatePlanet(p.id);
+            }
         }
     });
 }
