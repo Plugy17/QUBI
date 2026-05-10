@@ -86,13 +86,15 @@ const qubiImg = new Image(); qubiImg.src = 'assets/qubi-icon.png';
 const meteorImg = new Image(); meteorImg.src = 'assets/meteor.png'; // Убедись, что файл лежит по этому пути
 
 const planets = [
-    { id: 'runner', src: 'assets/quant.png', x: 0.5, y: 0.5, size: 120, rotation: 0, speed: 0.002, img: new Image() },
-    { id: 'build', src: 'assets/earth.png', x: 0.22, y: 0.5, size: 75, rotation: 0, speed: 0.001, img: new Image() },
-    { id: 'shop', src: 'assets/mars.png', x: 0.78, y: 0.5, size: 75, rotation: 0, speed: -0.001, img: new Image() },
-    { id: 'moon', src: 'assets/moon.png', x: 0.5, y: 0.72, size: 60, rotation: 0, speed: 0.003, img: new Image() },
-    { id: 'leaderboard', src: 'assets/neptun.png', x: 0.5, y: 0.32, size: 70, rotation: 0, speed: -0.0015, img: new Image() },
-    { id: 'station', name: 'СТАНЦИЯ', img: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, action: () => openStation() }
+    { id: 'runner', src: 'assets/quant.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, size: 120, rotation: 0, speed: 0.002, img: new Image() },
+    { id: 'build', src: 'assets/earth.png', x: window.innerWidth * 0.22, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: 0.001, img: new Image() },
+    { id: 'shop', src: 'assets/mars.png', x: window.innerWidth * 0.78, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: -0.001, img: new Image() },
+    { id: 'moon', src: 'assets/moon.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.72, size: 60, rotation: 0, speed: 0.003, img: new Image() },
+    { id: 'leaderboard', src: 'assets/neptun.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.32, size: 70, rotation: 0, speed: -0.0015, img: new Image() },
+    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() }
 ];
+
+// Правильная инициализация картинок для ВСЕХ объектов
 planets.forEach(p => { p.img.src = p.src; });
 
 let runnerShip = {
@@ -157,29 +159,31 @@ function draw() {
     const dpr = window.devicePixelRatio || 1;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
+    
+    // Если ты используешь resizeCanvas с умножением на DPR, 
+    // здесь масштаб должен соответствовать способу отрисовки
     ctx.scale(dpr, dpr);
 
     if (bg.complete) ctx.drawImage(bg, 0, 0, window.innerWidth, window.innerHeight);
 
     planets.forEach(p => {
-        // Проверяем, загружена ли картинка (если p.img это объект Image)
         if (p.img && p.img.complete) {
             ctx.save();
-            // Используем относительные координаты из массива
+            
+            // Смещение объекта
             ctx.translate(p.x, p.y); 
 
             if (p.id === 'station') {
-                // ЭФФЕКТ ДЛЯ СТАНЦИИ: Плавное покачивание вместо вращения
+                // Плавное покачивание станции (Float)
                 const floatY = Math.sin(Date.now() * 0.002) * 5; 
-                ctx.translate(0, floatY); 
-                ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+                ctx.translate(0, floatY);
             } else {
-                // ЛОГИКА ДЛЯ ПЛАНЕТ: Вращение
+                // Вращение планет
                 p.rotation += p.speed;
                 ctx.rotate(p.rotation);
-                ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             }
             
+            ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
     });
@@ -196,11 +200,14 @@ function processInput(e) {
     const clickY = clientY - rect.top;
 
     planets.forEach(p => {
-        const posX = p.x * window.innerWidth;
-        const posY = p.y * window.innerHeight;
-        if (Math.hypot(clickX - posX, clickY - posY) < (p.size / 2) + 15) {
+        // Теперь p.x и p.y — это уже готовые координаты в пикселях
+        const dist = Math.hypot(clickX - p.x, clickY - p.y);
+        
+        if (dist < (p.size / 2) + 10) {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            if (p.id === 'leaderboard') openLeaderboard();
+            
+            if (p.action) p.action(); // Вызов openStation()
+            else if (p.id === 'leaderboard') openLeaderboard();
             else if (p.id === 'moon') openMoonMenu();
             else activatePlanet(p.id);
         }
