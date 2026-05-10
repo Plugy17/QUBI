@@ -700,18 +700,148 @@ document.getElementById('close-leaderboard').onclick = () => {
 bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
 
-function openStation() {
-    // Показываем окно
-    document.getElementById('station-modal').style.display = 'flex';
-    
-    // Блокируем движение игрока или планет на фоне, если нужно
-    // isPaused = true; 
+function buyModule(id, name, type, power) {
+    // id: 'm1', name: 'Ядро жизни V1', type: 'hp', power: 50
+    if (!playerData.inventory) playerData.inventory = [];
 
-    // Обновляем статы из playerData
-    document.getElementById('stat-magnet').innerText = (playerData.inventory?.magnetBonus || 0) + '%';
-    document.getElementById('stat-armor').innerText = (playerData.inventory?.armorBonus || 0) + '%';
+    // Добавляем новый модуль в список купленных
+    playerData.inventory.push({
+        id: id + "_" + Date.now(), // Уникальный ID для каждого экземпляра
+        baseId: id,
+        name: name,
+        type: type,   // 'hp', 'barrier', 'energy', 'income'
+        power: power  // на сколько улучшает
+    });
+
+    userRef.update({ inventory: playerData.inventory });
+}
+
+function calculateCurrentStats() {
+    let stats = {
+        hp: 100,
+        barrier: 0,
+        energy: 100,
+        incomeQuant: 0,
+        incomeQubi: 0
+    };
+
+    if (playerData.equipped && playerData.inventory) {
+        playerData.equipped.forEach(modId => {
+            const module = playerData.inventory.find(m => m.id === modId);
+            if (module) {
+                if (module.type === 'hp') stats.hp += module.power;
+                if (module.type === 'barrier') stats.barrier += module.power;
+                if (module.type === 'income_quant') stats.incomeQuant += module.power;
+                if (module.type === 'income_qubi') stats.incomeQubi += module.power;
+                // Энергию обычно делаем как множитель или макс. запас
+            }
+        });
+    }
+    return stats;
+}
+
+function openStation() {
+    document.getElementById('station-modal').style.display = 'flex';
+
+    // Получаем актуальные статы с учетом модулей
+    const current = calculateCurrentStats();
+
+    // 1. Заполняем текстовые блоки
+    document.getElementById('stat-hp').innerText = current.hp;
+    document.getElementById('stat-barrier').innerText = current.barrier;
+    document.getElementById('stat-energy').innerText = Math.floor(playerData.energy || 0) + '%';
+    document.getElementById('stat-income-quant').innerText = current.incomeQuant;
+    document.getElementById('stat-income-qubi').innerText = current.incomeQubi;
+
+    // 2. Отрисовка АКТИВНЫХ СЛОТОВ (верхние 5 ячеек)
+    const activeContainer = document.getElementById('active-slots-container');
+    if (activeContainer) {
+        activeContainer.innerHTML = '';
+        for (let i = 0; i < 5; i++) {
+            const slot = document.createElement('div');
+            const equippedId = playerData.equipped ? playerData.equipped[i] : null;
+            
+            if (equippedId) {
+                const mod = playerData.inventory.find(m => m.id === equippedId);
+                slot.className = 'slot-mini filled';
+                slot.innerHTML = `<img src="assets/modules/${mod.type}.png" style="width:100%">`;
+            } else {
+                slot.className = 'slot-mini empty';
+            }
+            activeContainer.appendChild(slot);
+        }
+    }
+
+    // 3. Отрисовка ИНВЕНТАРЯ (нижняя листалка)
+    const scrollList = document.getElementById('inventory-scroll-list');
+    scrollList.innerHTML = '';
+
+    if (playerData.inventory && playerData.inventory.length > 0) {
+        playerData.inventory.forEach(item => {
+            const isEquipped = playerData.equipped?.includes(item.id);
+            const card = document.createElement('div');
+            card.className = `module-card ${isEquipped ? 'equipped' : ''}`;
+            
+            card.innerHTML = `
+                <img src="assets/modules/${item.type}.png" style="width:35px">
+                <span>${item.name}</span>
+                <small style="color: #00e5ff">+${item.power}</small>
+            `;
+            
+            card.onclick = () => toggleModule(item.id);
+            scrollList.appendChild(card);
+        });
+    } else {
+        scrollList.innerHTML = '<div class="no-modules">Купите модули в магазине</div>';
+    }
+}
+
+function toggleModule(modId) {
+    if (!playerData.equipped) playerData.equipped = [];
+    
+    const index = playerData.equipped.indexOf(modId);
+    if (index > -1) {
+        // Снимаем модуль
+        playerData.equipped.splice(index, 1);
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    } else {
+        // Ставим модуль (проверка на лимит 5)
+        if (playerData.equipped.length < 5) {
+            playerData.equipped.push(modId);
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        } else {
+            // Можно вывести сообщение, что слоты заняты
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            return; 
+        }
+    }
+
+    // Сохраняем в Firebase и обновляем окно
+    userRef.update({ equipped: playerData.equipped }).then(() => {
+        openStation(); 
+    });
 }
 
 function closeStation() {
-    document.getElementById('station-modal').style.display = 'none';
+    // 1. Скрываем окно
+    const modal = document.getElementById('station-modal');
+    if (modal) modal.style.display = 'none';
+
+    // 2. На всякий случай сохраняем текущий набор модулей в Firebase
+    // Это гарантирует, что выбор игрока не пропадет при перезагрузке
+    if (playerData.equipped) {
+        userRef.update({ 
+            equipped: playerData.equipped 
+        }).then(() => {
+            console.log("Конфигурация модулей сохранена");
+        }).catch((err) => {
+            console.error("Ошибка сохранения ангара:", err);
+        });
+    }
+
+    // 3. (Опционально) Если ты хочешь, чтобы статы на главном экране 
+    // тоже обновились после смены модулей:
+    if (typeof updateUI === "function") {
+        updateUI();
+    }
 }
