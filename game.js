@@ -84,6 +84,7 @@ const shipImg = new Image(); shipImg.src = 'assets/samolet.png';
 const quantImg = new Image(); quantImg.src = 'assets/quant-icon.png';
 const qubiImg = new Image(); qubiImg.src = 'assets/qubi-icon.png';
 const meteorImg = new Image(); meteorImg.src = 'assets/meteor.png'; // Убедись, что файл лежит по этому пути
+const alienImg = new Image(); alienImg.src = 'assets/alien.png';
 
 const planets = [
     { id: 'runner', src: 'assets/quant.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, size: 120, rotation: 0, speed: 0.002, img: new Image() },
@@ -99,8 +100,10 @@ planets.forEach(p => { p.img.src = p.src; });
 
 let runnerShip = {
     x: window.innerWidth / 2,
-    y: window.innerHeight - 200,
+    y: window.innerHeight - 200, 
     w: 80, h: 80,
+    hp: 100, // Текущее здоровье
+    maxHp: 100, // Максимальное здоровье
     targetX: window.innerWidth / 2,
     lerpSpeed: 0.2
 };
@@ -216,6 +219,10 @@ function openRunnerWindow() {
     sessionQubi = 0; 
     quants = [];
 
+    // --- ОБНУЛЯЕМ ЗДОРОВЬЕ ПЕРЕД СТАРТОМ ---
+    runnerShip.hp = 100; 
+    runnerShip.maxHp = 100; 
+
     // Сбрасываем текст в новых ID
     const qEl = document.getElementById('runner-score-quant');
     const bEl = document.getElementById('runner-score-qubi');
@@ -223,8 +230,13 @@ function openRunnerWindow() {
     if (bEl) bEl.innerText = "0";
 
     runnerWin.style.display = 'block';
+    
+    // Центрируем корабль QUBI
     runnerShip.x = window.innerWidth / 2;
     runnerShip.targetX = window.innerWidth / 2;
+    
+    // Поднимаем его (на всякий случай дублируем высоту здесь)
+    runnerShip.y = window.innerHeight - 250; 
     
     spawnRunnerObject();
     requestAnimationFrame(runnerLoop);
@@ -233,17 +245,18 @@ function openRunnerWindow() {
 function closeRunnerWindow() {
     isRunnerActive = false;
     
-    // Прибавляем собранное за забег
+    // ПРИВОДИМ КОРАБЛЬ В ПОРЯДОК ПЕРЕД СЛЕДУЮЩИМ ВЫЛЕТОМ
+    runnerShip.hp = 100; 
+
     playerData.quant += sessionQuants;
     playerData.qubi += sessionQubi;
     
-    // Сохраняем в Firebase
     userRef.update({ 
         quant: playerData.quant, 
         qubi: playerData.qubi 
     }).then(() => {
         syncWithLeaderboard();
-        updateUI(); // <-- ДОБАВЬ ЭТО: чтобы на главном экране сразу выросли цифры
+        updateUI(); 
         console.log("Данные сохранены и отправлены в ТОП");
     }).catch((err) => {
         console.error("Ошибка сохранения:", err);
@@ -269,66 +282,100 @@ function runnerLoop() {
         let q = quants[i];
         q.y += q.speed;
 
-        // --- ЛОГИКА ДЛЯ МЕТЕОРА ---
+        // --- ОТРИСОВКА МЕТЕОРА И ОГНЯ ---
         if (q.type === 'meteor') {
-            q.angle += q.rotationSpeed; // Вращаем метеор
-
+            q.angle += q.rotationSpeed;
             if (meteorImg.complete) {
                 runnerCtx.save();
                 runnerCtx.translate(q.x, q.y);
-                
-                // === ЭФФЕКТ УХОДЯЩЕГО ОГНЯ ===
-                // Рисуем несколько полупрозрачных кругов сзади метеора
                 let tailLength = 5;
                 for (let j = 0; j < tailLength; j++) {
-                    let tailY = -j * (q.size / 3); // Смещение назад
-                    let tailSize = q.size * (1 - j/tailLength); // Уменьшение размера
-                    let alpha = 0.6 * (1 - j/tailLength); // Прозрачность
-                    
+                    let tailY = -j * (q.size / 3);
+                    let tailSize = q.size * (1 - j/tailLength);
+                    let alpha = 0.6 * (1 - j/tailLength);
                     runnerCtx.beginPath();
-                    // Цвет огня: от оранжевого к красному
                     runnerCtx.fillStyle = `rgba(255, ${100 + j*30}, 0, ${alpha})`; 
                     runnerCtx.arc(0, tailY, tailSize / 2, 0, Math.PI * 2);
                     runnerCtx.fill();
                 }
-
-                // === РИСУЕМ САМ МЕТЕОР ===
                 runnerCtx.rotate(q.angle);
                 runnerCtx.drawImage(meteorImg, -q.size/2, -q.size/2, q.size, q.size);
                 runnerCtx.restore();
             }
         } 
-        // --- ЛОГИКА ДЛЯ МОНЕТОК (старая) ---
+        // --- ОТРИСОВКА ВРАЖЕСКОГО КОРАБЛЯ (ALIEN) ---
+        else if (q.type === 'alien') {
+            if (alienImg.complete) {
+                runnerCtx.drawImage(alienImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
+            }
+            
+            // Логика стрельбы врага
+            let now = Date.now();
+            if (now - (q.lastShot || 0) > (q.shotInterval || 1500)) {
+                quants.push({
+                    x: q.x,
+                    y: q.y + q.size / 2,
+                    size: 20,
+                    speed: q.speed + 4,
+                    type: 'plasma'
+                });
+                q.lastShot = now;
+            }
+        }
+        // --- ОТРИСОВКА ВРАЖЕСКОГО ЗАРЯДА (ПЛАЗМЫ) ---
+        else if (q.type === 'plasma') {
+            runnerCtx.save();
+            runnerCtx.beginPath();
+            runnerCtx.fillStyle = '#00e5ff';
+            runnerCtx.shadowBlur = 15;
+            runnerCtx.shadowColor = '#00e5ff';
+            runnerCtx.arc(q.x, q.y, q.size / 2, 0, Math.PI * 2);
+            runnerCtx.fill();
+            runnerCtx.restore();
+        }
         else {
             let currentImg = (q.type === 'qubi') ? qubiImg : quantImg;
             if (currentImg.complete) runnerCtx.drawImage(currentImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
         }
 
-        // --- ПРОВЕРКА СТОЛКНОВЕНИЯ ---
+        // --- СИСТЕМА СТОЛКНОВЕНИЙ ---
         if (Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w/3 + q.size/2)) {
             
-            // СТОЛКНУЛИСЬ С МЕТЕОРОМ -> КОНЕЦ ИГРЫ
             if (q.type === 'meteor') {
-                gameOver(); // Вызываем функцию проигрыша
-                return; // Прерываем цикл, игра окончена
+                runnerShip.hp -= 50; 
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+                quants.splice(i, 1);
             } 
-            
-            // СОБРАЛИ МОНЕТКУ (старая логика)
+            else if (q.type === 'plasma') {
+                runnerShip.hp -= 25; 
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                quants.splice(i, 1);
+            }
+            else if (q.type === 'alien') {
+                runnerShip.hp -= 100; // Прямое столкновение с врагом — фатально
+                quants.splice(i, 1);
+            }
             else {
-                if (q.type === 'qubi') {
-                    sessionQubi++;
-                    const qubiEl = document.getElementById('runner-score-qubi');
-                    if (qubiEl) qubiEl.innerText = sessionQubi;
-                } else {
-                    sessionQuants++;
-                    const quantEl = document.getElementById('runner-score-quant');
-                    if (quantEl) quantEl.innerText = sessionQuants;
-                }
+                if (q.type === 'qubi') sessionQubi++;
+                else sessionQuants++;
+                
+                const qEl = document.getElementById('runner-score-quant');
+                const bEl = document.getElementById('runner-score-qubi');
+                if (qEl) qEl.innerText = sessionQuants;
+                if (bEl) bEl.innerText = sessionQubi;
+
                 if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(q.type === 'qubi' ? 'medium' : 'light');
                 quants.splice(i, 1);
                 continue;
             }
+
+            if (runnerShip.hp <= 0) {
+                gameOver();
+                return;
+            }
+            continue;
         }
+
         if (q.y > window.innerHeight + q.size) quants.splice(i, 1);
     }
 
@@ -337,8 +384,17 @@ function runnerLoop() {
         runnerCtx.translate(runnerShip.x, runnerShip.y);
         runnerCtx.rotate(dx * 0.02);
         runnerCtx.drawImage(shipImg, -runnerShip.w/2, -runnerShip.h/2, runnerShip.w, runnerShip.h);
+        
+        const barW = 60;
+        const hpRate = Math.max(0, runnerShip.hp / runnerShip.maxHp);
+        runnerCtx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+        runnerCtx.fillRect(-barW/2, -runnerShip.h/2 - 15, barW, 6);
+        runnerCtx.fillStyle = hpRate > 0.3 ? '#00ff00' : '#ff4444'; 
+        runnerCtx.fillRect(-barW/2, -runnerShip.h/2 - 15, barW * hpRate, 6);
+        
         runnerCtx.restore();
     }
+    
     runnerCtx.restore();
     requestAnimationFrame(runnerLoop);
 }
@@ -346,25 +402,38 @@ function runnerLoop() {
 function spawnRunnerObject() {
     if (!isRunnerActive) return;
 
-    // Сначала определяем, ЧТО заспавнить: монетку (85%) или метеор (15%)
-    if (Math.random() * 100 < 35) {
-        // СПАВНИМ МЕТЕОР
-        let size = 90; // Метеор должен быть заметным и опасным
+    let rand = Math.random() * 100;
+
+    if (rand < 10) {
+        // --- СПАВНИМ ВРАЖЕСКИЙ КОРАБЛЬ (ALIEN) ---
+        let size = 70;
         quants.push({
             x: Math.random() * (window.innerWidth - size) + size / 2,
             y: -size,
             size: size,
-            // Метеоры могут лететь чуть быстрее монет
-            speed: 4 + Math.random() * 3, 
-            type: 'meteor', // Новый тип объекта
-            angle: Math.random() * Math.PI * 2, // Случайный поворот метеора
-            rotationSpeed: (Math.random() - 0.5) * 0.1 // Медленное вращение
+            speed: 2 + Math.random() * 1.5, // Летит медленнее метеора, чтобы успеть выстрелить
+            type: 'alien',
+            lastShot: 0,
+            shotInterval: 1500 // Стреляет каждые 1.5 секунды
         });
-    } else {
-        // СПАВНИМ МОНЕТКУ (твоя старая логика)
+    } 
+    else if (rand < 35) {
+        // --- СПАВНИМ МЕТЕОР ---
+        let size = 90;
+        quants.push({
+            x: Math.random() * (window.innerWidth - size) + size / 2,
+            y: -size,
+            size: size,
+            speed: 4 + Math.random() * 3, 
+            type: 'meteor',
+            angle: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 0.1
+        });
+    } 
+    else {
+        // --- СПАВНИМ МОНЕТКУ ---
         let type = (Math.random() * 100 < 5) ? 'qubi' : 'quant';
         let newSize = type === 'qubi' ? 60 : 50; 
-
         quants.push({
             x: Math.random() * (window.innerWidth - newSize) + newSize / 2,
             y: -newSize,
@@ -374,9 +443,7 @@ function spawnRunnerObject() {
         });
     }
 
-    // Время до следующего спавна (оставляем как есть)
-    let nextSpawn = 900 + Math.random() * 600;
-    
+    let nextSpawn = 800 + Math.random() * 500; // Немного ускорим темп игры
     if (this.spawnTimer) clearTimeout(this.spawnTimer);
     this.spawnTimer = setTimeout(spawnRunnerObject, nextSpawn);
 }
@@ -549,17 +616,15 @@ function regenerateEnergy() {
 
 function gameOver() {
     isRunnerActive = false;
-    if (this.spawnTimer) clearTimeout(this.spawnTimer); // Останавливаем спавн
+    if (this.spawnTimer) clearTimeout(this.spawnTimer);
 
-    // Сильное вибро при столкновении
     if (tg.HapticFeedback) {
         tg.HapticFeedback.notificationOccurred('error');
     }
 
-    // Простенький алерт (лучше потом заменить на красивое UI окно)
-    alert(`ВРЕЗАЛСЯ В МЕТЕОР!\n\nСобрано Квантов: ${sessionQuants}\nСобрано Qubi: ${sessionQubi}`);
+    // Универсальное сообщение
+    alert(`ИГРА ОКОНЧЕНА!\n\nТвой корабль QUBI получил критические повреждения.\n\nСобрано QUANT: ${sessionQuants}\nСобрано QUBI: ${sessionQubi}`);
 
-    // Закрываем окно игры и сохраняем то, что успели собрать
     closeRunnerWindow(); 
 }
 
