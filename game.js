@@ -426,9 +426,20 @@ runnerWin.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 canvas.addEventListener('click', processInput);
+
+// Кнопки окон
 document.getElementById('exit-runner').onclick = closeRunnerWindow;
-document.getElementById('close-moon').onclick = () => document.getElementById('moon-modal').style.display = 'none';
-document.getElementById('close-leaderboard').onclick = () => document.getElementById('leaderboard-modal').style.display = 'none';
+
+// Кнопка завода на Луне (ТВОЯ НОВАЯ СТРОКА)
+document.getElementById('process-btn').onclick = startRefining; 
+
+document.getElementById('close-moon').onclick = () => {
+    document.getElementById('moon-modal').style.display = 'none';
+};
+
+document.getElementById('close-leaderboard').onclick = () => {
+    document.getElementById('leaderboard-modal').style.display = 'none';
+};
 
 // ЗАПУСК
 bg.onload = () => { initGame(); draw(); };
