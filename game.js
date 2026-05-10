@@ -329,20 +329,31 @@ function syncWithLeaderboard() {
     });
 }
 
-// Слушатель движения пальца (только по горизонтали)
-runnerCanvas.addEventListener('touchmove', (e) => {
-    if (!isRunnerActive) return;
-    const touch = e.touches[0];
-    const rect = runnerCanvas.getBoundingClientRect();
-    runnerShip.targetX = touch.clientX - rect.left;
-    if (e.cancelable) e.preventDefault();
-}, { passive: false });
+const runnerWin = document.getElementById('runner-window');
 
-// Прыжок в точку при касании
-runnerCanvas.addEventListener('touchstart', (e) => {
-    if (!isRunnerActive) return;
+// Функция, которая проверяет: нажали на кнопку или на игру?
+function isUiHit(e) {
+    // Проверяем саму кнопку и её контейнер
+    return e.target.closest('.exit-btn') || e.target.closest('.runner-ui');
+}
+
+// Касание (прыжок самолета)
+runnerWin.addEventListener('touchstart', (e) => {
+    if (!isRunnerActive || isUiHit(e)) return; 
+    
     const rect = runnerCanvas.getBoundingClientRect();
     runnerShip.targetX = e.touches[0].clientX - rect.left;
+}, { passive: false });
+
+// Движение (плавное следование)
+runnerWin.addEventListener('touchmove', (e) => {
+    if (!isRunnerActive || isUiHit(e)) return;
+
+    const rect = runnerCanvas.getBoundingClientRect();
+    runnerShip.targetX = e.touches[0].clientX - rect.left;
+
+    // Блокируем свайпы Telegram (назад/закрыть), чтобы игра не вылетала
+    if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
 // --- ЛОГИКА РАННЕРА: ОБЪЕКТЫ И УПРАВЛЕНИЕ ---
