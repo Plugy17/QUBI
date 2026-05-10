@@ -704,13 +704,20 @@ function gameOver() {
 function isUiHit(target) { return target.closest('.exit-btn') || target.closest('.score-display'); }
 
 function handleCanvasClick(e) {
-    // СТОП-КРАН: Если открыто хоть одно окно, игнорируем клик по канвасу
+    // 1. СТОП-КРАН: Если открыто хоть одно окно, игнорируем клик по канвасу
     if (isAnyModalOpen()) return;
 
     const rect = canvas.getBoundingClientRect();
     
-    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
-    const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+    // 2. Корректное получение координат (защита от undefined при разных типах событий)
+    let clientX, clientY;
+    if (e.type.startsWith('touch')) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
 
     const clickX = clientX - rect.left;
     const clickY = clientY - rect.top;
