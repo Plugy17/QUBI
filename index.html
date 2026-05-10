@@ -83,12 +83,21 @@
         </div>
 
         <div id="runner-window" class="runner-overlay" style="display: none;">
-            <div class="runner-ui">
-                <div class="score-display">QUANT: <span id="runner-score">0</span></div>
-                <button class="exit-btn" id="exit-runner">ВЫХОД</button>
+    <div class="runner-ui">
+        <div class="score-panel">
+            <div class="score-row">
+                <img src="assets/quant-icon.png" class="run-icon" alt="Q"> 
+                <span id="runner-score-quant">0</span>
             </div>
-            <canvas id="runnerCanvas"></canvas>
+            <div class="score-row qubi-color">
+                <img src="assets/qubi-icon.png" class="run-icon" alt="B"> 
+                <span id="runner-score-qubi">0</span>
+            </div>
         </div>
+        <button class="exit-btn" id="exit-runner">ВЫХОД</button>
+    </div>
+    <canvas id="runnerCanvas"></canvas>
+</div>
         
         <div class="energy-section">
             <div class="energy-bar">
