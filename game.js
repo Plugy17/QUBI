@@ -1,3 +1,14 @@
+let quants = []; 
+// Счетчики за текущий забег
+let sessionQuants = 0;
+let sessionQubi = 0;
+
+const quantImg = new Image();
+quantImg.src = 'assets/quant-icon.png'; 
+
+const qubiImg = new Image();
+qubiImg.src = 'assets/qubi-icon.png'; // Убедись, что файл есть в assets
+
 // Новые ресурсы для Раннера
 const runnerCanvas = document.getElementById('runnerCanvas');
 const runnerCtx = runnerCanvas.getContext('2d');
@@ -402,7 +413,15 @@ function openRunnerWindow() {
 
 function closeRunnerWindow() {
     isRunnerActive = false;
+    
+    // Прибавляем собранное за сессию к общему балансу игрока
+    // Например: userInventory.quants += sessionQuants;
+    // Например: userInventory.qubi += sessionQubi;
+    
+    console.log(`Забег окончен. Собрано Квантов: ${sessionQuants}, QUBI: ${sessionQubi}`);
+    
     document.getElementById('runner-window').style.display = 'none';
+    quants = [];
 }
 
 function resizeRunnerCanvas() {
@@ -421,19 +440,53 @@ function runnerLoop() {
     runnerCtx.save();
     runnerCtx.scale(dpr, dpr);
 
+    // Рисуем фон (статичный, как договорились)
     if (runnerBg.complete) {
         runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
     }
 
-    // Плавное движение
+    // Движение самолета
     let dx = runnerShip.targetX - runnerShip.x;
     runnerShip.x += dx * runnerShip.lerpSpeed;
-
-    // Ограничители
     const margin = runnerShip.w / 2;
     if (runnerShip.x < margin) runnerShip.x = margin;
     if (runnerShip.x > window.innerWidth - margin) runnerShip.x = window.innerWidth - margin;
 
+    // Логика объектов
+    for (let i = quants.length - 1; i >= 0; i--) {
+        let q = quants[i];
+        q.y += q.speed;
+
+        // Отрисовка в зависимости от типа
+        let currentImg = (q.type === 'qubi') ? qubiImg : quantImg;
+        if (currentImg.complete) {
+            runnerCtx.drawImage(currentImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
+        }
+
+        // Коллизия
+        let dist = Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y);
+        if (dist < (runnerShip.w / 3 + q.size / 2)) {
+            if (q.type === 'qubi') {
+                sessionQubi++;
+                // Здесь можно добавить особый эффект или звук для QUBI
+            } else {
+                sessionQuants++;
+                // Обновляем текст счетчика QUANT на экране
+                document.getElementById('runner-score').innerText = sessionQuants;
+            }
+
+            if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+                Telegram.WebApp.HapticFeedback.impactOccurred(q.type === 'qubi' ? 'medium' : 'light');
+            }
+
+            quants.splice(i, 1);
+            continue;
+        }
+
+        if (q.y > window.innerHeight + 50) quants.splice(i, 1);
+    }
+
+    // Рисуем самолет
     if (shipImg.complete) {
         let tilt = dx * 0.02;
         runnerCtx.save();
@@ -445,4 +498,28 @@ function runnerLoop() {
 
     runnerCtx.restore();
     requestAnimationFrame(runnerLoop);
+}
+
+function spawnRunnerObject() {
+    if (!isRunnerActive) return;
+
+    let rand = Math.random() * 100;
+    let type = 'quant';
+    
+    // Шанс 5% на QUBI, остальные 95% — Кванты
+    if (rand < 5) {
+        type = 'qubi';
+    }
+
+    quants.push({
+        x: Math.random() * (window.innerWidth - 60) + 30,
+        y: -50,
+        size: type === 'qubi' ? 45 : 35, // QUBI сделаем чуть заметнее
+        speed: 2.5 + Math.random() * 3.5,
+        type: type
+    });
+
+    // Частота появления: в среднем раз в 1.2 сек
+    let nextSpawn = 900 + Math.random() * 600;
+    setTimeout(spawnRunnerObject, nextSpawn);
 }
