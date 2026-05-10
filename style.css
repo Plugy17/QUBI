@@ -311,14 +311,14 @@ canvas {
     top: 0;
     left: 0;
     width: 100%;
-    /* Учитываем safe-area Telegram */
-    padding: calc(env(safe-area-inset-top) + 20px) 20px 0 20px;
+    /* Увеличиваем отступ: 60px обычно достаточно, чтобы опустить UI ниже кнопок ТГ */
+    padding: 60px 20px 0 20px; 
     box-sizing: border-box;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    z-index: 1010; /* Выше чем runnerCanvas */
-    pointer-events: none; /* Пропускаем клики, кроме кнопок */
+    z-index: 1010;
+    pointer-events: none;
 }
 
 .score-display {
@@ -332,12 +332,13 @@ canvas {
 }
 
 .exit-btn {
-    background: rgba(255, 0, 0, 0.2);
-    border: 1px solid rgba(255, 0, 0, 0.5);
+    background: rgba(255, 0, 0, 0.4); /* Сделали чуть ярче */
+    border: 1px solid rgba(255, 255, 255, 0.3);
     color: #fff;
-    padding: 8px 15px;
-    border-radius: 20px;
+    padding: 10px 20px; /* Увеличили область нажатия */
+    border-radius: 12px;
     font-weight: bold;
     cursor: pointer;
-    pointer-events: auto; /* Кнопка кликабельна */
+    pointer-events: auto;
+    backdrop-filter: blur(5px); /* Добавили размытие фона для стиля */
 }
