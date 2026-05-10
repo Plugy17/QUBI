@@ -90,7 +90,8 @@ const planets = [
     { id: 'build', src: 'assets/earth.png', x: 0.22, y: 0.5, size: 75, rotation: 0, speed: 0.001, img: new Image() },
     { id: 'shop', src: 'assets/mars.png', x: 0.78, y: 0.5, size: 75, rotation: 0, speed: -0.001, img: new Image() },
     { id: 'moon', src: 'assets/moon.png', x: 0.5, y: 0.72, size: 60, rotation: 0, speed: 0.003, img: new Image() },
-    { id: 'leaderboard', src: 'assets/neptun.png', x: 0.5, y: 0.32, size: 70, rotation: 0, speed: -0.0015, img: new Image() }
+    { id: 'leaderboard', src: 'assets/neptun.png', x: 0.5, y: 0.32, size: 70, rotation: 0, speed: -0.0015, img: new Image() },
+    { id: 'station', name: 'СТАНЦИЯ', img: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, action: () => openStation() }
 ];
 planets.forEach(p => { p.img.src = p.src; });
 
@@ -578,7 +579,32 @@ runnerWin.addEventListener('touchmove', (e) => {
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
-canvas.addEventListener('click', processInput);
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    // Учитываем масштаб DPR для точности клика
+    const dpr = window.devicePixelRatio || 1;
+    const clickX = (e.clientX - rect.left) * dpr;
+    const clickY = (e.clientY - rect.top) * dpr;
+
+    planets.forEach(planet => {
+        // Проверяем попадание в радиус объекта
+        const dist = Math.hypot(clickX - planet.x, clickY - planet.y);
+        
+        if (dist < planet.size) { // Используем size как радиус (или size/2 для точности)
+            if (planet.action) {
+                planet.action(); // Это откроет Станцию или Луну
+            } else if (typeof processInput === 'function') {
+                // Если у планеты нет своего action, вызываем старую логику
+                processInput(e); 
+            }
+            
+            // Виброотклик Telegram
+            if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+                Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            }
+        }
+    });
+});
 
 // Кнопки окон
 document.getElementById('exit-runner').onclick = closeRunnerWindow;
