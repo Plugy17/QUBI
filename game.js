@@ -193,43 +193,6 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-function processInput(e) {
-    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
-    const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
-    const rect = canvas.getBoundingClientRect();
-    
-    // Учитываем коэффициент пикселей устройства (DPR)
-    const dpr = window.devicePixelRatio || 1;
-    
-    // Вычисляем координаты клика и масштабируем их под канвас
-    const clickX = (clientX - rect.left) * dpr;
-    const clickY = (clientY - rect.top) * dpr;
-
-    planets.forEach(p => {
-        // Теперь дистанция будет считаться корректно относительно масштаба отрисовки
-        const dist = Math.hypot(clickX - p.x, clickY - p.y);
-        
-        // Увеличим радиус клика до p.size, чтобы легче было попадать пальцем
-        if (dist < p.size) { 
-            if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-                Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-            }
-            
-            if (p.action) {
-                p.action(); 
-            } else if (p.id === 'leaderboard') {
-                openLeaderboard();
-            } else if (p.id === 'moon') {
-                // Если функция называется openMoonModal или openMoonMenu, проверь имя!
-                if (typeof openMoonModal === 'function') openMoonModal();
-                else openMoonMenu();
-            } else {
-                activatePlanet(p.id);
-            }
-        }
-    });
-}
-
 function activatePlanet(id) {
     if (id === 'runner') {
         if (playerData.energy < 10) {
@@ -604,6 +567,51 @@ function gameOver() {
 // --- 8. СОБЫТИЯ УПРАВЛЕНИЯ ---
 function isUiHit(target) { return target.closest('.exit-btn') || target.closest('.score-display'); }
 
+// Универсальная функция обработки клика по планетам и станции
+function handleCanvasClick(e) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    // Получаем координаты (поддержка и мыши, и тача)
+    const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+
+    // Вычисляем координаты клика, СТРОГО умножая на DPR
+    const clickX = (clientX - rect.left) * dpr;
+    const clickY = (clientY - rect.top) * dpr;
+
+    planets.forEach(planet => {
+        // Проверяем расстояние. planet.x и planet.y уже должны быть в DPR пикселях
+        const dist = Math.hypot(clickX - planet.x, clickY - planet.y);
+        
+        // Зона клика = размер объекта + небольшой запас для пальца
+        if (dist < planet.size * 0.8) { 
+            if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+                Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+            }
+
+            // Если есть специальное действие (Станция)
+            if (planet.action) {
+                planet.action();
+            } 
+            // Иначе стандартная логика переключения планет
+            else if (typeof activatePlanet === 'function') {
+                activatePlanet(planet.id);
+            }
+        }
+    });
+}
+
+// Удаляем старые слушатели и ставим новые чистые
+canvas.removeEventListener('click', processInput); // на всякий случай
+canvas.addEventListener('click', handleCanvasClick);
+canvas.addEventListener('touchstart', (e) => {
+    handleCanvasClick(e);
+    // Это важно, чтобы не срабатывал "фантомный" клик после тача
+    if (e.cancelable) e.preventDefault(); 
+}, { passive: false });
+
+// Оставляем управление кораблем (оно у тебя верное)
 runnerWin.addEventListener('touchstart', (e) => {
     if (!isRunnerActive || isUiHit(e.target)) return;
     runnerShip.targetX = e.touches[0].clientX;
@@ -615,37 +623,8 @@ runnerWin.addEventListener('touchmove', (e) => {
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
-canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    // Учитываем масштаб DPR для точности клика
-    const dpr = window.devicePixelRatio || 1;
-    const clickX = (e.clientX - rect.left) * dpr;
-    const clickY = (e.clientY - rect.top) * dpr;
-
-    planets.forEach(planet => {
-        // Проверяем попадание в радиус объекта
-        const dist = Math.hypot(clickX - planet.x, clickY - planet.y);
-        
-        if (dist < planet.size) { // Используем size как радиус (или size/2 для точности)
-            if (planet.action) {
-                planet.action(); // Это откроет Станцию или Луну
-            } else if (typeof processInput === 'function') {
-                // Если у планеты нет своего action, вызываем старую логику
-                processInput(e); 
-            }
-            
-            // Виброотклик Telegram
-            if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-                Telegram.WebApp.HapticFeedback.impactOccurred('light');
-            }
-        }
-    });
-});
-
-// Кнопки окон
+// Кнопки интерфейса
 document.getElementById('exit-runner').onclick = closeRunnerWindow;
-
-// Кнопка завода на Луне (ТВОЯ НОВАЯ СТРОКА)
 document.getElementById('process-btn').onclick = startRefining; 
 
 document.getElementById('close-moon').onclick = () => {
