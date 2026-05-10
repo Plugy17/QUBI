@@ -212,11 +212,20 @@ function activatePlanet(id) {
 // --- 6. МЕХАНИКА РАННЕРА ---
 function openRunnerWindow() {
     isRunnerActive = true;
-    sessionQuants = 0; sessionQubi = 0; quants = [];
-    document.getElementById('runner-score').innerText = "0";
+    sessionQuants = 0; 
+    sessionQubi = 0; 
+    quants = [];
+
+    // Сбрасываем текст в новых ID
+    const qEl = document.getElementById('runner-score-quant');
+    const bEl = document.getElementById('runner-score-qubi');
+    if (qEl) qEl.innerText = "0";
+    if (bEl) bEl.innerText = "0";
+
     runnerWin.style.display = 'block';
     runnerShip.x = window.innerWidth / 2;
     runnerShip.targetX = window.innerWidth / 2;
+    
     spawnRunnerObject();
     requestAnimationFrame(runnerLoop);
 }
@@ -228,19 +237,18 @@ function closeRunnerWindow() {
     playerData.quant += sessionQuants;
     playerData.qubi += sessionQubi;
     
-    // 1. Обновляем личный профиль игрока
+    // Сохраняем в Firebase
     userRef.update({ 
         quant: playerData.quant, 
         qubi: playerData.qubi 
     }).then(() => {
-        // 2. СРАЗУ ПОСЛЕ этого обновляем данные в глобальном лидерборде
         syncWithLeaderboard();
+        updateUI(); // <-- ДОБАВЬ ЭТО: чтобы на главном экране сразу выросли цифры
         console.log("Данные сохранены и отправлены в ТОП");
     }).catch((err) => {
         console.error("Ошибка сохранения:", err);
     });
     
-    // Закрываем окно и очищаем мусор
     runnerWin.style.display = 'none';
     quants = []; 
 }
@@ -263,16 +271,29 @@ function runnerLoop() {
         let currentImg = (q.type === 'qubi') ? qubiImg : quantImg;
         if (currentImg.complete) runnerCtx.drawImage(currentImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
 
+        // Проверка столкновения
         if (Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w/3 + q.size/2)) {
-            if (q.type === 'qubi') sessionQubi++;
-            else {
+            if (q.type === 'qubi') {
+                sessionQubi++;
+                // Обновляем счетчик QUBI
+                const qubiEl = document.getElementById('runner-score-qubi');
+                if (qubiEl) qubiEl.innerText = sessionQubi;
+            } else {
                 sessionQuants++;
-                document.getElementById('runner-score').innerText = sessionQuants;
+                // Обновляем счетчик QUANT
+                const quantEl = document.getElementById('runner-score-quant');
+                if (quantEl) quantEl.innerText = sessionQuants;
             }
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(q.type === 'qubi' ? 'medium' : 'light');
+
+            // Виброотклик (для QUBI чуть сильнее)
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred(q.type === 'qubi' ? 'medium' : 'light');
+            }
+
             quants.splice(i, 1);
             continue;
         }
+        
         if (q.y > window.innerHeight + 50) quants.splice(i, 1);
     }
 
