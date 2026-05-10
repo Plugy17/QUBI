@@ -338,15 +338,19 @@ canvas {
 }
 
 .exit-btn {
-    background: rgba(255, 0, 0, 0.4); /* Сделали чуть ярче */
+    background: rgba(255, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: #fff;
-    padding: 10px 20px; /* Увеличили область нажатия */
+    padding: 10px 20px;
     border-radius: 12px;
     font-weight: bold;
     cursor: pointer;
-    pointer-events: auto;
-    backdrop-filter: blur(5px); /* Добавили размытие фона для стиля */
+    pointer-events: auto !important; /* Принудительно включаем клики */
+    backdrop-filter: blur(5px);
+    
+    /* ДОБАВЬ ЭТО: */
+    position: relative;
+    z-index: 2000; /* Ставим выше всех игровых слоев */
 }
 
 .score-display {
