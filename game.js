@@ -1,3 +1,16 @@
+// Новые ресурсы для Раннера
+const runnerCanvas = document.getElementById('runnerCanvas');
+const runnerCtx = runnerCanvas.getContext('2d');
+
+const runnerBg = new Image();
+runnerBg.src = 'assets/background2.jpg'; 
+
+const shipImg = new Image();
+shipImg.src = 'assets/samolet.png';
+
+// Переменная для хранения состояния игры
+let isRunnerActive = false;
+
 // --- 1. ИНИЦИАЛИЗАЦИЯ И КОНФИГ ---
 const dpr = window.devicePixelRatio || 1;
 const firebaseConfig = {
@@ -204,13 +217,19 @@ function processInput(e) {
 
 function activatePlanet(id) {
     if (id === 'runner') {
-        tg.showPopup({
-            title: 'Добыча Кванта',
-            message: 'Запустить режим Runner?',
-            buttons: [{id: 'start', type: 'default', text: 'Запустить'}, {type: 'cancel'}]
-        }, (buttonId) => {
-            if (buttonId === 'start') console.log("Запуск Раннера...");
-        });
+        // Проверка энергии: если меньше 10, не пускаем
+        if (playerData.energy < 10) {
+            tg.showAlert("Недостаточно энергии для полета! Нужно минимум 10 ⚡");
+            return;
+        }
+        
+        // Списываем энергию (визуально сразу, база обновится при синхронизации)
+        playerData.energy -= 10;
+        updateUI();
+        
+        // Открываем окно игры
+        openRunnerWindow();
+
     } else if (id === 'build') {
         tg.showAlert("Режим «Создание» скоро!");
     } else if (id === 'shop') {
@@ -297,4 +316,67 @@ function syncWithLeaderboard() {
         name: tgUser.first_name || "Unknown Pilot",
         qubi: playerData.qubi || 0
     });
+}
+
+function openRunnerWindow() {
+    isRunnerActive = true;
+    document.getElementById('runner-window').style.display = 'block';
+    
+    // Подстраиваем размер второго канваса
+    resizeRunnerCanvas();
+    
+    // ЗДЕСЬ ПОЗЖЕ БУДЕТ СТАРТ ИГРОВОГО ЦИКЛА РАННЕРА (startRunnerLoop)
+    console.log("Окно Раннера открыто. Готовы загружать самолет.");
+    
+    // Временно рисуем фон2 и самолет, чтобы убедиться, что они грузятся
+    setTimeout(debugDrawRunner, 100); // Небольшая задержка для загрузки картинок
+}
+
+function closeRunnerWindow() {
+    isRunnerActive = false;
+    document.getElementById('runner-window').style.display = 'none';
+    // ЗДЕСЬ ПОЗЖЕ БУДЕТ ОСТАНОВКА ИГРОВОГО ЦИКЛА (stopRunnerLoop)
+}
+
+function resizeRunnerCanvas() {
+    // Используем DPR для четкости, как и в основном канвасе
+    const dprLB = window.devicePixelRatio || 1;
+    runnerCanvas.width = window.innerWidth * dprLB;
+    runnerCanvas.height = window.innerHeight * dprLB;
+    // Стили оставляем 100% в CSS
+}
+
+// Привязка кнопки выхода
+const exitBtn = document.getElementById('exit-runner');
+if (exitBtn) exitBtn.onclick = closeRunnerWindow;
+
+// Обработка ресайза для второго канваса
+window.addEventListener('resize', () => {
+    if (isRunnerActive) resizeRunnerCanvas();
+});
+
+// ЧИСТО ДЛЯ ТЕСТА: Простая отрисовка, чтобы проверить, что ассеты на месте
+function debugDrawRunner() {
+    if (!isRunnerActive) return;
+    
+    const dprLB = window.devicePixelRatio || 1;
+    runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+    runnerCtx.save();
+    runnerCtx.scale(dprLB, dprLB);
+
+    // Рисуем фон2
+    if (runnerBg.complete) {
+        runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
+    } else {
+        runnerCtx.fillStyle = '#111'; // Темный фон если картинка не прогрузилась
+        runnerCtx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+    }
+
+    // Рисуем самолет в центре
+    if (shipImg.complete) {
+        const shipSize = 80;
+        runnerCtx.drawImage(shipImg, (window.innerWidth/2) - shipSize/2, (window.innerHeight/2) - shipSize/2, shipSize, shipSize);
+    }
+
+    runnerCtx.restore();
 }
