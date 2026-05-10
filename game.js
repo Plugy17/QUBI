@@ -130,8 +130,12 @@ function initGame() {
     userRef.on('value', (snapshot) => {
         if (snapshot.exists()) {
             playerData = snapshot.val();
+            
+            // Проверка и инициализация данных обмена, если их нет
+            if (!playerData.dailyExchangeQuant) playerData.dailyExchangeQuant = 0;
+            if (!playerData.dailyExchangeQubi) playerData.dailyExchangeQubi = 0;
+            
             updateUI();
-            // ПРИНУДИТЕЛЬНО обновляем тебя в лидерборде при каждом чихе
             syncWithLeaderboard(); 
         } else {
             userRef.set(playerData);
@@ -634,6 +638,12 @@ function openLeaderboard() {
     });
 }
 
+// Закрытие Лидерборда
+function closeLeaderboard() {
+    const modal = document.getElementById('leaderboard-modal');
+    if (modal) modal.style.display = 'none';
+}
+
 function regenerateEnergy() {
     if (!playerData.lastEnergyUpdate) return; // Если данных еще нет
 
@@ -694,28 +704,27 @@ function gameOver() {
 function isUiHit(target) { return target.closest('.exit-btn') || target.closest('.score-display'); }
 
 function handleCanvasClick(e) {
+    // СТОП-КРАН: Если открыто хоть одно окно, игнорируем клик по канвасу
+    if (isAnyModalOpen()) return;
+
     const rect = canvas.getBoundingClientRect();
     
-    // Получаем координаты тача или мыши
     const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
     const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
 
-    // Считаем клик БЕЗ умножения на dpr
     const clickX = clientX - rect.left;
     const clickY = clientY - rect.top;
 
     planets.forEach(p => {
-        // Считаем дистанцию между логическим кликом и логической планетой
         const dist = Math.hypot(clickX - p.x, clickY - p.y);
         
-        // Зона клика (размер планеты)
         if (dist < p.size * 0.8) { 
             if (window.Telegram && Telegram.WebApp.HapticFeedback) {
                 Telegram.WebApp.HapticFeedback.impactOccurred('medium');
             }
 
             if (p.action) {
-                p.action(); // Откроет станцию
+                p.action(); 
             } else if (p.id === 'leaderboard') {
                 openLeaderboard();
             } else if (p.id === 'moon') {
@@ -732,7 +741,8 @@ function isAnyModalOpen() {
     const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal'];
     return modals.some(id => {
         const el = document.getElementById(id);
-        return el && el.style.display !== 'none' && el.style.display !== '';
+        // Проверяем только то, что окно реально видно (flex или block)
+        return el && (el.style.display === 'flex' || el.style.display === 'block');
     });
 }
 
@@ -936,8 +946,4 @@ function closeStation() {
     }
 }
 
-// Закрытие Лидерборда
-function closeLeaderboard() {
-    const modal = document.getElementById('leaderboard-modal');
-    if (modal) modal.style.display = 'none';
-}
+
