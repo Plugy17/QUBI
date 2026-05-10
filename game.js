@@ -373,9 +373,6 @@ function handleMove(clientX) {
     runnerShip.targetX = clientX;
 }
 
-// Слушаем события ПРЯМО НА ОКНЕ
-const runnerWin = document.getElementById('runner-window');
-
 // Вспомогательная функция, чтобы не дублировать код
 function isUiElement(target) {
     // Проверяем, нажали ли мы на кнопку или счетчик
