@@ -1266,7 +1266,10 @@ function closeStation() {
     }
 }
 
-// Проверяем регенерацию каждую минуту, пока открыта игра
+// Запускаем цикл проверки энергии
 setInterval(() => {
-    regenerateEnergy();
-}, 60000);
+    // Проверяем, существует ли функция и загружен ли профиль игрока
+    if (typeof regenerateEnergy === 'function' && typeof playerData !== 'undefined' && playerData) {
+        regenerateEnergy();
+    }
+}, 30000); // Проверяем раз в 30 секунд, чтобы расчет был точнее
