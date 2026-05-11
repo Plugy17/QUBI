@@ -579,26 +579,34 @@ canvas {
 }
 
 /* Новая секция кнопки внутри хедера */
+/* Убираем все лишние фоны и рамки */
 .wallet-connect-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Убираем фон и границы, так как теперь кнопка часть общего хедера */
-    background: none; 
-    border: none;
-    backdrop-filter: none;
-    
-    /* Даем блоку возможность расширяться в центре */
+    background: none !important; /* Убирает тот самый прямоугольник */
+    border: none !important;
+    box-shadow: none !important;
     flex: 1; 
-    pointer-events: auto; /* Чтобы кнопка нажималась */
-    z-index: 21;
+    pointer-events: auto; /* Включает клики именно на этот блок */
+    z-index: 999;
 }
 
-/* Контейнер самой кнопки TON */
+/* Убираем стили самого виджета, если они лезут из библиотеки */
 #ton-connect-btn {
-    transition: transform 0.2s ease;
-    display: flex;
-    justify-content: center;
+    background: none !important;
+    border: none !important;
+    pointer-events: auto !important;
+}
+
+/* Важный фикс: внутри виджета есть встроенные кнопки, им тоже нужны клики */
+#ton-connect-btn * {
+    pointer-events: auto !important;
+}
+
+/* Немного опустим кнопку, если она слишком близко к "Закрыть" */
+#ton-connect-btn {
+    transform: scale(0.8) translateY(5px); 
 }
 
 /* Оптимальный размер для мобилок внутри хедера */
