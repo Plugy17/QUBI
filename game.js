@@ -168,9 +168,14 @@ function initGame() {
             if (!playerData.dailyExchangeQuant) playerData.dailyExchangeQuant = 0;
             if (!playerData.dailyExchangeQubi) playerData.dailyExchangeQubi = 0;
             
+            // ВАЖНО: Запускаем расчет энергии сразу после загрузки данных
+            regenerateEnergy(); 
+            
             updateUI();
             syncWithLeaderboard(); 
         } else {
+            // Если игрок новый, записываем текущее время как точку отсчета регенерации
+            playerData.lastEnergyUpdate = Date.now();
             userRef.set(playerData);
         }
         hideLoading();
@@ -819,43 +824,49 @@ function closeLeaderboard() {
 }
 
 function regenerateEnergy() {
-    if (!playerData.lastEnergyUpdate) {
-        playerData.lastEnergyUpdate = Date.now();
-        return;
-    }
+    // 1. Проверяем, загружены ли данные игрока
+    if (!playerData || !userRef) return;
 
     const now = Date.now();
     const MAX_ENERGY = 100;
     const REGEN_PER_HOUR = 20;
     const MS_PER_ENERGY = (60 * 60 * 1000) / REGEN_PER_HOUR; // 180,000 мс (3 минуты) на 1 ед.
-    const STOP_LIMIT_MS = 4 * 60 * 60 * 1000; // 4 часа в миллисекундах
+    const STOP_LIMIT_MS = 4 * 60 * 60 * 1000; // 4 часа лимит
 
-    let timePassed = now - playerData.lastEnergyUpdate;
+    // 2. Берем время из playerData или инициализируем его, если его там нет
+    let lastUpdate = Number(playerData.lastEnergyUpdate);
 
-    // Ограничиваем простой 4 часами
+    if (!lastUpdate || isNaN(lastUpdate)) {
+        playerData.lastEnergyUpdate = now;
+        userRef.update({ lastEnergyUpdate: now });
+        return;
+    }
+
+    let timePassed = now - lastUpdate;
+
+    // Ограничиваем время простоя
     if (timePassed > STOP_LIMIT_MS) timePassed = STOP_LIMIT_MS;
 
-    // Считаем, сколько целых единиц энергии накопилось за это время
+    // 3. Считаем, сколько единиц накопилось
     const energyToAdd = Math.floor(timePassed / MS_PER_ENERGY);
 
-    if (energyToAdd > 0 && playerData.energy < MAX_ENERGY) {
+    if (energyToAdd > 0 && (playerData.energy || 0) < MAX_ENERGY) {
         const newEnergy = Math.min(MAX_ENERGY, (playerData.energy || 0) + energyToAdd);
         
-        // Сдвигаем время только на столько, сколько энергии реально "выдали"
-        // Это сохраняет оставшиеся секунды/минуты для следующего начисления
-        const updatedTime = playerData.lastEnergyUpdate + (energyToAdd * MS_PER_ENERGY);
+        // Сдвигаем время только на количество восстановленной энергии
+        const updatedTime = lastUpdate + (energyToAdd * MS_PER_ENERGY);
 
         playerData.energy = newEnergy;
         playerData.lastEnergyUpdate = updatedTime;
 
-        // Сохраняем в Firebase
+        // 4. Сохраняем в Firebase и обновляем UI
         userRef.update({ 
             energy: playerData.energy,
             lastEnergyUpdate: updatedTime 
+        }).then(() => {
+            console.log(`🔋 Регенерация сработала: +${energyToAdd} энергии.`);
+            updateUI();
         });
-
-        updateUI();
-        console.log(`Регенерация: +${energyToAdd} энергии. Текущая: ${playerData.energy}`);
     }
 }
 
