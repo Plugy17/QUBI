@@ -216,54 +216,44 @@ function openShop() {
     const shopModal = document.getElementById('shop-modal');
     const shopList = document.getElementById('shop-list');
     
-    if (!shopList) return;
+    if (!shopList || !shopModal) return;
     
-    shopList.innerHTML = ''; // Очистка перед отрисовкой
+    shopList.innerHTML = ''; // Очистка
 
     SHOP_MODULES.forEach(item => {
-        // ПРАВИЛЬНАЯ ПРОВЕРКА: ищем в инвентаре предмет, у которого shopId совпадает с ID в магазине
+        // Проверяем наличие модуля в инвентаре игрока
         const isOwned = playerData.inventory && playerData.inventory.some(owned => 
             owned.shopId === item.id || owned.id === item.id
         );
         
         const itemEl = document.createElement('div');
-        // Добавляем класс редкости для стилизации (common, rare, epic и т.д.)
         itemEl.className = `shop-item ${item.rarity}`;
         
-        // Формируем текст цены: если TON, то добавляем значок или слово TON
         const priceText = item.currency === 'TON' ? `${item.price} TON` : `${item.price} ${item.currency}`;
 
         itemEl.innerHTML = `
-            <div class="module-card-content">
-                <img src="assets/shop/${item.img}" alt="${item.name}" style="width:70px; height:70px; object-fit:contain; margin-bottom:8px;">
-                <div class="module-name" style="font-weight:bold; font-size:13px; color:#fff;">${item.name}</div>
-                <div class="module-desc" style="font-size:10px; color:rgba(255,255,255,0.6); margin:5px 0; min-height:30px;">${item.desc}</div>
-                
-                <div class="price-container" style="margin-top:auto;">
-                    ${isOwned ? 
-                        `<div class="owned-tag" style="color:#00ff00; font-size:12px; font-weight:bold; padding:8px;">КУПЛЕНО</div>` : 
-                        `<div class="price-tag" style="font-size:14px; color:#00e5ff; margin-bottom:5px;">${priceText}</div>
-                         <button onclick="buyModule('${item.id}')" class="buy-btn">КУПИТЬ</button>`
-                    }
-                </div>
+            <img src="assets/shop/${item.img}" style="width:70px; height:70px; object-fit:contain; margin-bottom:8px;">
+            <div style="font-weight:bold; font-size:13px; color:#fff;">${item.name}</div>
+            <div style="font-size:10px; color:rgba(255,255,255,0.6); margin:5px 0; min-height:30px;">${item.desc}</div>
+            <div class="price-container" style="margin-top:auto;">
+                ${isOwned ? 
+                    `<div class="owned-tag" style="color:#39ff14; font-size:12px; font-weight:bold; padding:8px;">КУПЛЕНО</div>` : 
+                    `<div class="price-tag" style="font-size:14px; color:#00e5ff; margin-bottom:5px;">${priceText}</div>
+                     <button onclick="buyModule('${item.id}')" class="buy-btn">КУПИТЬ</button>`
+                }
             </div>
         `;
         shopList.appendChild(itemEl);
     });
 
     shopModal.style.display = 'flex';
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 }
 
 function closeShop() {
     const shopModal = document.getElementById('shop-modal');
-    if (shopModal) {
-        shopModal.style.display = 'none';
-        
-        // По желанию: легкая вибрация при закрытии
-        if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-            Telegram.WebApp.HapticFeedback.impactOccurred('light');
-        }
-    }
+    if (shopModal) shopModal.style.display = 'none';
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 }
 
 // ВОТ ТВОЯ ФУНКЦИЯ (вставляй её здесь)
