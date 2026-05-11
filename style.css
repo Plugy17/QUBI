@@ -571,3 +571,27 @@ canvas {
 .modal-overlay {
     pointer-events: auto !important;
 }
+
+/* Секция подключения кошелька */
+.wallet-connect-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.4); /* Полупрозрачный черный */
+    border-bottom: 1px solid rgba(0, 229, 255, 0.3); /* Тонкая бирюзовая линия */
+    backdrop-filter: blur(5px); /* Эффект размытия фона */
+    z-index: 100; /* Чтобы кнопка всегда была сверху */
+}
+
+/* Контейнер самой кнопки TON */
+#ton-connect-btn {
+    transition: transform 0.2s ease;
+}
+
+/* Немного уменьшаем на мобилках, чтобы не занимала пол-экрана */
+@media (max-width: 480px) {
+    #ton-connect-btn {
+        transform: scale(0.9);
+    }
+}
