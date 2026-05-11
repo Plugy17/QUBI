@@ -419,16 +419,33 @@ function runnerLoop() {
             }
         }
 
-        // --- СИСТЕМА СТОЛКНОВЕНИЙ (ОБЫЧНАЯ) ---
-        if (q.type !== 'lightning' && Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w/3 + q.size/2)) {
+        // --- СИСТЕМА СТОЛКНОВЕНИЙ ---
+        
+        // 1. Проверка для молнии (Insta-kill)
+        if (q.type === 'lightning') {
+            if (q.active && Math.abs(q.x - runnerShip.x) < (runnerShip.w / 2.5 + q.width / 2)) {
+                // Выполняем смерть только если корабль еще "жив"
+                if (runnerShip.hp > 0) {
+                    runnerShip.hp = 0;
+                    gameOver();
+                }
+                return; // Прекращаем обработку текущего кадра
+            }
+        }
+        // 2. Проверка для остальных объектов
+        else if (Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w / 3 + q.size / 2)) {
             if (q.type === 'meteor') {
-                runnerShip.hp -= 50; 
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+                runnerShip.hp -= 50;
+                if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+                    Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+                }
                 quants.splice(i, 1);
             } 
             else if (q.type === 'plasma') {
-                runnerShip.hp -= 25; 
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                runnerShip.hp -= 25;
+                if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+                    Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                }
                 quants.splice(i, 1);
             }
             else if (q.type === 'alien') {
@@ -436,6 +453,7 @@ function runnerLoop() {
                 quants.splice(i, 1);
             }
             else {
+                // Сбор валюты
                 if (q.type === 'qubi') sessionQubi++;
                 else sessionQuants++;
                 
@@ -444,23 +462,27 @@ function runnerLoop() {
                 if (qEl) qEl.innerText = sessionQuants;
                 if (bEl) bEl.innerText = sessionQubi;
 
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(q.type === 'qubi' ? 'medium' : 'light');
+                if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+                    Telegram.WebApp.HapticFeedback.impactOccurred(q.type === 'qubi' ? 'medium' : 'light');
+                }
                 quants.splice(i, 1);
                 continue;
             }
 
+            // Если после попадания метеора/плазмы HP кончилось
             if (runnerShip.hp <= 0) {
+                runnerShip.hp = 0; // На всякий случай фиксируем в 0
                 gameOver();
                 return;
             }
             continue;
         }
 
-        // Удаление объектов за экраном
+        // Удаление объектов за экраном (кроме молнии, у неё своя логика в цикле выше)
         if (q.type !== 'lightning' && q.y > window.innerHeight + q.size) {
             quants.splice(i, 1);
         }
-    }
+    } // конец цикла for
 
     // --- ОТРИСОВКА ИГРОКА ---
     if (shipImg.complete) {
@@ -792,17 +814,31 @@ function regenerateEnergy() {
 }
 
 function gameOver() {
+    // 1. Сразу блокируем повторные вызовы
+    if (!isRunnerActive) return; 
     isRunnerActive = false;
+    runnerShip.hp = 0;
+
+    // 2. Останавливаем спавн объектов
     if (this.spawnTimer) clearTimeout(this.spawnTimer);
 
-    if (tg.HapticFeedback) {
-        tg.HapticFeedback.notificationOccurred('error');
+    // 3. Обратная связь (вибрация)
+    if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.notificationOccurred('error');
     }
 
-    // Универсальное сообщение
-    alert(`ИГРА ОКОНЧЕНА!\n\nТвой корабль QUBI получил критические повреждения.\n\nСобрано QUANT: ${sessionQuants}\nСобрано QUBI: ${sessionQubi}`);
+    // 4. Логируем для отладки
+    console.log("Game Over triggered. Quants:", sessionQuants, "Qubi:", sessionQubi);
 
-    closeRunnerWindow(); 
+    // 5. Используем небольшую задержку (300мс), чтобы игрок увидел момент взрыва/удара
+    setTimeout(() => {
+        // Если у тебя нет готового HTML-окна, оставляем alert, 
+        // но теперь он не будет мешать завершению логики
+        alert(`ИГРА ОКОНЧЕНА!\n\nКорабль уничтожен.\n\nСобрано QUANT: ${sessionQuants}\nСобрано QUBI: ${sessionQubi}`);
+        
+        // Закрываем режим раннера
+        closeRunnerWindow(); 
+    }, 300);
 }
 
 // --- 8. СОБЫТИЯ УПРАВЛЕНИЯ ---
