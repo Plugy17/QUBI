@@ -819,44 +819,43 @@ function closeLeaderboard() {
 }
 
 function regenerateEnergy() {
-    if (!playerData.lastEnergyUpdate) return; // Если данных еще нет
+    if (!playerData.lastEnergyUpdate) {
+        playerData.lastEnergyUpdate = Date.now();
+        return;
+    }
 
     const now = Date.now();
     const MAX_ENERGY = 100;
-    const REGEN_AMOUNT_PER_HOUR = 20;
-    const STOP_LIMIT_HOURS = 4; // Лимит простоя
+    const REGEN_PER_HOUR = 20;
+    const MS_PER_ENERGY = (60 * 60 * 1000) / REGEN_PER_HOUR; // 180,000 мс (3 минуты) на 1 ед.
+    const STOP_LIMIT_MS = 4 * 60 * 60 * 1000; // 4 часа в миллисекундах
 
-    // Считаем сколько времени прошло в часах
-    let hoursPassed = (now - playerData.lastEnergyUpdate) / (1000 * 60 * 60);
+    let timePassed = now - playerData.lastEnergyUpdate;
 
-    // Условие: если прошло больше 4 часов, считаем только за 4
-    if (hoursPassed > STOP_LIMIT_HOURS) {
-        hoursPassed = STOP_LIMIT_HOURS;
-    }
+    // Ограничиваем простой 4 часами
+    if (timePassed > STOP_LIMIT_MS) timePassed = STOP_LIMIT_MS;
 
-    // Начисляем энергию только если прошел хотя бы 1 час
-    if (hoursPassed >= 1) {
-        const fullHours = Math.floor(hoursPassed);
-        const energyToAdd = fullHours * REGEN_AMOUNT_PER_HOUR;
+    // Считаем, сколько целых единиц энергии накопилось за это время
+    const energyToAdd = Math.floor(timePassed / MS_PER_ENERGY);
 
-        // Обновляем энергию, не превышая максимум
+    if (energyToAdd > 0 && playerData.energy < MAX_ENERGY) {
         const newEnergy = Math.min(MAX_ENERGY, (playerData.energy || 0) + energyToAdd);
         
-        // Обновляем время. 
-        // ВАЖНО: отнимаем только целые часы, чтобы "хвостик" минут не пропадал
-        const updatedTime = playerData.lastEnergyUpdate + (fullHours * 1000 * 60 * 60);
+        // Сдвигаем время только на столько, сколько энергии реально "выдали"
+        // Это сохраняет оставшиеся секунды/минуты для следующего начисления
+        const updatedTime = playerData.lastEnergyUpdate + (energyToAdd * MS_PER_ENERGY);
 
         playerData.energy = newEnergy;
         playerData.lastEnergyUpdate = updatedTime;
 
-        // Сохраняем в базу
+        // Сохраняем в Firebase
         userRef.update({ 
             energy: playerData.energy,
             lastEnergyUpdate: updatedTime 
         });
 
         updateUI();
-        console.log(`Регенерация: +${energyToAdd} энергии за ${fullHours} ч.`);
+        console.log(`Регенерация: +${energyToAdd} энергии. Текущая: ${playerData.energy}`);
     }
 }
 
