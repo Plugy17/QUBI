@@ -11,7 +11,23 @@ let factoryLimit = {
     processedToday: 0
 };
 
-// --- 2. ИНИЦИАЛИЗАЦИЯ FIREBASE И TG ---
+// --- 2. ИНИЦИАЛИЗАЦИЯ TG (делаем ПЕРВОЙ) ---
+const tg = window.Telegram.WebApp;
+
+// Настройки внешнего вида и поведения
+tg.ready();
+tg.expand();
+if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+tg.isClosingConfirmationEnabled = true;
+tg.setHeaderColor('#000000');
+tg.setBackgroundColor('#000000');
+
+// Пытаемся войти в фуллскрин, если доступно
+if (tg.requestFullscreen) {
+    try { tg.requestFullscreen(); } catch (e) { console.error(e); }
+}
+
+// --- 2.1 FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyABKHaAdlSFq1KzURXmCF5Q-9xMUgE4Ot0",
     authDomain: "berry-game-4fa9b.firebaseapp.com",
@@ -24,40 +40,21 @@ const firebaseConfig = {
 
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const tg = window.Telegram.WebApp;
-
-if (window.Telegram && Telegram.WebApp) {
-    Telegram.WebApp.ready();
-    Telegram.WebApp.expand(); // Разворачивает окно на максимум
-}
 
 const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot" };
 const userRef = db.ref('users/' + tgUser.id);
+
+// --- ДАННЫЕ ИГРОКА ---
 let playerData = { 
     quant: 0, 
     qubi: 0, 
     energy: 100, 
     level: 1,
-    // Добавляем объект лимита прямо сюда
     factoryLimit: {
         date: new Date().toLocaleDateString(),
         processedToday: 0
     }
 };
-
-// --- 2.1 НАСТРОЙКИ TG (ВОЗВРАТ УДАЛЕННОГО) ---
-tg.expand();
-if (tg.requestFullscreen && typeof tg.requestFullscreen === 'function') {
-    try { tg.requestFullscreen(); } catch (e) { console.error("Fullscreen failed:", e); }
-}
-if (tg.disableVerticalSwipes && typeof tg.disableVerticalSwipes === 'function') {
-    tg.disableVerticalSwipes();
-}
-
-tg.isClosingConfirmationEnabled = true;
-tg.setHeaderColor('#000000');
-tg.setBackgroundColor('#000000');
-tg.ready();
 
 // --- 2.2 СИНХРОНИЗАЦИЯ ЛИДЕРБОРДА ---
 // Эта функция должна быть здесь, чтобы она была доступна при загрузке
@@ -193,25 +190,26 @@ function hideLoading() {
 
 // --- 5. ЛОГИКА КАРТЫ И ОТРИСОВКИ ---
 function draw() {
-    const dpr = window.devicePixelRatio || 1;
+    // 1. Очищаем холст, используя ФИЗИЧЕСКИЕ пиксели (те, что с DPR)
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
     
-    // Если ты используешь resizeCanvas с умножением на DPR, 
-    // здесь масштаб должен соответствовать способу отрисовки
-    ctx.scale(dpr, dpr);
+    // 2. РИСУЕМ ФОН
+    // Мы НЕ вызываем ctx.scale здесь, потому что он уже применен в resizeCanvas.
+    // Используем window.innerWidth/Height для логического позиционирования.
+    if (bg.complete) {
+        ctx.drawImage(bg, 0, 0, window.innerWidth, window.innerHeight);
+    }
 
-    if (bg.complete) ctx.drawImage(bg, 0, 0, window.innerWidth, window.innerHeight);
-
+    // 3. РИСУЕМ ПЛАНЕТЫ
     planets.forEach(p => {
         if (p.img && p.img.complete) {
             ctx.save();
             
-            // Смещение объекта
+            // Смещение (p.x и p.y теперь автоматически масштабируются благодаря resizeCanvas)
             ctx.translate(p.x, p.y); 
 
             if (p.id === 'station') {
-                // Плавное покачивание станции (Float)
+                // Плавное покачивание станции
                 const floatY = Math.sin(Date.now() * 0.002) * 5; 
                 ctx.translate(0, floatY);
             } else {
@@ -220,12 +218,14 @@ function draw() {
                 ctx.rotate(p.rotation);
             }
             
+            // Рисуем саму планету
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+            
             ctx.restore();
         }
     });
     
-    ctx.restore();
+    // Запускаем следующий кадр
     requestAnimationFrame(draw);
 }
 
