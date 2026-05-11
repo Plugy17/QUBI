@@ -878,7 +878,7 @@ function closeLeaderboard() {
     if (modal) modal.style.display = 'none';
 }
 
-function regenerateEnergy() {
+window.regenerateEnergy = function() {
     // 1. Проверяем, загружены ли данные игрока
     if (!playerData || !userRef) return;
 
@@ -1266,10 +1266,8 @@ function closeStation() {
     }
 }
 
-// Запускаем цикл проверки энергии
 setInterval(() => {
-    // Проверяем, существует ли функция и загружен ли профиль игрока
-    if (typeof regenerateEnergy === 'function' && typeof playerData !== 'undefined' && playerData) {
+    if (typeof regenerateEnergy === 'function') {
         regenerateEnergy();
     }
-}, 30000); // Проверяем раз в 30 секунд, чтобы расчет был точнее
+}, 60000);
