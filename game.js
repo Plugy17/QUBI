@@ -87,6 +87,7 @@ const quantImg = new Image(); quantImg.src = 'assets/quant-icon.png';
 const qubiImg = new Image(); qubiImg.src = 'assets/qubi-icon.png';
 const meteorImg = new Image(); meteorImg.src = 'assets/meteor.png'; // Убедись, что файл лежит по этому пути
 const alienImg = new Image(); alienImg.src = 'assets/alien.png';
+const lightningImg = new Image(); lightningImg.src = 'assets/molniya.png';
 
 const planets = [
     { id: 'runner', src: 'assets/quant.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, size: 120, rotation: 0, speed: 0.002, img: new Image() },
@@ -306,8 +307,7 @@ function runnerLoop() {
     // 1. Очистка по физическим пикселям
     runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
 
-    // 2. Фон (используем логические размеры окна)
-    // Убрали scale(dpr), так как он уже задан в resizeCanvas
+    // 2. Фон
     if (runnerBg.complete) {
         runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
     }
@@ -317,16 +317,58 @@ function runnerLoop() {
 
     for (let i = quants.length - 1; i >= 0; i--) {
         let q = quants[i];
-        q.y += q.speed;
+        
+        // Молния не падает как предметы, у нее своя логика времени
+        if (q.type !== 'lightning') {
+            q.y += q.speed;
+        }
 
+        // --- ОТРИСОВКА МОЛНИИ (INSTA-KILL) ---
+        if (q.type === 'lightning') {
+            q.timer++;
+
+            if (q.timer < q.warningTime) {
+                // 1. ПРЕДУПРЕЖДЕНИЕ: Тонкий мигающий луч
+                runnerCtx.save();
+                runnerCtx.globalAlpha = (Math.sin(Date.now() * 0.05) * 0.2) + 0.3;
+                runnerCtx.fillStyle = '#00e5ff';
+                runnerCtx.fillRect(q.x - q.width / 2, 0, q.width, window.innerHeight);
+                runnerCtx.restore();
+            } 
+            else if (q.timer >= q.warningTime && q.timer < q.warningTime + 10) {
+                // 2. УДАР: Вспышка изображения молнии
+                q.active = true; 
+                runnerCtx.save();
+                if (typeof lightningImg !== 'undefined' && lightningImg.complete) {
+                    runnerCtx.shadowBlur = 30;
+                    runnerCtx.shadowColor = '#fff';
+                    // Рисуем молнию на всю высоту
+                    runnerCtx.drawImage(lightningImg, q.x - q.width, 0, q.width * 2, window.innerHeight);
+                }
+                
+                if (q.timer === q.warningTime && tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('error'); 
+                }
+                runnerCtx.restore();
+            } 
+            else {
+                quants.splice(i, 1);
+                continue;
+            }
+
+            // ПРОВЕРКА СМЕРТИ ОТ МОЛНИИ
+            if (q.active && Math.abs(q.x - runnerShip.x) < (runnerShip.w / 2.5 + q.width / 2)) {
+                runnerShip.hp = 0;
+                gameOver();
+                return;
+            }
+        }
         // --- ОТРИСОВКА МЕТЕОРА ---
-        if (q.type === 'meteor') {
+        else if (q.type === 'meteor') {
             q.angle += q.rotationSpeed;
             if (meteorImg.complete) {
                 runnerCtx.save();
                 runnerCtx.translate(q.x, q.y);
-                
-                // Огонь (хвост)
                 let tailLength = 5;
                 for (let j = 0; j < tailLength; j++) {
                     let tailY = -j * (q.size / 3);
@@ -337,7 +379,6 @@ function runnerLoop() {
                     runnerCtx.arc(0, tailY, tailSize / 2, 0, Math.PI * 2);
                     runnerCtx.fill();
                 }
-                
                 runnerCtx.rotate(q.angle);
                 runnerCtx.drawImage(meteorImg, -q.size/2, -q.size/2, q.size, q.size);
                 runnerCtx.restore();
@@ -348,7 +389,6 @@ function runnerLoop() {
             if (alienImg.complete) {
                 runnerCtx.drawImage(alienImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
             }
-            // Логика стрельбы
             let now = Date.now();
             if (now - (q.lastShot || 0) > (q.shotInterval || 1500)) {
                 quants.push({
@@ -379,8 +419,8 @@ function runnerLoop() {
             }
         }
 
-        // --- СИСТЕМА СТОЛКНОВЕНИЙ ---
-        if (Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w/3 + q.size/2)) {
+        // --- СИСТЕМА СТОЛКНОВЕНИЙ (ОБЫЧНАЯ) ---
+        if (q.type !== 'lightning' && Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w/3 + q.size/2)) {
             if (q.type === 'meteor') {
                 runnerShip.hp -= 50; 
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
@@ -416,7 +456,10 @@ function runnerLoop() {
             continue;
         }
 
-        if (q.y > window.innerHeight + q.size) quants.splice(i, 1);
+        // Удаление объектов за экраном
+        if (q.type !== 'lightning' && q.y > window.innerHeight + q.size) {
+            quants.splice(i, 1);
+        }
     }
 
     // --- ОТРИСОВКА ИГРОКА ---
@@ -426,7 +469,6 @@ function runnerLoop() {
         runnerCtx.rotate(dx * 0.02);
         runnerCtx.drawImage(shipImg, -runnerShip.w/2, -runnerShip.h/2, runnerShip.w, runnerShip.h);
         
-        // HP BAR
         const barW = 60;
         const hpRate = Math.max(0, runnerShip.hp / runnerShip.maxHp);
         runnerCtx.fillStyle = 'rgba(255, 0, 0, 0.3)';
@@ -440,25 +482,50 @@ function runnerLoop() {
     requestAnimationFrame(runnerLoop);
 }
 
+function spawnLightning() {
+    quants.push({
+        x: runnerShip.x, // Целимся точно в игрока в момент появления
+        y: 0,
+        width: 60, // Ширина поражения
+        type: 'lightning',
+        warningTime: 35, // Время мерцания (примерно 0.5-0.7 сек)
+        timer: 0,
+        active: false
+    });
+}
+
 function spawnRunnerObject() {
     if (!isRunnerActive) return;
 
     let rand = Math.random() * 100;
 
-    if (rand < 10) {
+    // --- НОВАЯ ЛОГИКА: СПАВН МОЛНИИ (Insta-kill) ---
+    if (rand < 30) { 
+        // Молния появляется с шансом 5%
+        quants.push({
+            x: runnerShip.x, // Целимся точно в текущую позицию игрока
+            y: 0,
+            width: 60, // Ширина зоны поражения
+            type: 'lightning',
+            warningTime: 35, // Кол-во кадров мерцания до удара (~0.6 сек)
+            timer: 0,
+            active: false
+        });
+    } 
+    else if (rand < 15) { // Сдвигаем границы остальных шансов
         // --- СПАВНИМ ВРАЖЕСКИЙ КОРАБЛЬ (ALIEN) ---
         let size = 70;
         quants.push({
             x: Math.random() * (window.innerWidth - size) + size / 2,
             y: -size,
             size: size,
-            speed: 2 + Math.random() * 1.5, // Летит медленнее метеора, чтобы успеть выстрелить
+            speed: 2 + Math.random() * 1.5,
             type: 'alien',
             lastShot: 0,
-            shotInterval: 1500 // Стреляет каждые 1.5 секунды
+            shotInterval: 1500 
         });
     } 
-    else if (rand < 35) {
+    else if (rand < 40) {
         // --- СПАВНИМ МЕТЕОР ---
         let size = 90;
         quants.push({
@@ -484,7 +551,8 @@ function spawnRunnerObject() {
         });
     }
 
-    let nextSpawn = 800 + Math.random() * 500; // Немного ускорим темп игры
+    // Темп появления объектов
+    let nextSpawn = 700 + Math.random() * 500; // Чуть-чуть уменьшил минимальный порог для динамики
     if (this.spawnTimer) clearTimeout(this.spawnTimer);
     this.spawnTimer = setTimeout(spawnRunnerObject, nextSpawn);
 }
