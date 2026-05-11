@@ -212,23 +212,27 @@ function initGame() {
     });
 }
 
-// Функция покупки (универсальная)
-async function buyItem(itemId) {
-    const item = shopItems.find(i => i.id === itemId);
-    
-    if (item.currency === 'TON') {
-        // Вызываем ту самую функцию, которую ты добавил
-        const success = await payWithTON(item.price, item.id);
+function openShop() {
+    const shopList = document.getElementById('shop-list');
+    shopList.innerHTML = ''; // Очистка
+
+    SHOP_MODULES.forEach(item => {
+        // Проверяем, куплен ли уже этот модуль
+        const isOwned = playerData.inventory.some(owned => owned.id === item.id);
         
-        if (success) {
-            // Если транзакция прошла успешно (пользователь подтвердил)
-            grantItem(item.id); 
-            alert("Покупка за TON успешно совершена!");
-        }
-    } else {
-        // Обычная логика за игровые QUANT / QUBI
-        // ... (твой старый код покупки)
-    }
+        const itemEl = document.createElement('div');
+        itemEl.className = `shop-item ${item.rarity}`;
+        itemEl.innerHTML = `
+            <img src="assets/shop/${item.img}" style="width:60px; height:60px; margin-bottom:5px;">
+            <div style="font-weight:bold; font-size:14px;">${item.name}</div>
+            <div style="font-size:10px; color:#ccc; margin:5px 0;">${item.desc}</div>
+            <div class="price-tag">${isOwned ? 'КУПЛЕНО' : item.price + ' ' + item.currency}</div>
+            ${!isOwned ? `<button onclick="buyModule('${item.id}')" class="buy-btn">КУПИТЬ</button>` : ''}
+        `;
+        shopList.appendChild(itemEl);
+    });
+
+    document.getElementById('shop-modal').style.display = 'flex';
 }
 
 // ВОТ ТВОЯ ФУНКЦИЯ (вставляй её здесь)
@@ -1014,49 +1018,88 @@ if (document.getElementById('exit-runner')) {
 bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
 
-function buyModule(moduleId, priceQuant, priceQubi, name, type, power) {
-    // 1. Проверяем баланс игрока
-    if (playerData.quant < priceQuant || playerData.qubi < priceQubi) {
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-        alert("Недостаточно ресурсов для покупки!");
+async function buyModule(moduleId) {
+    // 1. Находим данные о модуле в нашем справочнике SHOP_MODULES
+    const itemData = SHOP_MODULES.find(m => m.id === moduleId);
+    
+    if (!itemData) {
+        console.error("Модуль не найден в базе магазина");
         return;
     }
 
-    // 2. Списываем валюту
+    // 2. Логика для оплаты через TON
+    if (itemData.currency === 'TON') {
+        try {
+            // Вызываем оплату через кошелек
+            const success = await payWithTON(itemData.price, itemData.id);
+            
+            if (success) {
+                grantModule(itemData); // Выдаем предмет
+                alert(`Успешно приобретено: ${itemData.name}!`);
+            }
+        } catch (e) {
+            console.error("Ошибка TON транзакции:", e);
+        }
+        return; // Выходим, так как для TON не нужна проверка QUANT/QUBI
+    }
+
+    // 3. Логика для QUANT и QUBI
+    let priceQuant = itemData.currency === 'QUANT' ? itemData.price : 0;
+    let priceQubi = itemData.currency === 'QUBI' ? itemData.price : 0;
+
+    // Проверка баланса
+    if (playerData.quant < priceQuant || playerData.qubi < priceQubi) {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        alert("Недостаточно ресурсов!");
+        return;
+    }
+
+    // Списываем валюту
     playerData.quant -= priceQuant;
     playerData.qubi -= priceQubi;
 
-    // 3. Создаем объект модуля
+    // Выдаем предмет
+    grantModule(itemData);
+}
+
+// Вспомогательная функция выдачи предмета в инвентарь
+function grantModule(itemData) {
     if (!playerData.inventory) playerData.inventory = [];
-    
+
+    // Создаем экземпляр модуля для инвентаря
     const newModule = {
-        id: moduleId + "_" + Date.now(), // Уникальный ID, чтобы можно было купить 2 одинаковых модуля
-        name: name,
-        type: type,   // 'hp', 'barrier', 'income_quant', 'income_qubi'
-        power: power
+        id: itemData.id + "_" + Date.now(), // Уникальный ID экземпляра
+        shopId: itemData.id,               // Ссылка на тип в магазине
+        name: itemData.name,
+        type: itemData.type,
+        power: itemData.power,
+        rarity: itemData.rarity,
+        img: itemData.img
     };
 
     playerData.inventory.push(newModule);
 
-    // 4. Сохраняем всё в Firebase
+    // Сохраняем всё в Firebase
     userRef.update({
         quant: playerData.quant,
         qubi: playerData.qubi,
         inventory: playerData.inventory
     }).then(() => {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        console.log("Покупка успешна!");
-        updateUI(); // Обновляем баланс на главном экране
-    }).catch(err => {
-        console.error("Ошибка при покупке:", err);
+        updateUI();   // Обновить баланс на экране
+        openShop();   // Перерисовать магазин (чтобы кнопка сменилась на "КУПЛЕНО")
+        console.log(`Модуль ${itemData.name} добавлен в инвентарь`);
     });
 }
 
 function calculateCurrentStats() {
+    // Базовые параметры игрока без модулей
     let stats = {
         hp: 100,
+        maxEnergy: 100,
+        regenBonusMs: 0, // Бонус к скорости (вычитается из интервала)
+        // Поля для будущего режима "Создание"
         barrier: 0,
-        energy: 100,
         incomeQuant: 0,
         incomeQubi: 0
     };
@@ -1065,11 +1108,21 @@ function calculateCurrentStats() {
         playerData.equipped.forEach(modId => {
             const module = playerData.inventory.find(m => m.id === modId);
             if (module) {
-                if (module.type === 'hp') stats.hp += module.power;
-                if (module.type === 'barrier') stats.barrier += module.power;
-                if (module.type === 'income_quant') stats.incomeQuant += module.power;
-                if (module.type === 'income_qubi') stats.incomeQubi += module.power;
-                // Энергию обычно делаем как множитель или макс. запас
+                // 1. Обработка обычных модулей (где power — число)
+                if (typeof module.power === 'number') {
+                    if (module.type === 'hp') stats.hp += module.power;
+                    if (module.type === 'energy_max') stats.maxEnergy += module.power;
+                    if (module.type === 'energy_regen') stats.regenBonusMs += module.power;
+                    if (module.type === 'barrier') stats.barrier += module.power;
+                    if (module.type === 'income_quant') stats.incomeQuant += module.power;
+                    if (module.type === 'income_qubi') stats.incomeQubi += module.power;
+                } 
+                // 2. Обработка гибридных модулей (где power — объект {hp, en, reg})
+                else if (typeof module.power === 'object') {
+                    if (module.power.hp) stats.hp += module.power.hp;
+                    if (module.power.en) stats.maxEnergy += module.power.en;
+                    if (module.power.reg) stats.regenBonusMs += module.power.reg;
+                }
             }
         });
     }
