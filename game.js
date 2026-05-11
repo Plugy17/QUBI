@@ -978,7 +978,7 @@ function handleCanvasClick(e) {
     planets.forEach(p => {
         const dist = Math.hypot(clickX - p.x, clickY - p.y);
         
-        if (dist < p.size * 0.8) { 
+        if (dist < p.size * 1.5) { // Увеличил радиус клика для удобства
             if (window.Telegram && Telegram.WebApp.HapticFeedback) {
                 Telegram.WebApp.HapticFeedback.impactOccurred('medium');
             }
@@ -989,20 +989,31 @@ function handleCanvasClick(e) {
                 openLeaderboard();
             } else if (p.id === 'moon') {
                 openMoonMenu();
+            } else if (p.id === 'shop') {
+                // ДОБАВЛЯЕМ ЭТУ СТРОЧКУ:
+                openShop(); 
+            } else if (p.id === 'station') {
+                // ДОБАВЛЯЕМ ДЛЯ СТАНЦИИ:
+                openStation();
             } else {
                 activatePlanet(p.id);
             }
         }
     });
-}
-
+    
 // Функция для блокировки кликов сквозь окна
 function isAnyModalOpen() {
-    const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal'];
+    // Добавляем runner-window, так как во время игры клики по планетам тоже должны быть отключены
+    const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal', 'runner-window'];
+    
     return modals.some(id => {
         const el = document.getElementById(id);
-        // Проверяем только то, что окно реально видно (flex или block)
-        return el && (el.style.display === 'flex' || el.style.display === 'block');
+        if (!el) return false;
+
+        // getComputedStyle проверяет реальное состояние на экране, 
+        // даже если стиль задан в файле .css
+        const style = window.getComputedStyle(el);
+        return style.display !== 'none' && style.visibility !== 'hidden';
     });
 }
 
