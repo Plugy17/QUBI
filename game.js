@@ -522,7 +522,7 @@ function spawnRunnerObject() {
     let rand = Math.random() * 100;
 
     // --- НОВАЯ ЛОГИКА: СПАВН МОЛНИИ (Insta-kill) ---
-    if (rand < 30) { 
+    if (rand < 10) { 
         // Молния появляется с шансом 5%
         quants.push({
             x: runnerShip.x, // Целимся точно в текущую позицию игрока
