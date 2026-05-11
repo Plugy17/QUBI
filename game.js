@@ -111,6 +111,11 @@ let runnerShip = {
     lerpSpeed: 0.2
 };
 
+const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: 'https://plugy17.github.io/QUBI/tonconnect-manifest.json',
+    buttonRootId: 'ton-connect-btn'
+});
+
 // --- 4. СИСТЕМНЫЕ ФУНКЦИИ (RESIZE, UI, START) ---
 function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
@@ -170,6 +175,48 @@ function initGame() {
         }
         hideLoading();
     });
+}
+
+// Функция покупки (универсальная)
+async function buyItem(itemId) {
+    const item = shopItems.find(i => i.id === itemId);
+    
+    if (item.currency === 'TON') {
+        // Вызываем ту самую функцию, которую ты добавил
+        const success = await payWithTON(item.price, item.id);
+        
+        if (success) {
+            // Если транзакция прошла успешно (пользователь подтвердил)
+            grantItem(item.id); 
+            alert("Покупка за TON успешно совершена!");
+        }
+    } else {
+        // Обычная логика за игровые QUANT / QUBI
+        // ... (твой старый код покупки)
+    }
+}
+
+// ВОТ ТВОЯ ФУНКЦИЯ (вставляй её здесь)
+async function payWithTON(amountInTon, itemId) {
+    const amountInNanotons = (amountInTon * 1000000000).toString();
+    
+    const transaction = {
+        validUntil: Math.floor(Date.now() / 1000) + 120, // 2 минуты на оплату
+        messages: [
+            {
+                address: "UQAolTf91hk9X9SbfkeWcs10mOCwQCvq5iax2WgQ4H678l6r", // ЗАМЕНИ НА СВОЙ
+                amount: amountInNanotons,
+            }
+        ]
+    };
+
+    try {
+        const result = await tonConnectUI.sendTransaction(transaction);
+        return true; 
+    } catch (e) {
+        console.error("Ошибка оплаты:", e);
+        return false;
+    }
 }
 
 function updateUI() {
