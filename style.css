@@ -47,15 +47,21 @@ canvas {
     left: 0;
     width: 100%; 
     box-sizing: border-box;
-    /* Отступ сверху для Telegram */
+    /* Твои отступы */
     padding-top: calc(env(safe-area-inset-top, 0px) + 40px); 
     padding-left: 15px;
     padding-right: 15px;
     
     display: flex;
-    justify-content: space-between; /* Строго разносит ник и кошелек */
-    align-items: flex-start; 
+    justify-content: space-between; 
+    align-items: center; /* Центрируем по вертикали, чтобы кнопка и текст были в одну линию */
     z-index: 20;
+    pointer-events: none; /* Пропускаем клики сквозь хедер на игру... */
+}
+
+/* ...но возвращаем клики на интерактивные элементы! */
+.user-info, .wallet, .wallet-connect-wrapper {
+    pointer-events: auto;
 }
 
 .user-info {
@@ -572,26 +578,33 @@ canvas {
     pointer-events: auto !important;
 }
 
-/* Секция подключения кошелька */
+/* Новая секция кнопки внутри хедера */
 .wallet-connect-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.4); /* Полупрозрачный черный */
-    border-bottom: 1px solid rgba(0, 229, 255, 0.3); /* Тонкая бирюзовая линия */
-    backdrop-filter: blur(5px); /* Эффект размытия фона */
-    z-index: 100; /* Чтобы кнопка всегда была сверху */
+    /* Убираем фон и границы, так как теперь кнопка часть общего хедера */
+    background: none; 
+    border: none;
+    backdrop-filter: none;
+    
+    /* Даем блоку возможность расширяться в центре */
+    flex: 1; 
+    pointer-events: auto; /* Чтобы кнопка нажималась */
+    z-index: 21;
 }
 
 /* Контейнер самой кнопки TON */
 #ton-connect-btn {
     transition: transform 0.2s ease;
+    display: flex;
+    justify-content: center;
 }
 
-/* Немного уменьшаем на мобилках, чтобы не занимала пол-экрана */
+/* Оптимальный размер для мобилок внутри хедера */
 @media (max-width: 480px) {
     #ton-connect-btn {
-        transform: scale(0.9);
+        /* scale 0.7-0.8 — золотая середина, чтобы не перекрывать баланс */
+        transform: scale(0.8); 
     }
 }
