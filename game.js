@@ -302,12 +302,15 @@ function closeRunnerWindow() {
 
 function runnerLoop() {
     if (!isRunnerActive) return;
-    const dpr = window.devicePixelRatio || 1;
-    runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
-    runnerCtx.save();
-    runnerCtx.scale(dpr, dpr);
 
-    if (runnerBg.complete) runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
+    // 1. Очистка по физическим пикселям
+    runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+
+    // 2. Фон (используем логические размеры окна)
+    // Убрали scale(dpr), так как он уже задан в resizeCanvas
+    if (runnerBg.complete) {
+        runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
+    }
 
     let dx = runnerShip.targetX - runnerShip.x;
     runnerShip.x += dx * runnerShip.lerpSpeed;
@@ -316,12 +319,14 @@ function runnerLoop() {
         let q = quants[i];
         q.y += q.speed;
 
-        // --- ОТРИСОВКА МЕТЕОРА И ОГНЯ ---
+        // --- ОТРИСОВКА МЕТЕОРА ---
         if (q.type === 'meteor') {
             q.angle += q.rotationSpeed;
             if (meteorImg.complete) {
                 runnerCtx.save();
                 runnerCtx.translate(q.x, q.y);
+                
+                // Огонь (хвост)
                 let tailLength = 5;
                 for (let j = 0; j < tailLength; j++) {
                     let tailY = -j * (q.size / 3);
@@ -332,18 +337,18 @@ function runnerLoop() {
                     runnerCtx.arc(0, tailY, tailSize / 2, 0, Math.PI * 2);
                     runnerCtx.fill();
                 }
+                
                 runnerCtx.rotate(q.angle);
                 runnerCtx.drawImage(meteorImg, -q.size/2, -q.size/2, q.size, q.size);
                 runnerCtx.restore();
             }
         } 
-        // --- ОТРИСОВКА ВРАЖЕСКОГО КОРАБЛЯ (ALIEN) ---
+        // --- ОТРИСОВКА АЛИЕНА ---
         else if (q.type === 'alien') {
             if (alienImg.complete) {
                 runnerCtx.drawImage(alienImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
             }
-            
-            // Логика стрельбы врага
+            // Логика стрельбы
             let now = Date.now();
             if (now - (q.lastShot || 0) > (q.shotInterval || 1500)) {
                 quants.push({
@@ -356,7 +361,7 @@ function runnerLoop() {
                 q.lastShot = now;
             }
         }
-        // --- ОТРИСОВКА ВРАЖЕСКОГО ЗАРЯДА (ПЛАЗМЫ) ---
+        // --- ОТРИСОВКА ПЛАЗМЫ ---
         else if (q.type === 'plasma') {
             runnerCtx.save();
             runnerCtx.beginPath();
@@ -369,12 +374,13 @@ function runnerLoop() {
         }
         else {
             let currentImg = (q.type === 'qubi') ? qubiImg : quantImg;
-            if (currentImg.complete) runnerCtx.drawImage(currentImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
+            if (currentImg.complete) {
+                runnerCtx.drawImage(currentImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
+            }
         }
 
         // --- СИСТЕМА СТОЛКНОВЕНИЙ ---
         if (Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w/3 + q.size/2)) {
-            
             if (q.type === 'meteor') {
                 runnerShip.hp -= 50; 
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
@@ -386,7 +392,7 @@ function runnerLoop() {
                 quants.splice(i, 1);
             }
             else if (q.type === 'alien') {
-                runnerShip.hp -= 100; // Прямое столкновение с врагом — фатально
+                runnerShip.hp -= 100;
                 quants.splice(i, 1);
             }
             else {
@@ -413,12 +419,14 @@ function runnerLoop() {
         if (q.y > window.innerHeight + q.size) quants.splice(i, 1);
     }
 
+    // --- ОТРИСОВКА ИГРОКА ---
     if (shipImg.complete) {
         runnerCtx.save();
         runnerCtx.translate(runnerShip.x, runnerShip.y);
         runnerCtx.rotate(dx * 0.02);
         runnerCtx.drawImage(shipImg, -runnerShip.w/2, -runnerShip.h/2, runnerShip.w, runnerShip.h);
         
+        // HP BAR
         const barW = 60;
         const hpRate = Math.max(0, runnerShip.hp / runnerShip.maxHp);
         runnerCtx.fillStyle = 'rgba(255, 0, 0, 0.3)';
@@ -429,7 +437,6 @@ function runnerLoop() {
         runnerCtx.restore();
     }
     
-    runnerCtx.restore();
     requestAnimationFrame(runnerLoop);
 }
 
