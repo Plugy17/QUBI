@@ -1270,5 +1270,3 @@ function closeStation() {
 setInterval(() => {
     regenerateEnergy();
 }, 60000);
-
-
