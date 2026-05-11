@@ -618,34 +618,59 @@ canvas {
 }
 
 /* МАГАЗИН */
+/* Фоновая подложка */
 #shop-modal {
     background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(10px); /* Эффект матового стекла */
+    backdrop-filter: blur(10px);
+    z-index: 2000; /* Чтобы был поверх всего */
 }
 
+/* Окно магазина (центрирование и форма) */
+.shop-window {
+    width: 90%;
+    max-width: 400px;
+    background: #0a0a0a;
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Сетка товаров */
 .shop-container {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    padding: 20px;
-    max-height: 70vh;
-    overflow-y: auto; /* Прокрутка, чтобы влезли все 20 модулей */
+    gap: 12px;
+    padding: 15px;
+    max-height: 65vh; /* Оптимально для экранов телефонов */
+    overflow-y: auto;
+    /* Тонкий скроллбар для красоты */
+    scrollbar-width: thin;
+    scrollbar-color: #00e5ff transparent;
 }
 
+/* Карточка товара (Твои стили с небольшими правками) */
 .shop-item {
     background: linear-gradient(145deg, rgba(30,30,40,0.8), rgba(10,10,20,0.9));
     border: 1px solid rgba(0, 229, 255, 0.2);
     border-radius: 12px;
-    padding: 10px;
+    padding: 12px 8px;
     text-align: center;
     transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.shop-item:hover {
-    transform: translateY(-5px);
+.shop-item:active { /* Для мобилок лучше active вместо hover */
+    transform: scale(0.95);
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
 }
 
+/* Редкости */
 .shop-item.rare { border-color: #a335ee; }
 .shop-item.epic { border-color: #ff8000; box-shadow: inset 0 0 10px rgba(255, 128, 0, 0.2); }
 .shop-item.legendary { border-color: #ff00ff; animation: pulse-gold 2s infinite; }
@@ -656,9 +681,37 @@ canvas {
     100% { box-shadow: 0 0 5px #ff00ff; }
 }
 
+/* Цена и Кнопка */
 .price-tag {
-    font-size: 0.9em;
+    font-size: 0.85em;
     font-weight: bold;
     color: #00e5ff;
-    margin-top: 10px;
+    margin: 8px 0;
+}
+
+.buy-btn {
+    background: #00e5ff;
+    color: #000;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 11px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.buy-btn:disabled {
+    background: #444;
+    color: #888;
+    cursor: not-allowed;
+}
+
+/* Текст "КУПЛЕНО" */
+.owned-tag {
+    color: #39ff14;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
