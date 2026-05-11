@@ -1140,4 +1140,9 @@ function closeStation() {
     }
 }
 
+// Проверяем регенерацию каждую минуту, пока открыта игра
+setInterval(() => {
+    regenerateEnergy();
+}, 60000);
+
 
