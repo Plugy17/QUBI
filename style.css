@@ -86,16 +86,12 @@ canvas {
 
 .wallet {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(15px);
-    padding: 12px 16px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 160px; /* Немного уменьшил для мобильных экранов */
-    pointer-events: auto;
-    margin-top: 5px; 
+    flex-direction: column; /* Если хочешь, чтобы QUANT и QUBI были друг под другом */
+    gap: 8px;
+    background: none !important; /* Убираем черный фон */
+    border: none !important;     /* Убираем рамку */
+    box-shadow: none !important;  /* Убираем тени, если есть */
+    padding: 0 !important;       /* Убираем внутренние отступы */
 }
 
 /* Секция энергии */
@@ -110,11 +106,14 @@ canvas {
     align-items: center;
 }
 
+/* Каждая отдельная строка с валютой */
 .currency {
+    background: none !important;
+    border: none !important;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    width: 100%;
+    justify-content: flex-end; /* Прижимаем к правому краю */
+    gap: 10px;
 }
 
 .coin-tag {
@@ -145,10 +144,11 @@ canvas {
     font-weight: bold;
 }
 
+/* Чтобы цифры лучше читались на фоне звезд, добавим им легкое свечение */
 #quant-val, #qubi-val {
-    font-size: 18px;
-    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 10px rgba(0, 229, 255, 0.5), 0 0 20px rgba(0, 0, 0, 0.8);
     font-weight: bold;
+    font-size: 18px;
 }
 
 #quant-val { color: #00e5ff; }
