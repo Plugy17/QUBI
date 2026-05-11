@@ -56,6 +56,53 @@ let playerData = {
     }
 };
 
+function regenerateEnergy() {
+    // 1. Проверяем, загружены ли данные игрока
+    if (!playerData || !userRef) return;
+
+    const now = Date.now();
+    const MAX_ENERGY = 100;
+    const REGEN_PER_HOUR = 20;
+    const MS_PER_ENERGY = (60 * 60 * 1000) / REGEN_PER_HOUR; // 180,000 мс (3 минуты) на 1 ед.
+    const STOP_LIMIT_MS = 4 * 60 * 60 * 1000; // 4 часа лимит
+
+    // 2. Берем время из playerData или инициализируем его, если его там нет
+    let lastUpdate = Number(playerData.lastEnergyUpdate);
+
+    if (!lastUpdate || isNaN(lastUpdate)) {
+        playerData.lastEnergyUpdate = now;
+        userRef.update({ lastEnergyUpdate: now });
+        return;
+    }
+
+    let timePassed = now - lastUpdate;
+
+    // Ограничиваем время простоя
+    if (timePassed > STOP_LIMIT_MS) timePassed = STOP_LIMIT_MS;
+
+    // 3. Считаем, сколько единиц накопилось
+    const energyToAdd = Math.floor(timePassed / MS_PER_ENERGY);
+
+    if (energyToAdd > 0 && (playerData.energy || 0) < MAX_ENERGY) {
+        const newEnergy = Math.min(MAX_ENERGY, (playerData.energy || 0) + energyToAdd);
+        
+        // Сдвигаем время только на количество восстановленной энергии
+        const updatedTime = lastUpdate + (energyToAdd * MS_PER_ENERGY);
+
+        playerData.energy = newEnergy;
+        playerData.lastEnergyUpdate = updatedTime;
+
+        // 4. Сохраняем в Firebase и обновляем UI
+        userRef.update({ 
+            energy: playerData.energy,
+            lastEnergyUpdate: updatedTime 
+        }).then(() => {
+            console.log(`🔋 Регенерация сработала: +${energyToAdd} энергии.`);
+            updateUI();
+        });
+    }
+}
+
 // --- 2.2 СИНХРОНИЗАЦИЯ ЛИДЕРБОРДА ---
 // Эта функция должна быть здесь, чтобы она была доступна при загрузке
 function syncWithLeaderboard() {
@@ -876,53 +923,6 @@ function openLeaderboard() {
 function closeLeaderboard() {
     const modal = document.getElementById('leaderboard-modal');
     if (modal) modal.style.display = 'none';
-}
-
-window.regenerateEnergy = function() {
-    // 1. Проверяем, загружены ли данные игрока
-    if (!playerData || !userRef) return;
-
-    const now = Date.now();
-    const MAX_ENERGY = 100;
-    const REGEN_PER_HOUR = 20;
-    const MS_PER_ENERGY = (60 * 60 * 1000) / REGEN_PER_HOUR; // 180,000 мс (3 минуты) на 1 ед.
-    const STOP_LIMIT_MS = 4 * 60 * 60 * 1000; // 4 часа лимит
-
-    // 2. Берем время из playerData или инициализируем его, если его там нет
-    let lastUpdate = Number(playerData.lastEnergyUpdate);
-
-    if (!lastUpdate || isNaN(lastUpdate)) {
-        playerData.lastEnergyUpdate = now;
-        userRef.update({ lastEnergyUpdate: now });
-        return;
-    }
-
-    let timePassed = now - lastUpdate;
-
-    // Ограничиваем время простоя
-    if (timePassed > STOP_LIMIT_MS) timePassed = STOP_LIMIT_MS;
-
-    // 3. Считаем, сколько единиц накопилось
-    const energyToAdd = Math.floor(timePassed / MS_PER_ENERGY);
-
-    if (energyToAdd > 0 && (playerData.energy || 0) < MAX_ENERGY) {
-        const newEnergy = Math.min(MAX_ENERGY, (playerData.energy || 0) + energyToAdd);
-        
-        // Сдвигаем время только на количество восстановленной энергии
-        const updatedTime = lastUpdate + (energyToAdd * MS_PER_ENERGY);
-
-        playerData.energy = newEnergy;
-        playerData.lastEnergyUpdate = updatedTime;
-
-        // 4. Сохраняем в Firebase и обновляем UI
-        userRef.update({ 
-            energy: playerData.energy,
-            lastEnergyUpdate: updatedTime 
-        }).then(() => {
-            console.log(`🔋 Регенерация сработала: +${energyToAdd} энергии.`);
-            updateUI();
-        });
-    }
 }
 
 function gameOver() {
