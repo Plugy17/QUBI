@@ -361,19 +361,38 @@ function draw() {
 }
 
 function activatePlanet(id) {
+    // Если любое окно уже открыто, блокируем выполнение, чтобы не тратить энергию под интерфейсом
+    if (isAnyModalOpen()) return;
+
     if (id === 'runner') {
+        // Проверка энергии только для запуска игры
         if (playerData.energy < 10) {
-            tg.showAlert("Недостаточно энергии! Нужно минимум 10 ⚡");
+            if (window.Telegram && Telegram.WebApp.showAlert) {
+                Telegram.WebApp.showAlert("Недостаточно энергии! Нужно минимум 10 ⚡");
+            }
             return;
         }
+        
+        // Списываем энергию и запускаем раннер
         playerData.energy -= 10;
-        updateUI();
-        userRef.update({ energy: playerData.energy });
-        openRunnerWindow();
-    } else if (id === 'build') {
-        tg.showAlert("Режим «Создание» скоро!");
-    } else if (id === 'shop') {
-        tg.showAlert("Магазин закрыт на ремонт.");
+        if (typeof updateUI === "function") updateUI();
+        
+        if (typeof userRef !== "undefined") {
+            userRef.update({ energy: playerData.energy });
+        }
+        
+        if (typeof openRunnerWindow === "function") {
+            openRunnerWindow();
+        }
+    } 
+    // Для 'shop', 'leaderboard', 'station' и т.д. мы здесь ничего не пишем, 
+    // так как они обрабатываются напрямую в handleCanvasClick.
+    
+    else if (id === 'build') {
+        // Оставляем только то, чего реально еще нет
+        if (window.Telegram && Telegram.WebApp.showAlert) {
+            Telegram.WebApp.showAlert("Режим «Создание» скоро!");
+        }
     }
 }
 
@@ -917,15 +936,15 @@ function gameOver() {
 function isUiHit(target) { return target.closest('.exit-btn') || target.closest('.score-display'); }
 
 function handleCanvasClick(e) {
-    // ЗАЩИТА 1: Если клик пришелся на HTML кнопку или меню (не на сам холст) — игнорируем
+    // 1. ПРЕДОХРАНИТЕЛЬ: Если клик попал в любой HTML-элемент (кнопку, меню), 
+    // а не прямо в «черное поле» игры — игнорируем его для планет.
     if (e.target !== canvas) return;
 
-    // ЗАЩИТА 2: Если открыто хоть одно окно или идет игра — игнорируем клик по планетам
-    if (isAnyModalOpen() || isRunnerActive) return;
+    // 2. Если какое-то окно уже открыто, планеты под ним не должны реагировать
+    if (isAnyModalOpen()) return;
 
     const rect = canvas.getBoundingClientRect();
     let clientX, clientY;
-    
     if (e.type.startsWith('touch')) {
         clientX = e.changedTouches[0].clientX;
         clientY = e.changedTouches[0].clientY;
@@ -940,53 +959,39 @@ function handleCanvasClick(e) {
     planets.forEach(p => {
         const dist = Math.hypot(clickX - p.x, clickY - p.y);
         
-        // Увеличиваем точность попадания (1.5 — хороший радиус)
-        if (dist < p.size * 1.5) {
+        // 3. УМЕНЬШАЕМ РАДИУС: p.size * 1.5 — это слишком много, 
+        // поэтому клики «наслаиваются». Ставим 0.9 или 1.0, чтобы клик был строго по планете.
+        if (dist < p.size * 1.0) { 
             if (window.Telegram && Telegram.WebApp.HapticFeedback) {
                 Telegram.WebApp.HapticFeedback.impactOccurred('medium');
             }
 
-            // Прямые вызовы функций по ID планеты
-            if (p.id === 'shop') {
+            if (p.id === 'moon') {
+                openMoonMenu();
+            } else if (p.id === 'shop') {
                 openShop();
             } else if (p.id === 'leaderboard') {
                 openLeaderboard();
-            } else if (p.id === 'moon') {
-                openMoonMenu();
             } else if (p.id === 'station') {
                 openStation();
-            } else if (p.id === 'factory') {
-                if (typeof openFactory === 'function') openFactory();
+            } else if (p.id === 'core' || p.id === 'runner') { // Твое ядро
+                activatePlanet(p.id);
             } else if (p.action) {
                 p.action();
-            } else {
-                activatePlanet(p.id);
             }
         }
     });
 }
 
 function isAnyModalOpen() {
-    // ЗАЩИТА 3: Добавлены все возможные ID окон, включая завод и лидерборд
-    const modals = [
-        'moon-modal', 
-        'leaderboard-modal', 
-        'station-modal', 
-        'shop-modal', 
-        'runner-window', 
-        'factory-modal'
-    ];
-    
+    // Проверь, чтобы все ID твоих окон были здесь
+    const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal', 'runner-window'];
     return modals.some(id => {
         const el = document.getElementById(id);
         if (!el) return false;
-
-        // Проверяем, отображается ли элемент в данный момент
         const style = window.getComputedStyle(el);
-        const isVisible = style.display !== 'none' && style.visibility !== 'hidden';
-        
-        // Доп. проверка через offsetParent (если элемент скрыт родителем)
-        return isVisible && el.offsetParent !== null;
+        // Если окно показано (не none), блокируем клики по планетам
+        return style.display !== 'none' && style.visibility !== 'hidden';
     });
 }
 
