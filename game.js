@@ -25,33 +25,6 @@ let runnerShip = {
     lerpSpeed: 0.2
 };
 
-// Функция для получения текущих лимитов (с учетом модулей)
-function getLimits() {
-    let stats = {
-        maxEnergy: 100,
-        regenBonusMs: 0,
-        hp: 100
-    };
-
-    if (playerData && playerData.equipped && playerData.inventory) {
-        playerData.equipped.forEach(modId => {
-            const module = playerData.inventory.find(m => m.id === modId);
-            if (module && module.power) {
-                if (typeof module.power === 'number') {
-                    if (module.type === 'energy_max') stats.maxEnergy += module.power;
-                    if (module.type === 'energy_regen') stats.regenBonusMs += module.power;
-                    if (module.type === 'hp') stats.hp += module.power;
-                } else if (typeof module.power === 'object') {
-                    if (module.power.en) stats.maxEnergy += module.power.en;
-                    if (module.power.reg) stats.regenBonusMs += module.power.reg;
-                    if (module.power.hp) stats.hp += module.power.hp;
-                }
-            }
-        });
-    }
-    return stats;
-}
-
 let quants = []; 
 let sessionQuants = 0;
 let sessionQubi = 0;
@@ -97,39 +70,34 @@ function regenerateEnergy() {
     const now = Date.now();
     let lastUpdate = Number(playerData.lastEnergyUpdate);
 
-    // ЛЕЧЕНИЕ: Если время в базе из будущего — сбрасываем
+    // ЛЕЧЕНИЕ: Сброс времени из будущего (твой баг с 2026 годом)
     if (!lastUpdate || isNaN(lastUpdate) || lastUpdate > now) {
         playerData.lastEnergyUpdate = now;
         userRef.update({ lastEnergyUpdate: now });
         return;
     }
 
-    const stats = getLimits();
+    const stats = calculateCurrentStats(); // Теперь используем только её
     const CURRENT_MAX = stats.maxEnergy;
     const bonusMs = Number(stats.regenBonusMs) || 0;
     
-    // Интервал: базовые 60с минус бонус. Для твоего модуля за TON станет 1000мс (1 сек)
+    // Интервал тика: 60 сек минус бонус (минимум 1 секунда)
     const MS_PER_UNIT = Math.max(1000, 60000 - bonusMs);
-    
     const timePassed = now - lastUpdate;
 
-    // Если время для начисления 1 единицы не пришло — выходим
     if (timePassed < MS_PER_UNIT) return;
 
     const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
 
     if (energyToAdd > 0 && playerData.energy < CURRENT_MAX) {
         const newEnergy = Math.min(CURRENT_MAX, (playerData.energy || 0) + energyToAdd);
-        // Важно: двигаем время строго на количество начисленных "тиков"
         const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
         playerData.energy = newEnergy;
         playerData.lastEnergyUpdate = updatedTime;
 
-        // Обновляем UI сразу
         updateUI();
 
-        // Пишем в базу
         userRef.update({
             energy: playerData.energy,
             lastEnergyUpdate: updatedTime
@@ -137,7 +105,7 @@ function regenerateEnergy() {
             console.log(`🔋 Реген: +${energyToAdd} (Всего: ${playerData.energy}/${CURRENT_MAX})`);
         });
     } else if (playerData.energy >= CURRENT_MAX) {
-        // Если энергия полная, просто подтягиваем время к текущему, чтобы не копилось "оффлайн" время
+        // Подтягиваем время, чтобы не копилось оффлайн-время при полном баке
         playerData.lastEnergyUpdate = now;
         userRef.update({ lastEnergyUpdate: now });
     }
@@ -413,7 +381,7 @@ function updateUI() {
     
     if(e) {
         // Считаем % динамически: (текущая / максимальная) * 100
-        const stats = getLimits();
+        const stats = calculateCurrentStats();
         const percent = Math.min(100, (playerData.energy / stats.maxEnergy) * 100);
         e.style.width = percent + "%";
         
@@ -1017,27 +985,24 @@ function calculateCurrentStats() {
         incomeQubi: 0
     };
 
-    // Проверка на загрузку данных
-    if (typeof playerData === 'undefined' || !playerData || !playerData.inventory) {
-        return stats;
-    }
-
-    if (playerData.equipped) {
+    // Проверяем, что данные игрока загружены
+    if (playerData && playerData.equipped && playerData.inventory) {
         playerData.equipped.forEach(modId => {
             const module = playerData.inventory.find(m => m.id === modId);
             if (module && module.power) {
-                if (typeof module.power === 'number') {
-                    if (module.type === 'hp') stats.hp += module.power;
-                    if (module.type === 'energy_max') stats.maxEnergy += module.power;
-                    if (module.type === 'energy_regen') stats.regenBonusMs += module.power;
-                    if (module.type === 'barrier') stats.barrier += module.power;
-                    if (module.type === 'income_quant') stats.incomeQuant += module.power;
-                    if (module.type === 'income_qubi') stats.incomeQubi += module.power;
+                // Обработка если power — число
+                if (!isNaN(module.power)) {
+                    const p = Number(module.power);
+                    if (module.type === 'hp') stats.hp += p;
+                    if (module.type === 'energy_max') stats.maxEnergy += p;
+                    if (module.type === 'energy_regen') stats.regenBonusMs += p;
+                    if (module.type === 'barrier') stats.barrier += p;
                 } 
+                // Обработка если power — объект (для гибридных модулей)
                 else if (typeof module.power === 'object') {
-                    if (module.power.hp) stats.hp += module.power.hp;
-                    if (module.power.en) stats.maxEnergy += module.power.en;
-                    if (module.power.reg) stats.regenBonusMs += module.power.reg;
+                    if (module.power.hp) stats.hp += Number(module.power.hp);
+                    if (module.power.en) stats.maxEnergy += Number(module.power.en);
+                    if (module.power.reg) stats.regenBonusMs += Number(module.power.reg);
                 }
             }
         });
