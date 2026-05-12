@@ -703,4 +703,3 @@ function spawnRunnerObject() {
 userRef.update({ equipped: playerData.equipped }).then(() => {
         if (typeof openStation === 'function') openStation(); 
     });
-}
