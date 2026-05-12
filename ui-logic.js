@@ -506,15 +506,12 @@ function closeStation() {
         updateUI();
     }
 }
-
-    // --- ЗАВЕРШЕНИЕ ФАЙЛА (БЕЗ ОБРЫВОВ) ---
-
-setInterval(() => {
-    try {
-        if (typeof regenerateEnergy === 'function' && window.playerData) {
-            regenerateEnergy();
-        }
-    } catch (e) {
-        console.error("Ошибка в цикле регенерации:", e);
+// --- ФИНАЛ ФАЙЛА ---
+function checkRegen() {
+    if (typeof regenerateEnergy === 'function' && window.playerData) {
+        regenerateEnergy();
     }
-}, 60000);
+}
+
+// Запуск раз в минуту
+setInterval(checkRegen, 60000);
