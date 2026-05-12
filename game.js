@@ -693,12 +693,12 @@ function spawnRunnerObject() {
             type: type
         });
     }
+}
 
     // Темп появления объектов
     let nextSpawn = 700 + Math.random() * 500; // Чуть-чуть уменьшил минимальный порог для динамики
     if (this.spawnTimer) clearTimeout(this.spawnTimer);
     this.spawnTimer = setTimeout(spawnRunnerObject, nextSpawn);
-}
 
 userRef.update({ equipped: playerData.equipped }).then(() => {
         if (typeof openStation === 'function') openStation(); 
