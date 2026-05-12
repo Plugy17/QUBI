@@ -1,13 +1,11 @@
-// --- 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И СОСТОЯНИЕ ---
-let lastEnergyUpdate = Date.now();
-
 let playerData = { 
     quant: 0, 
     qubi: 0, 
     energy: 100, 
     level: 1,
-    inventory: [], // Добавлено для хранения модулей
-    equipped: [],  // Добавлено для активных слотов
+    inventory: [], 
+    equipped: [],  
+    lastEnergyUpdate: 0, // Инициализируем нулем, значение придет из Firebase
     factoryLimit: {
         date: new Date().toLocaleDateString(),
         processedToday: 0
@@ -259,15 +257,20 @@ function initGame() {
         if (snapshot.exists()) {
             playerData = snapshot.val();
             
-            // Инициализация массивов, если их нет в базе
+            // ПРОВЕРКА ВРЕМЕНИ: Если метки нет, создаем её сейчас
+            if (!playerData.lastEnergyUpdate || isNaN(playerData.lastEnergyUpdate)) {
+                playerData.lastEnergyUpdate = Date.now();
+                userRef.update({ lastEnergyUpdate: playerData.lastEnergyUpdate });
+            }
+
+            // Инициализация массивов
             if (!playerData.inventory) playerData.inventory = [];
             if (!playerData.equipped) playerData.equipped = [];
             if (!playerData.dailyExchangeQuant) playerData.dailyExchangeQuant = 0;
             if (!playerData.dailyExchangeQubi) playerData.dailyExchangeQubi = 0;
             
-            // Запускаем регенерацию с учетом новых лимитов
+            // После того как время точно есть, запускаем цикл
             regenerateEnergy(); 
-            
             updateUI();
             syncWithLeaderboard(); 
         } else {
