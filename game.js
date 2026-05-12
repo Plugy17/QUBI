@@ -80,19 +80,26 @@ function regenerateEnergy() {
     if (typeof playerData === 'undefined' || !playerData || !window.userRef) return;
 
     const now = Date.now();
+    let lastUpdate = Number(playerData.lastEnergyUpdate);
+
+    // --- ЛЕЧАЩИЙ КОД: Сброс "времени из будущего" ---
+    if (lastUpdate > now) {
+        console.warn("⚠️ Обнаружен сбой времени (дата в будущем). Сбрасываю счетчик...");
+        playerData.lastEnergyUpdate = now;
+        window.userRef.update({ lastEnergyUpdate: now });
+        return; 
+    }
+    // ---------------------------------------------
+
     const stats = getLimits(); 
     const CURRENT_MAX = stats.maxEnergy; 
     
-    // ПРАВКА 1: Правильный расчет интервала для мощных бонусов.
-    // Если бонус (например 162000мс за TON) больше 60 секунд, 
-    // ставим минимальный интервал 1000мс (1 секунда).
+    // Расчет интервала с учетом бонусов за TON (минимум 1 секунда)
     const baseInterval = 60000;
     const bonusMs = Number(stats.regenBonusMs) || 0;
     const MS_PER_UNIT = Math.max(1000, baseInterval - bonusMs); 
     
     const STOP_LIMIT = 4 * 60 * 60 * 1000; 
-
-    let lastUpdate = Number(playerData.lastEnergyUpdate);
 
     if (!lastUpdate || isNaN(lastUpdate)) {
         playerData.lastEnergyUpdate = now;
@@ -102,8 +109,7 @@ function regenerateEnergy() {
 
     let timePassed = now - lastUpdate;
     
-    // ПРАВКА 2: Если время для тика еще не пришло — выходим.
-    // С Хронос-двигателем это условие будет пропускать только если прошло меньше 1 сек.
+    // Если время для тика еще не пришло — выходим.
     if (timePassed < MS_PER_UNIT) return;
 
     if (timePassed > STOP_LIMIT) timePassed = STOP_LIMIT;
@@ -114,13 +120,13 @@ function regenerateEnergy() {
         const newEnergy = Math.min(CURRENT_MAX, (playerData.energy || 0) + energyToAdd);
         const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
-        // ПРАВКА 3: Сначала обновляем локально и рисуем UI, чтобы игрок видел скорость
+        // Обновляем локально для мгновенной реакции полоски
         playerData.energy = newEnergy;
         playerData.lastEnergyUpdate = updatedTime;
         
         if (typeof updateUI === 'function') updateUI();
 
-        // Затем отправляем в облако
+        // Синхронизируем с Firebase
         window.userRef.update({ 
             energy: playerData.energy,
             lastEnergyUpdate: updatedTime 
