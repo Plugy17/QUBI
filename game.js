@@ -27,26 +27,30 @@ let runnerShip = {
 
 // Функция для получения текущих лимитов (с учетом модулей)
 function getLimits() {
-    let maxE = 100;
-    let regenB = 0;
+    let stats = {
+        maxEnergy: 100,
+        regenBonusMs: 0,
+        hp: 100
+    };
 
-    // Проходим по надетым модулям
-    if (playerData.inventory) {
-        playerData.inventory.forEach(item => {
-            if (item.equipped) {
-                if (item.type === 'energy_max') maxE += item.power;
-                // ВАЖНО: Если в базе бонус 2.7 (минуты), переводим в мс
-                if (item.type === 'energy_regen') regenB += (item.power * 60 * 1000);
+    if (playerData && playerData.equipped && playerData.inventory) {
+        playerData.equipped.forEach(modId => {
+            const module = playerData.inventory.find(m => m.id === modId);
+            if (module && module.power) {
+                if (typeof module.power === 'number') {
+                    if (module.type === 'energy_max') stats.maxEnergy += module.power;
+                    if (module.type === 'energy_regen') stats.regenBonusMs += module.power;
+                    if (module.type === 'hp') stats.hp += module.power;
+                } else if (typeof module.power === 'object') {
+                    if (module.power.en) stats.maxEnergy += module.power.en;
+                    if (module.power.reg) stats.regenBonusMs += module.power.reg;
+                    if (module.power.hp) stats.hp += module.power.hp;
+                }
             }
         });
     }
-
-    return { maxEnergy: maxE, regenBonusMs: regenB };
+    return stats;
 }
-
-// Теперь эти переменные будут обновляться динамически в коде
-let currentStats = getLimits();
-let MAX_ENERGY = currentStats.maxEnergy; 
 
 let quants = []; 
 let sessionQuants = 0;
@@ -93,52 +97,49 @@ function regenerateEnergy() {
     const now = Date.now();
     let lastUpdate = Number(playerData.lastEnergyUpdate);
 
-    // 1. ЛЕЧЕНИЕ: Сброс будущего времени
-    if (lastUpdate > now) {
-        console.warn("⚠️ Сброс времени из будущего:", lastUpdate, "на", now);
+    // ЛЕЧЕНИЕ: Если время в базе из будущего — сбрасываем
+    if (!lastUpdate || isNaN(lastUpdate) || lastUpdate > now) {
         playerData.lastEnergyUpdate = now;
-        window.userRef.update({ lastEnergyUpdate: now });
-        return; 
+        userRef.update({ lastEnergyUpdate: now });
+        return;
     }
 
-    // 2. ПОЛУЧЕНИЕ СТАТОВ
-    const stats = getLimits(); 
-    const CURRENT_MAX = Number(stats.maxEnergy) || 100; 
+    const stats = getLimits();
+    const CURRENT_MAX = stats.maxEnergy;
     const bonusMs = Number(stats.regenBonusMs) || 0;
     
-    // 3. РАСЧЕТ ИНТЕРВАЛА
-    const baseInterval = 60000;
-    // Если бонус очень большой, ставим 1 сек
-    let MS_PER_UNIT = baseInterval - bonusMs;
-    if (MS_PER_UNIT < 1000) MS_PER_UNIT = 1000; 
+    // Интервал: базовые 60с минус бонус. Для твоего модуля за TON станет 1000мс (1 сек)
+    const MS_PER_UNIT = Math.max(1000, 60000 - bonusMs);
     
-    // 4. ПРОВЕРКА ТИКА
-    let timePassed = now - lastUpdate;
+    const timePassed = now - lastUpdate;
 
-    // ВЫВОД В КОНСОЛЬ ДЛЯ ТЕСТА (потом можно удалить)
-    // console.log(`Прошло: ${Math.floor(timePassed/1000)} сек. Нужно: ${MS_PER_UNIT/1000} сек.`);
-
+    // Если время для начисления 1 единицы не пришло — выходим
     if (timePassed < MS_PER_UNIT) return;
 
-    // 5. НАЧИСЛЕНИЕ
     const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
 
-    if (energyToAdd > 0 && (playerData.energy || 0) < CURRENT_MAX) {
+    if (energyToAdd > 0 && playerData.energy < CURRENT_MAX) {
         const newEnergy = Math.min(CURRENT_MAX, (playerData.energy || 0) + energyToAdd);
+        // Важно: двигаем время строго на количество начисленных "тиков"
         const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
         playerData.energy = newEnergy;
         playerData.lastEnergyUpdate = updatedTime;
-        
-        // Сразу дергаем UI
-        if (typeof updateUI === 'function') updateUI();
 
-        window.userRef.update({ 
+        // Обновляем UI сразу
+        updateUI();
+
+        // Пишем в базу
+        userRef.update({
             energy: playerData.energy,
-            lastEnergyUpdate: updatedTime 
+            lastEnergyUpdate: updatedTime
         }).then(() => {
-            console.log(`🚀 УСПЕХ: +${energyToAdd} энергии. Лимит: ${CURRENT_MAX}`);
+            console.log(`🔋 Реген: +${energyToAdd} (Всего: ${playerData.energy}/${CURRENT_MAX})`);
         });
+    } else if (playerData.energy >= CURRENT_MAX) {
+        // Если энергия полная, просто подтягиваем время к текущему, чтобы не копилось "оффлайн" время
+        playerData.lastEnergyUpdate = now;
+        userRef.update({ lastEnergyUpdate: now });
     }
 }
 
