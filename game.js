@@ -971,28 +971,45 @@ function calculateCurrentStats() {
 }
 
 // Слушатели для главного экрана
-canvas.addEventListener('click', handleCanvasClick);
-canvas.addEventListener('touchstart', (e) => {
-    handleCanvasClick(e);
-    if (e.cancelable) e.preventDefault();
-}, { passive: false });
+if (typeof canvas !== 'undefined' && canvas) {
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('touchstart', (e) => {
+        handleCanvasClick(e);
+        if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+}
 
 // Слушатели для раннера (движение корабля)
-runnerWin.addEventListener('touchstart', (e) => {
-    if (!isRunnerActive || isUiHit(e.target)) return;
-    runnerShip.targetX = e.touches[0].clientX;
-}, { passive: false });
+// ПРОВЕРКА: Если runnerWin не найден, код просто пропустит этот блок вместо ошибки
+if (typeof runnerWin !== 'undefined' && runnerWin) {
+    runnerWin.addEventListener('touchstart', (e) => {
+        // Проверяем активность игры и попадание по UI (кнопкам)
+        if (typeof isRunnerActive !== 'undefined' && isRunnerActive) {
+            if (!isUiHit(e.target)) {
+                runnerShip.targetX = e.touches[0].clientX;
+            }
+        }
+    }, { passive: false });
 
-runnerWin.addEventListener('touchmove', (e) => {
-    if (!isRunnerActive || isUiHit(e.target)) return;
-    runnerShip.targetX = e.touches[0].clientX;
-    if (e.cancelable) e.preventDefault();
-}, { passive: false });
+    runnerWin.addEventListener('touchmove', (e) => {
+        if (typeof isRunnerActive !== 'undefined' && isRunnerActive) {
+            if (!isUiHit(e.target)) {
+                runnerShip.targetX = e.touches[0].clientX;
+                if (e.cancelable) e.preventDefault();
+            }
+        }
+    }, { passive: false });
+}
 
 // Кнопка выхода из раннера
 const exitRunnerBtn = document.getElementById('exit-runner');
 if (exitRunnerBtn) {
-    exitRunnerBtn.onclick = closeRunnerWindow;
+    // Используем стрелочную функцию или проверку существования функции
+    exitRunnerBtn.onclick = () => {
+        if (typeof closeRunnerWindow === 'function') {
+            closeRunnerWindow();
+        }
+    };
 }
 
 // Старт игры после загрузки фона
