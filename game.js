@@ -27,10 +27,21 @@ let runnerShip = {
 
 // Функция для получения текущих лимитов (с учетом модулей)
 function getLimits() {
-    if (typeof calculateCurrentStats === 'function') {
-        return calculateCurrentStats();
+    let maxE = 100;
+    let regenB = 0;
+
+    // Проходим по надетым модулям
+    if (playerData.inventory) {
+        playerData.inventory.forEach(item => {
+            if (item.equipped) {
+                if (item.type === 'energy_max') maxE += item.power;
+                // ВАЖНО: Если в базе бонус 2.7 (минуты), переводим в мс
+                if (item.type === 'energy_regen') regenB += (item.power * 60 * 1000);
+            }
+        });
     }
-    return { maxEnergy: 100, hp: 100, regenBonusMs: 0 }; // Значения по умолчанию
+
+    return { maxEnergy: maxE, regenBonusMs: regenB };
 }
 
 // Теперь эти переменные будут обновляться динамически в коде
