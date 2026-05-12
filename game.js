@@ -972,14 +972,17 @@ function calculateCurrentStats() {
 
 // Слушатели для главного экрана
 if (typeof canvas !== 'undefined' && canvas) {
+    // 1. Слушатель обычного клика
     canvas.addEventListener('click', handleCanvasClick);
+
+    // 2. Слушатель тача (для мобилок)
     canvas.addEventListener('touchstart', (e) => {
         handleCanvasClick(e);
+        // preventDefault нужен, чтобы не срабатывал "двойной клик" в браузере
         if (e.cancelable) e.preventDefault();
-    }, { passive: false });
+    }, { passive: false }); // Эти параметры относятся только к touchstart
 }
 
-// Слушатели для раннера (движение корабля)
 // ПРОВЕРКА: Если runnerWin не найден, код просто пропустит этот блок вместо ошибки
 if (typeof runnerWin !== 'undefined' && runnerWin) {
     runnerWin.addEventListener('touchstart', (e) => {
