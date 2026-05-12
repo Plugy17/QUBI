@@ -1,6 +1,19 @@
 // --- 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И СОСТОЯНИЕ ---
 let lastEnergyUpdate = Date.now();
 
+let playerData = { 
+    quant: 0, 
+    qubi: 0, 
+    energy: 100, 
+    level: 1,
+    inventory: [], // Добавлено для хранения модулей
+    equipped: [],  // Добавлено для активных слотов
+    factoryLimit: {
+        date: new Date().toLocaleDateString(),
+        processedToday: 0
+    }
+};
+
 // Функция для получения текущих лимитов (с учетом модулей)
 function getLimits() {
     if (typeof calculateCurrentStats === 'function') {
@@ -51,19 +64,6 @@ const db = firebase.database();
 
 const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot" };
 const userRef = db.ref('users/' + tgUser.id);
-
-let playerData = { 
-    quant: 0, 
-    qubi: 0, 
-    energy: 100, 
-    level: 1,
-    inventory: [], // Добавлено для хранения модулей
-    equipped: [],  // Добавлено для активных слотов
-    factoryLimit: {
-        date: new Date().toLocaleDateString(),
-        processedToday: 0
-    }
-};
 
 function regenerateEnergy() {
     if (typeof playerData === 'undefined' || !playerData || !window.userRef) return;
