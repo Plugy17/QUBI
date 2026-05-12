@@ -11,10 +11,8 @@ let factoryLimit = {
     processedToday: 0
 };
 
-// --- 2. ИНИЦИАЛИЗАЦИЯ TG (делаем ПЕРВОЙ) ---
 const tg = window.Telegram.WebApp;
 
-// Настройки внешнего вида и поведения
 tg.ready();
 tg.expand();
 if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
@@ -22,12 +20,10 @@ tg.isClosingConfirmationEnabled = true;
 tg.setHeaderColor('#000000');
 tg.setBackgroundColor('#000000');
 
-// Пытаемся войти в фуллскрин, если доступно
 if (tg.requestFullscreen) {
     try { tg.requestFullscreen(); } catch (e) { console.error(e); }
 }
 
-// --- 2.1 FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyABKHaAdlSFq1KzURXmCF5Q-9xMUgE4Ot0",
     authDomain: "berry-game-4fa9b.firebaseapp.com",
@@ -44,7 +40,6 @@ const db = firebase.database();
 const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot" };
 const userRef = db.ref('users/' + tgUser.id);
 
-// --- ДАННЫЕ ИГРОКА ---
 let playerData = { 
     quant: 0, 
     qubi: 0, 
@@ -96,8 +91,6 @@ function regenerateEnergy() {
     }
 }
 
-// --- 2.2 СИНХРОНИЗАЦИЯ ЛИДЕРБОРДА ---
-// Эта функция должна быть здесь, чтобы она была доступна при загрузке
 function syncWithLeaderboard() {
     if (!playerData) return;
     
@@ -113,7 +106,6 @@ function syncWithLeaderboard() {
     });
 }
 
-// --- 3. РЕСУРСЫ (КАРТИНКИ И КАНВАС) ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const runnerCanvas = document.getElementById('runnerCanvas');
@@ -186,7 +178,6 @@ const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
     buttonRootId: 'ton-connect-btn'
 });
 
-// --- 4. СИСТЕМНЫЕ ФУНКЦИИ (RESIZE, UI, START) ---
 function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
     const width = window.innerWidth;
@@ -209,7 +200,6 @@ function resizeCanvas() {
         ctx.scale(dpr, dpr);
     });
 
-    // Обновляем позицию корабля в раннере относительно новой высоты
     if (typeof runnerShip !== 'undefined') {
         runnerShip.y = height - 200;
     }
@@ -218,8 +208,6 @@ function resizeCanvas() {
 // Слушатель событий
 window.addEventListener('resize', resizeCanvas);
 
-// --- ГЛАВНЫЙ ФИКС ДЛЯ TELEGRAM ---
-// Вызываем сразу
 resizeCanvas();
 
 // И вызываем повторно через короткие паузы, когда WebView стабилизируется
@@ -296,7 +284,6 @@ function closeShop() {
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 }
 
-// ВОТ ТВОЯ ФУНКЦИЯ (вставляй её здесь)
 async function payWithTON(amountInTon, itemId) {
     const amountInNanotons = (amountInTon * 1000000000).toString();
     
@@ -336,14 +323,10 @@ function hideLoading() {
     }
 }
 
-// --- 5. ЛОГИКА КАРТЫ И ОТРИСОВКИ ---
 function draw() {
     // 1. Очищаем холст, используя ФИЗИЧЕСКИЕ пиксели (те, что с DPR)
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 2. РИСУЕМ ФОН
-    // Мы НЕ вызываем ctx.scale здесь, потому что он уже применен в resizeCanvas.
-    // Используем window.innerWidth/Height для логического позиционирования.
     if (bg.complete) {
         ctx.drawImage(bg, 0, 0, window.innerWidth, window.innerHeight);
     }
@@ -394,14 +377,12 @@ function activatePlanet(id) {
     }
 }
 
-// --- 6. МЕХАНИКА РАННЕРА ---
 function openRunnerWindow() {
     isRunnerActive = true;
     sessionQuants = 0; 
     sessionQubi = 0; 
     quants = [];
 
-    // --- ОБНУЛЯЕМ ЗДОРОВЬЕ ПЕРЕД СТАРТОМ ---
     runnerShip.hp = 100; 
     runnerShip.maxHp = 100; 
 
@@ -470,7 +451,6 @@ function runnerLoop() {
             q.y += q.speed;
         }
 
-        // --- ОТРИСОВКА МОЛНИИ (INSTA-KILL) ---
         if (q.type === 'lightning') {
             q.timer++;
 
@@ -503,7 +483,6 @@ function runnerLoop() {
                 continue;
             }
 
-            // ПРОВЕРКА СМЕРТИ ОТ МОЛНИИ
             if (q.active && Math.abs(q.x - runnerShip.x) < (runnerShip.w / 2.5 + q.width / 2)) {
                 runnerShip.hp = 0;
                 gameOver();
@@ -566,9 +545,6 @@ function runnerLoop() {
             }
         }
 
-        // --- СИСТЕМА СТОЛКНОВЕНИЙ ---
-        
-        // 1. Проверка для молнии (Insta-kill)
         if (q.type === 'lightning') {
             if (q.active && Math.abs(q.x - runnerShip.x) < (runnerShip.w / 2.5 + q.width / 2)) {
                 // Выполняем смерть только если корабль еще "жив"
@@ -631,7 +607,6 @@ function runnerLoop() {
         }
     } // конец цикла for
 
-    // --- ОТРИСОВКА ИГРОКА ---
     if (shipImg.complete) {
         runnerCtx.save();
         runnerCtx.translate(runnerShip.x, runnerShip.y);
@@ -668,7 +643,6 @@ function spawnRunnerObject() {
 
     let rand = Math.random() * 100;
 
-    // --- НОВАЯ ЛОГИКА: СПАВН МОЛНИИ (Insta-kill) ---
     if (rand < 10) { 
         // Молния появляется с шансом 5%
         quants.push({
@@ -726,7 +700,6 @@ function spawnRunnerObject() {
     this.spawnTimer = setTimeout(spawnRunnerObject, nextSpawn);
 }
 
-// --- 7. ЛУНА, ЛИДЕРЫ И РЕГЕН ---
 function openMoonMenu() {
     const modal = document.getElementById('moon-modal');
     if (modal) {
@@ -735,7 +708,6 @@ function openMoonMenu() {
     }
 }
 
-// Закрытие Луны
 function closeMoon() {
     const modal = document.getElementById('moon-modal');
     if (modal) modal.style.display = 'none';
@@ -1034,12 +1006,10 @@ runnerWin.addEventListener('touchmove', (e) => {
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
-// Кнопки интерфейса (убрали лишние привязки, теперь работаем через функции ниже)
 if (document.getElementById('exit-runner')) {
     document.getElementById('exit-runner').onclick = closeRunnerWindow;
 }
 
-// ЗАПУСК
 bg.onload = () => { initGame(); draw(); };
 if (bg.complete) { initGame(); draw(); }
 
@@ -1087,7 +1057,6 @@ async function buyModule(moduleId) {
     grantModule(itemData);
 }
 
-// Вспомогательная функция выдачи предмета в инвентарь
 function grantModule(itemData) {
     if (!playerData.inventory) playerData.inventory = [];
 
@@ -1157,7 +1126,6 @@ function calculateCurrentStats() {
 function openStation() {
     document.getElementById('station-modal').style.display = 'flex';
 
-    // Получаем актуальные статы с учетом модулей
     const current = calculateCurrentStats();
 
     // 1. Заполняем текстовые блоки
@@ -1186,7 +1154,6 @@ function openStation() {
         }
     }
 
-    // 3. Отрисовка ИНВЕНТАРЯ (нижняя листалка)
     const scrollList = document.getElementById('inventory-scroll-list');
     scrollList.innerHTML = '';
 
@@ -1236,7 +1203,6 @@ function toggleModule(modId) {
     });
 }
 
-// Твоя расширенная функция для Станции (Ангара)
 function closeStation() {
     // 1. Скрываем окно
     const modal = document.getElementById('station-modal');
@@ -1258,8 +1224,6 @@ function closeStation() {
     }
 }
 
-// --- ФИНАЛЬНЫЙ БЛОК ФАЙЛА ---
-
 function safeRegenerate() {
     try {
         if (typeof regenerateEnergy === 'function' && window.playerData && window.userRef) {
@@ -1270,7 +1234,4 @@ function safeRegenerate() {
     }
 }
 
-// Запускаем интервал
 setInterval(safeRegenerate, 60000);
-
-// КОНЕЦ ФАЙЛА. УБЕДИСЬ, ЧТО НИЖЕ НЕТ ПУСТЫХ СКОБОК ИЛИ ТЕКСТА.
