@@ -261,8 +261,8 @@ function handleCanvasClick(e) {
             } else {
                 activatePlanet(p.id);
             }
-        }
     });
+}
     
 function isAnyModalOpen() {
     // Добавляем runner-window, так как во время игры клики по планетам тоже должны быть отключены
