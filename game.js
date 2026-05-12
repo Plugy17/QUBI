@@ -962,6 +962,35 @@ function calculateCurrentStats() {
     return stats;
 }
 
+// --- ЛОГИКА ОБРАБОТКИ КЛИКОВ ---
+function handleCanvasClick(e) {
+    if (isAnyModalOpen()) return;
+
+    // Получаем координаты клика
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+
+    // Проверяем попадание по каждой планете
+    planets.forEach(p => {
+        const dx = x - p.x;
+        const dy = y - p.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < p.size / 2) {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            
+            // Если у планеты есть свое действие (например, Станция)
+            if (p.action) {
+                p.action();
+            } else {
+                // Иначе стандартная активация (Раннер и т.д.)
+                activatePlanet(p.id);
+            }
+        }
+    });
+}
+
 // --- СЛУШАТЕЛИ СОБЫТИЙ ---
 if (typeof canvas !== 'undefined' && canvas) {
     canvas.addEventListener('click', handleCanvasClick);
