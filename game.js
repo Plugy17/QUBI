@@ -1266,8 +1266,14 @@ function closeStation() {
     }
 }
 
-setInterval(() => {
-    if (typeof regenerateEnergy === 'function') {
-        regenerateEnergy();
-    }
-}, 60000);
+// Ждем 5 секунд после загрузки страницы, прежде чем запустить регенерацию
+setTimeout(() => {
+    console.log("Запуск цикла регенерации...");
+    setInterval(() => {
+        if (typeof regenerateEnergy === 'function') {
+            regenerateEnergy();
+        } else {
+            console.warn("Регенерация еще не готова...");
+        }
+    }, 60000);
+}, 5000);
