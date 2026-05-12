@@ -1258,12 +1258,19 @@ function closeStation() {
     }
 }
 
-setInterval(() => {
+// --- ФИНАЛЬНЫЙ БЛОК ФАЙЛА ---
+
+function safeRegenerate() {
     try {
-        if (typeof regenerateEnergy === 'function') {
+        if (typeof regenerateEnergy === 'function' && window.playerData && window.userRef) {
             regenerateEnergy();
         }
     } catch (e) {
-        console.error("Критическая ошибка интервала регенерации:", e);
+        console.warn("Регенерация пока не доступна:", e.message);
     }
-}, 60000);
+}
+
+// Запускаем интервал
+setInterval(safeRegenerate, 60000);
+
+// КОНЕЦ ФАЙЛА. УБЕДИСЬ, ЧТО НИЖЕ НЕТ ПУСТЫХ СКОБОК ИЛИ ТЕКСТА.
