@@ -269,35 +269,28 @@ function openShop() {
     const shopModal = document.getElementById('shop-modal');
     if (shopModal) {
         shopModal.style.display = 'flex';
-        renderShopItems('all'); // При открытии всегда показываем всё
+        // При открытии по умолчанию активируем вкладку "ВСЕ"
+        renderShopItems('all'); 
     }
 }
 
-// Функция отрисовки предметов с фильтрацией (вызывается из HTML кнопками)
+// Функция отрисовки предметов с активной подсветкой вкладок
 function renderShopItems(filter = 'all') {
     const shopList = document.getElementById('shop-list');
     if (!shopList) return;
     
     shopList.innerHTML = ''; 
 
-    // Фильтруем модули на основе выбранной вкладки
+    // 1. Фильтрация модулей
     const filteredModules = SHOP_MODULES.filter(item => {
         if (filter === 'all') return true;
         if (filter === 'ton') return item.currency === 'TON';
-        
-        // Маппинг: если нажата "ЭНЕРГИЯ" (energy_max), показываем лимит и реген
-        if (filter === 'energy_max') {
-            return item.type === 'energy_max' || item.type === 'energy_regen';
-        }
-        
-        // Маппинг: если нажата "БРОНЯ" (hp), показываем HP и щиты
-        if (filter === 'hp') {
-            return item.type === 'hp' || item.type === 'barrier';
-        }
-        
+        if (filter === 'energy_max') return item.type === 'energy_max' || item.type === 'energy_regen';
+        if (filter === 'hp') return item.type === 'hp' || item.type === 'barrier';
         return item.type === filter;
     });
 
+    // 2. Отрисовка карточек
     filteredModules.forEach(item => {
         const isOwned = playerData.inventory && playerData.inventory.some(owned => 
             owned.shopId === item.id
@@ -314,8 +307,8 @@ function renderShopItems(filter = 'all') {
             <div style="font-size:10px; color:rgba(255,255,255,0.6); margin:5px 0; min-height:30px;">${item.desc}</div>
             <div class="price-container" style="margin-top:auto;">
                 ${isOwned ? 
-                    `<div class="owned-tag" style="color:#39ff14; font-size:12px; font-weight:bold; padding:8px;">КУПЛЕНО</div>` : 
-                    `<div class="price-tag" style="font-size:14px; color:#00e5ff; margin-bottom:5px;">${priceText}</div>
+                    `<div style="color:#39ff14; font-size:12px; font-weight:bold; padding:8px;">КУПЛЕНО</div>` : 
+                    `<div style="font-size:14px; color:#00e5ff; margin-bottom:5px;">${priceText}</div>
                      <button onclick="buyModule('${item.id}')" class="buy-btn">КУПИТЬ</button>`
                 }
             </div>
@@ -323,31 +316,36 @@ function renderShopItems(filter = 'all') {
         shopList.appendChild(itemEl);
     });
 
-    // Обновляем визуальный стиль кнопок
-    updateShopTabsUI(filter);
+    // 3. ПОДСВЕТКА КНОПОК
+    updateShopTabsVisuals(filter);
 
-    if (window.tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    if (window.tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 }
 
-// Подсветка активной кнопки в меню магазина
-function updateShopTabsUI(activeFilter) {
-    // Получаем все кнопки внутри контейнера вкладок магазина
-    const shopNav = document.querySelector('.shop-nav'); // Убедись, что у тебя есть этот класс или используй подходящий селектор
-    if (!shopNav) return;
+// Вспомогательная функция для выделения активной кнопки
+function updateShopTabsVisuals(activeFilter) {
+    // Ищем контейнер, где лежат твои кнопки (поправь селектор, если кнопки лежат в другом месте)
+    const navContainer = document.querySelector('.shop-nav') || document.querySelector('#shop-modal div[style*="display:flex"]');
+    if (!navContainer) return;
 
-    const buttons = shopNav.querySelectorAll('button');
+    const buttons = navContainer.querySelectorAll('button');
     
     buttons.forEach(btn => {
-        // Проверяем, на какую функцию ссылается кнопка
         const onClickAttr = btn.getAttribute('onclick');
         
+        // Проверяем, содержит ли onclick именно наш текущий фильтр
         if (onClickAttr && onClickAttr.includes(`'${activeFilter}'`)) {
+            // Стиль для активной кнопки
             btn.style.color = (activeFilter === 'ton') ? '#ffa500' : '#00e5ff';
-            // Можно добавить подчеркивание
+            btn.style.fontWeight = 'bold';
             btn.style.borderBottom = `2px solid ${activeFilter === 'ton' ? '#ffa500' : '#00e5ff'}`;
+            btn.style.opacity = '1';
         } else {
-            btn.style.color = '#fff';
+            // Стиль для неактивных кнопок
+            btn.style.color = '#ffffff';
+            btn.style.fontWeight = 'normal';
             btn.style.borderBottom = 'none';
+            btn.style.opacity = '0.5'; // Делаем чуть тусклее, чтобы активная выделялась
         }
     });
 }
