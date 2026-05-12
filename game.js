@@ -643,20 +643,18 @@ function spawnRunnerObject() {
 
     let rand = Math.random() * 100;
 
-    if (rand < 10) { 
-        // Молния появляется с шансом 5%
+    if (rand < 10) {
         quants.push({
-            x: runnerShip.x, // Целимся точно в текущую позицию игрока
+            x: runnerShip.x,
             y: 0,
-            width: 60, // Ширина зоны поражения
+            width: 60,
             type: 'lightning',
-            warningTime: 35, // Кол-во кадров мерцания до удара (~0.6 сек)
+            warningTime: 35,
             timer: 0,
             active: false
         });
     } 
-    else if (rand < 15) { // Сдвигаем границы остальных шансов
-        // --- СПАВНИМ ВРАЖЕСКИЙ КОРАБЛЬ (ALIEN) ---
+    else if (rand < 15) {
         let size = 70;
         quants.push({
             x: Math.random() * (window.innerWidth - size) + size / 2,
@@ -669,7 +667,6 @@ function spawnRunnerObject() {
         });
     } 
     else if (rand < 40) {
-        // --- СПАВНИМ МЕТЕОР ---
         let size = 90;
         quants.push({
             x: Math.random() * (window.innerWidth - size) + size / 2,
@@ -682,7 +679,6 @@ function spawnRunnerObject() {
         });
     } 
     else {
-        // --- СПАВНИМ МОНЕТКУ ---
         let type = (Math.random() * 100 < 5) ? 'qubi' : 'quant';
         let newSize = type === 'qubi' ? 60 : 50; 
         quants.push({
@@ -693,10 +689,8 @@ function spawnRunnerObject() {
             type: type
         });
     }
-}
-
-    // Темп появления объектов
-    let nextSpawn = 700 + Math.random() * 500; // Чуть-чуть уменьшил минимальный порог для динамики
-    if (this.spawnTimer) clearTimeout(this.spawnTimer);
-    this.spawnTimer = setTimeout(spawnRunnerObject, nextSpawn);
+// ⬇️ ВОТ СЮДА переносим
+    let nextSpawn = 700 + Math.random() * 500;
+    if (spawnRunnerObject.spawnTimer) clearTimeout(spawnRunnerObject.spawnTimer);
+    spawnRunnerObject.spawnTimer = setTimeout(spawnRunnerObject, nextSpawn);
 }
