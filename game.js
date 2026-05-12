@@ -264,21 +264,38 @@ function initGame() {
     });
 }
 
-function openShop(filter = 'all') {
+// Основная функция открытия магазина
+function openShop() {
     const shopModal = document.getElementById('shop-modal');
+    if (shopModal) {
+        shopModal.style.display = 'flex';
+        renderShopItems('all'); // При открытии всегда показываем всё
+    }
+}
+
+// Функция отрисовки предметов с фильтрацией (вызывается из HTML кнопками)
+function renderShopItems(filter = 'all') {
     const shopList = document.getElementById('shop-list');
-    
-    if (!shopList || !shopModal) return;
+    if (!shopList) return;
     
     shopList.innerHTML = ''; 
 
     // Фильтруем модули на основе выбранной вкладки
     const filteredModules = SHOP_MODULES.filter(item => {
         if (filter === 'all') return true;
-        if (filter === 'energy') return item.type === 'energy_max' || item.type === 'energy_regen';
-        if (filter === 'armor') return item.type === 'hp' || item.type === 'barrier';
         if (filter === 'ton') return item.currency === 'TON';
-        return true;
+        
+        // Маппинг: если нажата "ЭНЕРГИЯ" (energy_max), показываем лимит и реген
+        if (filter === 'energy_max') {
+            return item.type === 'energy_max' || item.type === 'energy_regen';
+        }
+        
+        // Маппинг: если нажата "БРОНЯ" (hp), показываем HP и щиты
+        if (filter === 'hp') {
+            return item.type === 'hp' || item.type === 'barrier';
+        }
+        
+        return item.type === filter;
     });
 
     filteredModules.forEach(item => {
@@ -306,28 +323,33 @@ function openShop(filter = 'all') {
         shopList.appendChild(itemEl);
     });
 
-    shopModal.style.display = 'flex';
-    
-    // Подсветка активной вкладки (визуальный эффект)
-    updateTabStyles(filter);
+    // Обновляем визуальный стиль кнопок
+    updateShopTabsUI(filter);
 
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    if (window.tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 }
 
-function updateTabStyles(activeFilter) {
-    const tabs = {
-        'all': document.getElementById('tab-all'),
-        'energy': document.getElementById('tab-energy'),
-        'armor': document.getElementById('tab-armor'),
-        'ton': document.getElementById('tab-ton')
-    };
+// Подсветка активной кнопки в меню магазина
+function updateShopTabsUI(activeFilter) {
+    // Получаем все кнопки внутри контейнера вкладок магазина
+    const shopNav = document.querySelector('.shop-nav'); // Убедись, что у тебя есть этот класс или используй подходящий селектор
+    if (!shopNav) return;
 
-    for (let key in tabs) {
-        if (tabs[key]) {
-            tabs[key].style.color = (key === activeFilter) ? '#00e5ff' : '#888';
-            tabs[key].style.borderBottom = (key === activeFilter) ? '2px solid #00e5ff' : 'none';
+    const buttons = shopNav.querySelectorAll('button');
+    
+    buttons.forEach(btn => {
+        // Проверяем, на какую функцию ссылается кнопка
+        const onClickAttr = btn.getAttribute('onclick');
+        
+        if (onClickAttr && onClickAttr.includes(`'${activeFilter}'`)) {
+            btn.style.color = (activeFilter === 'ton') ? '#ffa500' : '#00e5ff';
+            // Можно добавить подчеркивание
+            btn.style.borderBottom = `2px solid ${activeFilter === 'ton' ? '#ffa500' : '#00e5ff'}`;
+        } else {
+            btn.style.color = '#fff';
+            btn.style.borderBottom = 'none';
         }
-    }
+    });
 }
 
 function closeShop() {
