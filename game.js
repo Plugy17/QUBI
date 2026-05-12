@@ -93,57 +93,52 @@ function regenerateEnergy() {
     const now = Date.now();
     let lastUpdate = Number(playerData.lastEnergyUpdate);
 
-    // --- ЛЕЧАЩИЙ КОД: Сброс "времени из будущего" ---
+    // 1. ЛЕЧЕНИЕ: Сброс будущего времени
     if (lastUpdate > now) {
-        console.warn("⚠️ Обнаружен сбой времени (дата в будущем). Сбрасываю счетчик...");
+        console.warn("⚠️ Сброс времени из будущего:", lastUpdate, "на", now);
         playerData.lastEnergyUpdate = now;
         window.userRef.update({ lastEnergyUpdate: now });
         return; 
     }
-    // ---------------------------------------------
 
+    // 2. ПОЛУЧЕНИЕ СТАТОВ
     const stats = getLimits(); 
-    const CURRENT_MAX = stats.maxEnergy; 
-    
-    // Расчет интервала с учетом бонусов за TON (минимум 1 секунда)
-    const baseInterval = 60000;
+    const CURRENT_MAX = Number(stats.maxEnergy) || 100; 
     const bonusMs = Number(stats.regenBonusMs) || 0;
-    const MS_PER_UNIT = Math.max(1000, baseInterval - bonusMs); 
     
-    const STOP_LIMIT = 4 * 60 * 60 * 1000; 
-
-    if (!lastUpdate || isNaN(lastUpdate)) {
-        playerData.lastEnergyUpdate = now;
-        window.userRef.update({ lastEnergyUpdate: now });
-        return;
-    }
-
+    // 3. РАСЧЕТ ИНТЕРВАЛА
+    const baseInterval = 60000;
+    // Если бонус очень большой, ставим 1 сек
+    let MS_PER_UNIT = baseInterval - bonusMs;
+    if (MS_PER_UNIT < 1000) MS_PER_UNIT = 1000; 
+    
+    // 4. ПРОВЕРКА ТИКА
     let timePassed = now - lastUpdate;
-    
-    // Если время для тика еще не пришло — выходим.
+
+    // ВЫВОД В КОНСОЛЬ ДЛЯ ТЕСТА (потом можно удалить)
+    // console.log(`Прошло: ${Math.floor(timePassed/1000)} сек. Нужно: ${MS_PER_UNIT/1000} сек.`);
+
     if (timePassed < MS_PER_UNIT) return;
 
-    if (timePassed > STOP_LIMIT) timePassed = STOP_LIMIT;
-
+    // 5. НАЧИСЛЕНИЕ
     const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
 
     if (energyToAdd > 0 && (playerData.energy || 0) < CURRENT_MAX) {
         const newEnergy = Math.min(CURRENT_MAX, (playerData.energy || 0) + energyToAdd);
         const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
-        // Обновляем локально для мгновенной реакции полоски
         playerData.energy = newEnergy;
         playerData.lastEnergyUpdate = updatedTime;
         
+        // Сразу дергаем UI
         if (typeof updateUI === 'function') updateUI();
 
-        // Синхронизируем с Firebase
         window.userRef.update({ 
             energy: playerData.energy,
             lastEnergyUpdate: updatedTime 
         }).then(() => {
-            console.log(`🚀 ХРОНОС: +${energyToAdd} (Интервал: ${MS_PER_UNIT/1000} сек)`);
-        }).catch(e => console.error("Ошибка регенерации:", e));
+            console.log(`🚀 УСПЕХ: +${energyToAdd} энергии. Лимит: ${CURRENT_MAX}`);
+        });
     }
 }
 
