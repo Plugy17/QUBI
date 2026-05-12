@@ -220,12 +220,9 @@ function gameOver() {
 function isUiHit(target) { return target.closest('.exit-btn') || target.closest('.score-display'); }
 
 function handleCanvasClick(e) {
-    // 1. СТОП-КРАН: Если открыто хоть одно окно, игнорируем клик по канвасу
     if (isAnyModalOpen()) return;
 
     const rect = canvas.getBoundingClientRect();
-    
-    // 2. Корректное получение координат (защита от undefined при разных типах событий)
     let clientX, clientY;
     if (e.type.startsWith('touch')) {
         clientX = e.changedTouches[0].clientX;
@@ -240,12 +237,10 @@ function handleCanvasClick(e) {
 
     planets.forEach(p => {
         const dist = Math.hypot(clickX - p.x, clickY - p.y);
-        
-        if (dist < p.size * 1.5) { // Увеличил радиус клика для удобства
+        if (dist < p.size * 1.5) {
             if (window.Telegram && Telegram.WebApp.HapticFeedback) {
                 Telegram.WebApp.HapticFeedback.impactOccurred('medium');
             }
-
             if (p.action) {
                 p.action(); 
             } else if (p.id === 'leaderboard') {
@@ -253,16 +248,15 @@ function handleCanvasClick(e) {
             } else if (p.id === 'moon') {
                 openMoonMenu();
             } else if (p.id === 'shop') {
-                // ДОБАВЛЯЕМ ЭТУ СТРОЧКУ:
                 openShop(); 
             } else if (p.id === 'station') {
-                // ДОБАВЛЯЕМ ДЛЯ СТАНЦИИ:
                 openStation();
             } else {
                 activatePlanet(p.id);
             }
-    });
-}
+        }
+    }); // Закрытие forEach
+} // Закрытие handleCanvasClick
     
 function isAnyModalOpen() {
     // Добавляем runner-window, так как во время игры клики по планетам тоже должны быть отключены
@@ -506,12 +500,10 @@ function closeStation() {
         updateUI();
     }
 }
-// --- ФИНАЛ ФАЙЛА ---
+
 function checkRegen() {
     if (typeof regenerateEnergy === 'function' && window.playerData) {
         regenerateEnergy();
     }
 }
-
-// Запуск раз в минуту
 setInterval(checkRegen, 60000);
