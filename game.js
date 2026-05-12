@@ -1253,13 +1253,11 @@ function closeStation() {
         });
     }
 
-    // 3. Обновляем главный экран
     if (typeof updateUI === "function") {
         updateUI();
     }
 }
 
-    // Запускаем интервал максимально безопасно
 setInterval(() => {
     try {
         if (typeof regenerateEnergy === 'function') {
