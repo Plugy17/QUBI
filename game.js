@@ -917,10 +917,15 @@ function gameOver() {
 function isUiHit(target) { return target.closest('.exit-btn') || target.closest('.score-display'); }
 
 function handleCanvasClick(e) {
-    if (isAnyModalOpen()) return;
+    // ЗАЩИТА 1: Если клик пришелся на HTML кнопку или меню (не на сам холст) — игнорируем
+    if (e.target !== canvas) return;
+
+    // ЗАЩИТА 2: Если открыто хоть одно окно или идет игра — игнорируем клик по планетам
+    if (isAnyModalOpen() || isRunnerActive) return;
 
     const rect = canvas.getBoundingClientRect();
     let clientX, clientY;
+    
     if (e.type.startsWith('touch')) {
         clientX = e.changedTouches[0].clientX;
         clientY = e.changedTouches[0].clientY;
@@ -934,39 +939,54 @@ function handleCanvasClick(e) {
 
     planets.forEach(p => {
         const dist = Math.hypot(clickX - p.x, clickY - p.y);
+        
+        // Увеличиваем точность попадания (1.5 — хороший радиус)
         if (dist < p.size * 1.5) {
             if (window.Telegram && Telegram.WebApp.HapticFeedback) {
                 Telegram.WebApp.HapticFeedback.impactOccurred('medium');
             }
-            if (p.action) {
-                p.action(); 
+
+            // Прямые вызовы функций по ID планеты
+            if (p.id === 'shop') {
+                openShop();
             } else if (p.id === 'leaderboard') {
                 openLeaderboard();
             } else if (p.id === 'moon') {
                 openMoonMenu();
-            } else if (p.id === 'shop') {
-                openShop(); 
             } else if (p.id === 'station') {
                 openStation();
+            } else if (p.id === 'factory') {
+                if (typeof openFactory === 'function') openFactory();
+            } else if (p.action) {
+                p.action();
             } else {
                 activatePlanet(p.id);
             }
         }
-    }); // Закрытие forEach
-} // Закрытие handleCanvasClick
-    
+    });
+}
+
 function isAnyModalOpen() {
-    // Список всех твоих ID окон
-    const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal', 'runner-window'];
+    // ЗАЩИТА 3: Добавлены все возможные ID окон, включая завод и лидерборд
+    const modals = [
+        'moon-modal', 
+        'leaderboard-modal', 
+        'station-modal', 
+        'shop-modal', 
+        'runner-window', 
+        'factory-modal'
+    ];
     
     return modals.some(id => {
         const el = document.getElementById(id);
         if (!el) return false;
 
-        // Проверяем не только стили, но и физическое отображение
-        return el.style.display === 'flex' || 
-               el.style.display === 'block' || 
-               el.offsetParent !== null; // Если элемент занимает место на экране
+        // Проверяем, отображается ли элемент в данный момент
+        const style = window.getComputedStyle(el);
+        const isVisible = style.display !== 'none' && style.visibility !== 'hidden';
+        
+        // Доп. проверка через offsetParent (если элемент скрыт родителем)
+        return isVisible && el.offsetParent !== null;
     });
 }
 
