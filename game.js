@@ -264,7 +264,7 @@ function initGame() {
     });
 }
 
-function openShop() {
+function openShop(filter = 'all') {
     const shopModal = document.getElementById('shop-modal');
     const shopList = document.getElementById('shop-list');
     
@@ -272,8 +272,16 @@ function openShop() {
     
     shopList.innerHTML = ''; 
 
-    SHOP_MODULES.forEach(item => {
-        // Проверка: куплен ли модуль (ищем в инвентаре по shopId)
+    // Фильтруем модули на основе выбранной вкладки
+    const filteredModules = SHOP_MODULES.filter(item => {
+        if (filter === 'all') return true;
+        if (filter === 'energy') return item.type === 'energy_max' || item.type === 'energy_regen';
+        if (filter === 'armor') return item.type === 'hp' || item.type === 'barrier';
+        if (filter === 'ton') return item.currency === 'TON';
+        return true;
+    });
+
+    filteredModules.forEach(item => {
         const isOwned = playerData.inventory && playerData.inventory.some(owned => 
             owned.shopId === item.id
         );
@@ -299,7 +307,27 @@ function openShop() {
     });
 
     shopModal.style.display = 'flex';
+    
+    // Подсветка активной вкладки (визуальный эффект)
+    updateTabStyles(filter);
+
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+}
+
+function updateTabStyles(activeFilter) {
+    const tabs = {
+        'all': document.getElementById('tab-all'),
+        'energy': document.getElementById('tab-energy'),
+        'armor': document.getElementById('tab-armor'),
+        'ton': document.getElementById('tab-ton')
+    };
+
+    for (let key in tabs) {
+        if (tabs[key]) {
+            tabs[key].style.color = (key === activeFilter) ? '#00e5ff' : '#888';
+            tabs[key].style.borderBottom = (key === activeFilter) ? '2px solid #00e5ff' : 'none';
+        }
+    }
 }
 
 function closeShop() {
