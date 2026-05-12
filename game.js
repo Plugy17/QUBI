@@ -923,38 +923,51 @@ function isAnyModalOpen() {
     });
 }
 
-function handleCanvasClick(e) {
-    // Если клик не по самому холсту или открыто окно — игнор
-    if (e.target !== canvas || isAnyModalOpen()) return;
+function calculateCurrentStats() {
+    // 1. Устанавливаем базовые параметры (дефолт)
+    let stats = {
+        hp: 100,
+        maxEnergy: 100,
+        regenBonusMs: 0, 
+        barrier: 0,
+        incomeQuant: 0,
+        incomeQubi: 0
+    };
 
-    const rect = canvas.getBoundingClientRect();
-    let clientX, clientY;
-    if (e.type.startsWith('touch')) {
-        clientX = e.changedTouches[0].clientX;
-        clientY = e.changedTouches[0].clientY;
-    } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
+    // 2. КРИТИЧЕСКИЙ ПРЕДОХРАНИТЕЛЬ (Решает проблему со скрина)
+    // Если playerData еще не загружена из Firebase или инвентарь пуст — 
+    // мы просто возвращаем базовые статы и не идем дальше.
+    if (!window.playerData || !playerData.inventory) {
+        return stats; 
     }
 
-    const clickX = clientX - rect.left;
-    const clickY = clientY - rect.top;
+    // 3. Если данные есть, считаем бонусы от надетых модулей
+    if (playerData.equipped) {
+        playerData.equipped.forEach(modId => {
+            // Ищем модуль в инвентаре по его уникальному ID
+            const module = playerData.inventory.find(m => m.id === modId);
+            
+            if (module) {
+                // Обработка числовой силы (power: 50)
+                if (typeof module.power === 'number') {
+                    if (module.type === 'hp') stats.hp += module.power;
+                    if (module.type === 'energy_max') stats.maxEnergy += module.power;
+                    if (module.type === 'energy_regen') stats.regenBonusMs += module.power;
+                    if (module.type === 'barrier') stats.barrier += module.power;
+                    if (module.type === 'income_quant') stats.incomeQuant += module.power;
+                    if (module.type === 'income_qubi') stats.incomeQubi += module.power;
+                } 
+                // Обработка гибридной силы (power: {hp: 20, en: 10})
+                else if (typeof module.power === 'object' && module.power !== null) {
+                    if (module.power.hp) stats.hp += module.power.hp;
+                    if (module.power.en) stats.maxEnergy += module.power.en;
+                    if (module.power.reg) stats.regenBonusMs += module.power.reg;
+                }
+            }
+        });
+    }
 
-    planets.forEach(p => {
-        const dist = Math.hypot(clickX - p.x, clickY - p.y);
-        
-        // dist < p.size * 1.0 — точный клик по спрайту
-        if (dist < p.size * 1.0) { 
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-
-            if (p.id === 'moon') openMoonMenu();
-            else if (p.id === 'shop') openShop();
-            else if (p.id === 'leaderboard') openLeaderboard();
-            else if (p.id === 'station') openStation();
-            else if (p.id === 'core' || p.id === 'runner') activatePlanet('runner');
-            else if (p.action) p.action();
-        }
-    });
+    return stats;
 }
 
 // Слушатели для главного экрана
