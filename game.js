@@ -14,6 +14,17 @@ let playerData = {
     }
 };
 
+// --- СОСТОЯНИЕ КОРАБЛЯ ---
+let runnerShip = {
+    x: window.innerWidth / 2,
+    y: window.innerHeight - 200, 
+    w: 80, h: 80,
+    hp: 100, 
+    maxHp: 100, 
+    targetX: window.innerWidth / 2,
+    lerpSpeed: 0.2
+};
+
 // Функция для получения текущих лимитов (с учетом модулей)
 function getLimits() {
     if (typeof calculateCurrentStats === 'function') {
@@ -180,17 +191,6 @@ const SHOP_MODULES = [
     { id: 'mod_hyb_4', name: 'Дрон Mk.1', type: 'hybrid', power: {hp: 300, en: 150}, price: 1.5, currency: 'TON', rarity: 'epic', desc: 'Верный спутник: +300 HP и +150 энергии.', img: 'module_20.png' },
     { id: 'mod_hyb_5', name: 'Бесконечность', type: 'hybrid', power: {hp: 500, en: 500, reg: 150000}, price: 2.5, currency: 'TON', rarity: 'legendary', desc: 'Абсолютная власть над космосом.', img: 'module_07.png' }
 ];
-
-// --- СОСТОЯНИЕ КОРАБЛЯ ---
-let runnerShip = {
-    x: window.innerWidth / 2,
-    y: window.innerHeight - 200, 
-    w: 80, h: 80,
-    hp: 100, 
-    maxHp: 100, 
-    targetX: window.innerWidth / 2,
-    lerpSpeed: 0.2
-};
 
 // Функция для обновления параметров корабля перед стартом
 function syncShipStats() {
