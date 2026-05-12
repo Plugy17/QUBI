@@ -923,172 +923,6 @@ function isAnyModalOpen() {
     });
 }
 
-function calculateCurrentStats() {
-    // 1. Устанавливаем базовые параметры (дефолт)
-    let stats = {
-        hp: 100,
-        maxEnergy: 100,
-        regenBonusMs: 0, 
-        barrier: 0,
-        incomeQuant: 0,
-        incomeQubi: 0
-    };
-
-    // 2. КРИТИЧЕСКИЙ ПРЕДОХРАНИТЕЛЬ (Решает проблему со скрина)
-    // Если playerData еще не загружена из Firebase или инвентарь пуст — 
-    // мы просто возвращаем базовые статы и не идем дальше.
-    if (!window.playerData || !playerData.inventory) {
-        return stats; 
-    }
-
-    // 3. Если данные есть, считаем бонусы от надетых модулей
-    if (playerData.equipped) {
-        playerData.equipped.forEach(modId => {
-            // Ищем модуль в инвентаре по его уникальному ID
-            const module = playerData.inventory.find(m => m.id === modId);
-            
-            if (module) {
-                // Обработка числовой силы (power: 50)
-                if (typeof module.power === 'number') {
-                    if (module.type === 'hp') stats.hp += module.power;
-                    if (module.type === 'energy_max') stats.maxEnergy += module.power;
-                    if (module.type === 'energy_regen') stats.regenBonusMs += module.power;
-                    if (module.type === 'barrier') stats.barrier += module.power;
-                    if (module.type === 'income_quant') stats.incomeQuant += module.power;
-                    if (module.type === 'income_qubi') stats.incomeQubi += module.power;
-                } 
-                // Обработка гибридной силы (power: {hp: 20, en: 10})
-                else if (typeof module.power === 'object' && module.power !== null) {
-                    if (module.power.hp) stats.hp += module.power.hp;
-                    if (module.power.en) stats.maxEnergy += module.power.en;
-                    if (module.power.reg) stats.regenBonusMs += module.power.reg;
-                }
-            }
-        });
-    }
-
-    return stats;
-}
-
-// --- СЛУШАТЕЛИ СОБЫТИЙ ---
-// Слушатели для главного экрана
-if (typeof canvas !== 'undefined' && canvas) {
-    // 1. Слушатель обычного клика
-    canvas.addEventListener('click', handleCanvasClick);
-
-    // 2. Слушатель тача (для мобилок)
-    canvas.addEventListener('touchstart', (e) => {
-        handleCanvasClick(e);
-        // preventDefault нужен, чтобы не срабатывал "двойной клик" в браузере
-        if (e.cancelable) e.preventDefault();
-    }, { passive: false });
-}
-
-// ПРОВЕРКА: Если runnerWin не найден, код просто пропустит этот блок вместо ошибки
-if (typeof runnerWin !== 'undefined' && runnerWin) {
-    runnerWin.addEventListener('touchstart', (e) => {
-        // Проверяем активность игры и попадание по UI (кнопкам)
-        if (typeof isRunnerActive !== 'undefined' && isRunnerActive) {
-            if (!isUiHit(e.target)) {
-                runnerShip.targetX = e.touches[0].clientX;
-            }
-        }
-    }, { passive: false });
-
-    runnerWin.addEventListener('touchmove', (e) => {
-        if (typeof isRunnerActive !== 'undefined' && isRunnerActive) {
-            if (!isUiHit(e.target)) {
-                runnerShip.targetX = e.touches[0].clientX;
-                if (e.cancelable) e.preventDefault();
-            }
-        }
-    }, { passive: false });
-}
-
-// Кнопка выхода из раннера
-const exitRunnerBtn = document.getElementById('exit-runner');
-if (exitRunnerBtn) {
-    exitRunnerBtn.onclick = () => {
-        if (typeof closeRunnerWindow === 'function') {
-            closeRunnerWindow();
-        }
-    };
-}
-
-// Старт игры после загрузки фона
-bg.onload = () => { 
-    if (typeof initGame === 'function') initGame(); 
-    if (typeof draw === 'function') draw(); 
-};
-if (bg.complete) { 
-    if (typeof initGame === 'function') initGame(); 
-    if (typeof draw === 'function') draw(); 
-}
-
-// --- МАГАЗИН И МОДУЛИ ---
-
-async function buyModule(moduleId) {
-    const itemData = SHOP_MODULES.find(m => m.id === moduleId);
-    
-    if (!itemData) {
-        console.error("Модуль не найден в базе магазина");
-        return;
-    }
-
-    if (itemData.currency === 'TON') {
-        try {
-            const success = await payWithTON(itemData.price, itemData.id);
-            if (success) {
-                grantModule(itemData);
-                if (tg.showAlert) tg.showAlert(`Успешно приобретено: ${itemData.name}!`);
-            }
-        } catch (e) {
-            console.error("Ошибка TON транзакции:", e);
-        }
-        return;
-    }
-
-    let priceQuant = itemData.currency === 'QUANT' ? itemData.price : 0;
-    let priceQubi = itemData.currency === 'QUBI' ? itemData.price : 0;
-
-    if (playerData.quant < priceQuant || playerData.qubi < priceQubi) {
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-        alert("Недостаточно ресурсов!");
-        return;
-    }
-
-    playerData.quant -= priceQuant;
-    playerData.qubi -= priceQubi;
-
-    grantModule(itemData);
-}
-
-function grantModule(itemData) {
-    if (!playerData.inventory) playerData.inventory = [];
-
-    const newModule = {
-        id: itemData.id + "_" + Date.now(), 
-        shopId: itemData.id,                
-        name: itemData.name,
-        type: itemData.type,
-        power: itemData.power,
-        rarity: itemData.rarity,
-        img: itemData.img
-    };
-
-    playerData.inventory.push(newModule);
-
-    userRef.update({
-        quant: playerData.quant,
-        qubi: playerData.qubi,
-        inventory: playerData.inventory
-    }).then(() => {
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        if (typeof updateUI === 'function') updateUI();   
-        if (typeof openShop === 'function') openShop();   
-    });
-}
-
 // --- ГЛАВНЫЙ МОЗГ ХАРАКТЕРИСТИК ---
 function calculateCurrentStats() {
     let stats = {
@@ -1100,11 +934,12 @@ function calculateCurrentStats() {
         incomeQubi: 0
     };
 
-    if (typeof playerData === 'undefined' || !playerData) {
+    // Проверка на загрузку данных
+    if (typeof playerData === 'undefined' || !playerData || !playerData.inventory) {
         return stats;
     }
 
-    if (playerData.equipped && playerData.inventory) {
+    if (playerData.equipped) {
         playerData.equipped.forEach(modId => {
             const module = playerData.inventory.find(m => m.id === modId);
             if (module && module.power) {
@@ -1127,25 +962,114 @@ function calculateCurrentStats() {
     return stats;
 }
 
-// --- ОКНО АНГАРА (СТАНЦИЯ) ---
+// --- СЛУШАТЕЛИ СОБЫТИЙ ---
+if (typeof canvas !== 'undefined' && canvas) {
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('touchstart', (e) => {
+        handleCanvasClick(e);
+        if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+}
+
+if (typeof runnerWin !== 'undefined' && runnerWin) {
+    runnerWin.addEventListener('touchstart', (e) => {
+        if (typeof isRunnerActive !== 'undefined' && isRunnerActive) {
+            if (!isUiHit(e.target)) {
+                runnerShip.targetX = e.touches[0].clientX;
+            }
+        }
+    }, { passive: false });
+
+    runnerWin.addEventListener('touchmove', (e) => {
+        if (typeof isRunnerActive !== 'undefined' && isRunnerActive) {
+            if (!isUiHit(e.target)) {
+                runnerShip.targetX = e.touches[0].clientX;
+                if (e.cancelable) e.preventDefault();
+            }
+        }
+    }, { passive: false });
+}
+
+const exitRunnerBtn = document.getElementById('exit-runner');
+if (exitRunnerBtn) {
+    exitRunnerBtn.onclick = () => {
+        if (typeof closeRunnerWindow === 'function') closeRunnerWindow();
+    };
+}
+
+// Запуск отрисовки и инициализации
+bg.onload = () => { 
+    if (typeof initGame === 'function') initGame(); 
+    if (typeof draw === 'function') draw(); 
+};
+if (bg.complete) { 
+    if (typeof initGame === 'function') initGame(); 
+    if (typeof draw === 'function') draw(); 
+}
+
+// --- ФУНКЦИИ МАГАЗИНА И АНГАРА ---
+async function buyModule(moduleId) {
+    const itemData = SHOP_MODULES.find(m => m.id === moduleId);
+    if (!itemData) return;
+
+    if (itemData.currency === 'TON') {
+        try {
+            const success = await payWithTON(itemData.price, itemData.id);
+            if (success) grantModule(itemData);
+        } catch (e) { console.error(e); }
+        return;
+    }
+
+    let priceQuant = itemData.currency === 'QUANT' ? itemData.price : 0;
+    let priceQubi = itemData.currency === 'QUBI' ? itemData.price : 0;
+
+    if (playerData.quant < priceQuant || playerData.qubi < priceQubi) {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        alert("Недостаточно ресурсов!");
+        return;
+    }
+    playerData.quant -= priceQuant;
+    playerData.qubi -= priceQubi;
+    grantModule(itemData);
+}
+
+function grantModule(itemData) {
+    if (!playerData.inventory) playerData.inventory = [];
+    const newModule = {
+        id: itemData.id + "_" + Date.now(), 
+        shopId: itemData.id, name: itemData.name, type: itemData.type,
+        power: itemData.power, rarity: itemData.rarity, img: itemData.img
+    };
+    playerData.inventory.push(newModule);
+    userRef.update({ quant: playerData.quant, qubi: playerData.qubi, inventory: playerData.inventory })
+    .then(() => {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        updateUI(); openShop();
+    });
+}
+
 function openStation() {
     const modal = document.getElementById('station-modal');
     if (modal) modal.style.display = 'flex';
 
+    // Получаем актуальные статы с учетом надетых модулей
     const current = calculateCurrentStats();
 
+    // 1. Обновляем текстовые показатели в UI
     const hpEl = document.getElementById('stat-hp');
     const enEl = document.getElementById('stat-energy');
-    const regEl = document.getElementById('stat-income-quant');
+    const regEl = document.getElementById('stat-income-quant'); // Используем этот ID под реген, как в твоем исходнике
 
     if (hpEl) hpEl.innerText = current.hp;
     if (enEl) enEl.innerText = current.maxEnergy;
     
     if (regEl) {
+        // Переводим мс в минуты (например, 60000мс -> 1.0 мин)
         const regenBonusMin = (current.regenBonusMs / 60000).toFixed(1);
         regEl.innerText = "-" + regenBonusMin + " мин";
     }
 
+    // 2. Рендерим 5 верхних слотов экипировки
     const activeContainer = document.getElementById('active-slots-container');
     if (activeContainer) {
         activeContainer.innerHTML = '';
@@ -1166,12 +1090,13 @@ function openStation() {
         }
     }
 
+    // 3. Рендерим список всех модулей в инвентаре (нижний список)
     const scrollList = document.getElementById('inventory-scroll-list');
     if (scrollList) {
         scrollList.innerHTML = '';
         if (playerData.inventory && playerData.inventory.length > 0) {
             playerData.inventory.forEach(item => {
-                const isEquipped = playerData.equipped?.includes(item.id);
+                const isEquipped = playerData.equipped && playerData.equipped.includes(item.id);
                 const card = document.createElement('div');
                 card.className = `module-card ${isEquipped ? 'equipped' : ''}`;
                 
@@ -1188,35 +1113,25 @@ function openStation() {
                     </div>
                 `;
                 
+                // При клике на карточку — снимаем или надеваем модуль
                 card.onclick = () => toggleModule(item.id);
                 scrollList.appendChild(card);
             });
         } else {
-            scrollList.innerHTML = '<div class="no-modules">Ангар пуст. Купи модули в магазине!</div>';
+            scrollList.innerHTML = '<div class="no-modules" style="text-align:center; padding:20px; color:#666;">Ангар пуст. Купи модули в магазине!</div>';
         }
     }
 }
 
 function toggleModule(modId) {
     if (!playerData.equipped) playerData.equipped = [];
-    
     const index = playerData.equipped.indexOf(modId);
     if (index > -1) {
         playerData.equipped.splice(index, 1);
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-    } else {
-        if (playerData.equipped.length < 5) {
-            playerData.equipped.push(modId);
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        } else {
-            if (tg.showAlert) tg.showAlert("Все слоты заняты! Сними что-то старое.");
-            return; 
-        }
+    } else if (playerData.equipped.length < 5) {
+        playerData.equipped.push(modId);
     }
-
-    userRef.update({ equipped: playerData.equipped }).then(() => {
-        openStation(); 
-    });
+    userRef.update({ equipped: playerData.equipped }).then(() => openStation());
 }
 
 function closeStation() {
@@ -1225,7 +1140,6 @@ function closeStation() {
     if (typeof updateUI === "function") updateUI();
 }
 
-// --- РЕГЕНЕРАЦИЯ ---
 setInterval(() => {
     if (typeof regenerateEnergy === 'function' && window.playerData) {
         regenerateEnergy();
