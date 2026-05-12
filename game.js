@@ -970,6 +970,7 @@ function calculateCurrentStats() {
     return stats;
 }
 
+// --- СЛУШАТЕЛИ СОБЫТИЙ ---
 // Слушатели для главного экрана
 if (typeof canvas !== 'undefined' && canvas) {
     // 1. Слушатель обычного клика
@@ -980,7 +981,7 @@ if (typeof canvas !== 'undefined' && canvas) {
         handleCanvasClick(e);
         // preventDefault нужен, чтобы не срабатывал "двойной клик" в браузере
         if (e.cancelable) e.preventDefault();
-    }, { passive: false }); // Эти параметры относятся только к touchstart
+    }, { passive: false });
 }
 
 // ПРОВЕРКА: Если runnerWin не найден, код просто пропустит этот блок вместо ошибки
@@ -1007,7 +1008,6 @@ if (typeof runnerWin !== 'undefined' && runnerWin) {
 // Кнопка выхода из раннера
 const exitRunnerBtn = document.getElementById('exit-runner');
 if (exitRunnerBtn) {
-    // Используем стрелочную функцию или проверку существования функции
     exitRunnerBtn.onclick = () => {
         if (typeof closeRunnerWindow === 'function') {
             closeRunnerWindow();
@@ -1017,13 +1017,15 @@ if (exitRunnerBtn) {
 
 // Старт игры после загрузки фона
 bg.onload = () => { 
-    initGame(); 
-    draw(); 
+    if (typeof initGame === 'function') initGame(); 
+    if (typeof draw === 'function') draw(); 
 };
 if (bg.complete) { 
-    initGame(); 
-    draw(); 
+    if (typeof initGame === 'function') initGame(); 
+    if (typeof draw === 'function') draw(); 
 }
+
+// --- МАГАЗИН И МОДУЛИ ---
 
 async function buyModule(moduleId) {
     const itemData = SHOP_MODULES.find(m => m.id === moduleId);
@@ -1066,7 +1068,7 @@ function grantModule(itemData) {
 
     const newModule = {
         id: itemData.id + "_" + Date.now(), 
-        shopId: itemData.id,               
+        shopId: itemData.id,                
         name: itemData.name,
         type: itemData.type,
         power: itemData.power,
@@ -1082,15 +1084,13 @@ function grantModule(itemData) {
         inventory: playerData.inventory
     }).then(() => {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        updateUI();   
-        openShop();   
+        if (typeof updateUI === 'function') updateUI();   
+        if (typeof openShop === 'function') openShop();   
     });
 }
 
 // --- ГЛАВНЫЙ МОЗГ ХАРАКТЕРИСТИК ---
-// --- ГЛАВНЫЙ МОЗГ ХАРАКТЕРИСТИК ---
 function calculateCurrentStats() {
-    // 1. Базовые статы, которые есть у игрока по умолчанию
     let stats = {
         hp: 100,
         maxEnergy: 100,
@@ -1100,20 +1100,14 @@ function calculateCurrentStats() {
         incomeQubi: 0
     };
 
-    // 2. ПРОВЕРКА: Если playerData еще не определена (например, идет загрузка),
-    // мы возвращаем базовые статы, чтобы код не "падал".
     if (typeof playerData === 'undefined' || !playerData) {
         return stats;
     }
 
-    // 3. ПРОВЕРКА: Есть ли инвентарь и надетые вещи
     if (playerData.equipped && playerData.inventory) {
         playerData.equipped.forEach(modId => {
-            // Ищем модуль в инвентаре по его уникальному ID
             const module = playerData.inventory.find(m => m.id === modId);
-            
             if (module && module.power) {
-                // Если power — это просто число (например, +50 HP)
                 if (typeof module.power === 'number') {
                     if (module.type === 'hp') stats.hp += module.power;
                     if (module.type === 'energy_max') stats.maxEnergy += module.power;
@@ -1122,7 +1116,6 @@ function calculateCurrentStats() {
                     if (module.type === 'income_quant') stats.incomeQuant += module.power;
                     if (module.type === 'income_qubi') stats.incomeQubi += module.power;
                 } 
-                // Если power — это объект (гибридные модули)
                 else if (typeof module.power === 'object') {
                     if (module.power.hp) stats.hp += module.power.hp;
                     if (module.power.en) stats.maxEnergy += module.power.en;
@@ -1131,7 +1124,6 @@ function calculateCurrentStats() {
             }
         });
     }
-    
     return stats;
 }
 
@@ -1142,21 +1134,18 @@ function openStation() {
 
     const current = calculateCurrentStats();
 
-    // Обновляем текст в UI
     const hpEl = document.getElementById('stat-hp');
     const enEl = document.getElementById('stat-energy');
-    const regEl = document.getElementById('stat-income-quant'); // Используем этот ID под реген
+    const regEl = document.getElementById('stat-income-quant');
 
     if (hpEl) hpEl.innerText = current.hp;
     if (enEl) enEl.innerText = current.maxEnergy;
     
     if (regEl) {
-        // Переводим бонусные мс в наглядные минуты для игрока
         const regenBonusMin = (current.regenBonusMs / 60000).toFixed(1);
         regEl.innerText = "-" + regenBonusMin + " мин";
     }
 
-    // Рендерим 5 слотов экипировки
     const activeContainer = document.getElementById('active-slots-container');
     if (activeContainer) {
         activeContainer.innerHTML = '';
@@ -1177,7 +1166,6 @@ function openStation() {
         }
     }
 
-    // Список всех модулей в инвентаре
     const scrollList = document.getElementById('inventory-scroll-list');
     if (scrollList) {
         scrollList.innerHTML = '';
@@ -1227,7 +1215,7 @@ function toggleModule(modId) {
     }
 
     userRef.update({ equipped: playerData.equipped }).then(() => {
-        openStation(); // Перерисовываем окно, чтобы обновились статы и карточки
+        openStation(); 
     });
 }
 
