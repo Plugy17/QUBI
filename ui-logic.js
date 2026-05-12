@@ -506,3 +506,15 @@ function closeStation() {
         updateUI();
     }
 }
+
+    // --- ЗАВЕРШЕНИЕ ФАЙЛА (БЕЗ ОБРЫВОВ) ---
+
+setInterval(() => {
+    try {
+        if (typeof regenerateEnergy === 'function' && window.playerData) {
+            regenerateEnergy();
+        }
+    } catch (e) {
+        console.error("Ошибка в цикле регенерации:", e);
+    }
+}, 60000);
