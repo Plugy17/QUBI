@@ -1068,7 +1068,9 @@ function grantModule(itemData) {
 }
 
 // --- ГЛАВНЫЙ МОЗГ ХАРАКТЕРИСТИК ---
+// --- ГЛАВНЫЙ МОЗГ ХАРАКТЕРИСТИК ---
 function calculateCurrentStats() {
+    // 1. Базовые статы, которые есть у игрока по умолчанию
     let stats = {
         hp: 100,
         maxEnergy: 100,
@@ -1078,11 +1080,20 @@ function calculateCurrentStats() {
         incomeQubi: 0
     };
 
+    // 2. ПРОВЕРКА: Если playerData еще не определена (например, идет загрузка),
+    // мы возвращаем базовые статы, чтобы код не "падал".
+    if (typeof playerData === 'undefined' || !playerData) {
+        return stats;
+    }
+
+    // 3. ПРОВЕРКА: Есть ли инвентарь и надетые вещи
     if (playerData.equipped && playerData.inventory) {
         playerData.equipped.forEach(modId => {
+            // Ищем модуль в инвентаре по его уникальному ID
             const module = playerData.inventory.find(m => m.id === modId);
-            if (module) {
-                // Масштабируем статы в зависимости от типа модуля
+            
+            if (module && module.power) {
+                // Если power — это просто число (например, +50 HP)
                 if (typeof module.power === 'number') {
                     if (module.type === 'hp') stats.hp += module.power;
                     if (module.type === 'energy_max') stats.maxEnergy += module.power;
@@ -1091,6 +1102,7 @@ function calculateCurrentStats() {
                     if (module.type === 'income_quant') stats.incomeQuant += module.power;
                     if (module.type === 'income_qubi') stats.incomeQubi += module.power;
                 } 
+                // Если power — это объект (гибридные модули)
                 else if (typeof module.power === 'object') {
                     if (module.power.hp) stats.hp += module.power.hp;
                     if (module.power.en) stats.maxEnergy += module.power.en;
@@ -1099,6 +1111,7 @@ function calculateCurrentStats() {
             }
         });
     }
+    
     return stats;
 }
 
