@@ -1,5 +1,7 @@
 // --- 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И СОСТОЯНИЕ ---
 let lastEnergyUpdate = Date.now();
+const stats = calculateCurrentStats();
+const MAX_VAL = stats.maxEnergy; // Теперь лимит зависит от модулей
 const MAX_ENERGY = 100;
 let quants = []; 
 let sessionQuants = 0;
@@ -402,8 +404,9 @@ function openRunnerWindow() {
     sessionQubi = 0; 
     quants = [];
 
-    runnerShip.hp = 100; 
-    runnerShip.maxHp = 100; 
+    const stats = calculateCurrentStats();
+    runnerShip.maxHp = stats.hp; 
+    runnerShip.hp = stats.hp;
 
     // Сбрасываем текст в новых ID
     const qEl = document.getElementById('runner-score-quant');
@@ -769,7 +772,8 @@ function exchangeEnergy(type) {
         alert("Дневной лимит переработки исчерпан!");
         return;
     }
-    if (playerData.energy >= 100) {
+    const stats = calculateCurrentStats();
+if (playerData.energy >= stats.maxEnergy) {
         alert("Энергия уже на максимуме!");
         return;
     }
@@ -1132,12 +1136,15 @@ function openStation() {
 
     const current = calculateCurrentStats();
 
-    document.getElementById('stat-hp').innerText = current.hp;
-    document.getElementById('stat-barrier').innerText = current.barrier;
-    document.getElementById('stat-energy').innerText = Math.floor(playerData.energy || 0) + '%';
-    document.getElementById('stat-income-quant').innerText = current.incomeQuant;
-    document.getElementById('stat-income-qubi').innerText = current.incomeQubi;
+    // Обновляем текст статов в окне
+    if(document.getElementById('stat-hp')) document.getElementById('stat-hp').innerText = current.hp;
+    if(document.getElementById('stat-energy')) document.getElementById('stat-energy').innerText = current.maxEnergy;
+    
+    // Показываем бонус регенерации (переводим мс в минуты для красоты)
+    const regenBonusMin = (current.regenBonusMs / 60000).toFixed(1);
+    if(document.getElementById('stat-income-quant')) document.getElementById('stat-income-quant').innerText = "-" + regenBonusMin + " мин";
 
+    // Отрисовка 5 слотов экипировки
     const activeContainer = document.getElementById('active-slots-container');
     if (activeContainer) {
         activeContainer.innerHTML = '';
@@ -1148,7 +1155,10 @@ function openStation() {
             if (equippedId) {
                 const mod = playerData.inventory.find(m => m.id === equippedId);
                 slot.className = 'slot-mini filled';
-                slot.innerHTML = `<img src="assets/modules/${mod.type}.png" style="width:100%">`;
+                // Ищем картинку в SHOP_MODULES по shopId
+                const shopData = SHOP_MODULES.find(sm => sm.id === mod.shopId);
+                const imgPath = shopData ? `assets/shop/${shopData.img}` : `assets/shop/module_01.png`;
+                slot.innerHTML = `<img src="${imgPath}" style="width:100%; height:100%; object-fit:contain;">`;
             } else {
                 slot.className = 'slot-mini empty';
             }
@@ -1156,26 +1166,33 @@ function openStation() {
         }
     }
 
+    // Отрисовка списка инвентаря
     const scrollList = document.getElementById('inventory-scroll-list');
-    scrollList.innerHTML = '';
+    if (scrollList) {
+        scrollList.innerHTML = '';
+        if (playerData.inventory && playerData.inventory.length > 0) {
+            playerData.inventory.forEach(item => {
+                const isEquipped = playerData.equipped?.includes(item.id);
+                const card = document.createElement('div');
+                card.className = `module-card ${isEquipped ? 'equipped' : ''}`;
+                
+                const shopData = SHOP_MODULES.find(sm => sm.id === item.shopId);
+                const imgPath = shopData ? `assets/shop/${shopData.img}` : `assets/shop/module_01.png`;
 
-    if (playerData.inventory && playerData.inventory.length > 0) {
-        playerData.inventory.forEach(item => {
-            const isEquipped = playerData.equipped?.includes(item.id);
-            const card = document.createElement('div');
-            card.className = `module-card ${isEquipped ? 'equipped' : ''}`;
-            
-            card.innerHTML = `
-                <img src="assets/modules/${item.type}.png" style="width:35px">
-                <span>${item.name}</span>
-                <small style="color: #00e5ff">+${item.power}</small>
-            `;
-            
-            card.onclick = () => toggleModule(item.id);
-            scrollList.appendChild(card);
-        });
-    } else {
-        scrollList.innerHTML = '<div class="no-modules">Купите модули в магазине</div>';
+                card.innerHTML = `
+                    <img src="${imgPath}" style="width:35px; height:35px; object-fit:contain;">
+                    <div style="display:flex; flex-direction:column; margin-left:10px;">
+                        <span style="font-size:12px;">${item.name}</span>
+                        <small style="color: #00e5ff; font-size:10px;">${isEquipped ? 'УСТАНОВЛЕНО' : 'В ГАРДЕРОБЕ'}</small>
+                    </div>
+                `;
+                
+                card.onclick = () => toggleModule(item.id);
+                scrollList.appendChild(card);
+            });
+        } else {
+            scrollList.innerHTML = '<div class="no-modules">Инвентарь пуст</div>';
+        }
     }
 }
 
