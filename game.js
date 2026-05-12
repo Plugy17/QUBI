@@ -80,18 +80,20 @@ function regenerateEnergy() {
     if (typeof playerData === 'undefined' || !playerData || !window.userRef) return;
 
     const now = Date.now();
-    const stats = getLimits(); // Получаем макс. энергию и бонусы из модулей
+    const stats = getLimits(); 
     const CURRENT_MAX = stats.maxEnergy; 
     
-    // Интервал одного тика (базовые 60 сек минус бонус от модулей)
-    const MS_PER_UNIT = Math.max(5000, 60000 - (stats.regenBonusMs || 0)); 
+    // ПРАВКА 1: Правильный расчет интервала для мощных бонусов.
+    // Если бонус (например 162000мс за TON) больше 60 секунд, 
+    // ставим минимальный интервал 1000мс (1 секунда).
+    const baseInterval = 60000;
+    const bonusMs = Number(stats.regenBonusMs) || 0;
+    const MS_PER_UNIT = Math.max(1000, baseInterval - bonusMs); 
     
-    // Лимит оффлайн-накопления (например, не более 4 часов)
     const STOP_LIMIT = 4 * 60 * 60 * 1000; 
 
     let lastUpdate = Number(playerData.lastEnergyUpdate);
 
-    // Если даты обновления нет, ставим текущую и выходим
     if (!lastUpdate || isNaN(lastUpdate)) {
         playerData.lastEnergyUpdate = now;
         window.userRef.update({ lastEnergyUpdate: now });
@@ -100,32 +102,30 @@ function regenerateEnergy() {
 
     let timePassed = now - lastUpdate;
     
-    // Если прошло меньше времени, чем нужно для 1 единицы — ничего не делаем
+    // ПРАВКА 2: Если время для тика еще не пришло — выходим.
+    // С Хронос-двигателем это условие будет пропускать только если прошло меньше 1 сек.
     if (timePassed < MS_PER_UNIT) return;
 
-    // Ограничиваем время оффлайна
     if (timePassed > STOP_LIMIT) timePassed = STOP_LIMIT;
 
-    // Считаем, сколько единиц энергии накопилось
     const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
 
-    // Если есть что добавлять и мы не достигли лимита
     if (energyToAdd > 0 && (playerData.energy || 0) < CURRENT_MAX) {
         const newEnergy = Math.min(CURRENT_MAX, (playerData.energy || 0) + energyToAdd);
-        
-        // Обновляем время последнего успешного начисления
-        // Важно: прибавляем именно кратное количество интервалов
         const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
+        // ПРАВКА 3: Сначала обновляем локально и рисуем UI, чтобы игрок видел скорость
         playerData.energy = newEnergy;
         playerData.lastEnergyUpdate = updatedTime;
+        
+        if (typeof updateUI === 'function') updateUI();
 
+        // Затем отправляем в облако
         window.userRef.update({ 
             energy: playerData.energy,
             lastEnergyUpdate: updatedTime 
         }).then(() => {
-            console.log(`🔋 Регенерация: +${energyToAdd} (Энергия: ${newEnergy}/${CURRENT_MAX})`);
-            if (typeof updateUI === 'function') updateUI();
+            console.log(`🚀 ХРОНОС: +${energyToAdd} (Интервал: ${MS_PER_UNIT/1000} сек)`);
         }).catch(e => console.error("Ошибка регенерации:", e));
     }
 }
