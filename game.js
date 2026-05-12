@@ -30,6 +30,79 @@ let sessionQuants = 0;
 let sessionQubi = 0;
 let isRunnerActive = false;
 
+// --- ЕДИНАЯ ФУНКЦИЯ РАСЧЕТА ХАРАКТЕРИСТИК ---
+function calculateCurrentStats() {
+    let stats = {
+        hp: 100,
+        maxEnergy: 100,
+        regenBonusMs: 0, 
+        barrier: 0,
+        incomeQuant: 0,
+        incomeQubi: 0
+    };
+
+    if (playerData && playerData.equipped && playerData.inventory) {
+        playerData.equipped.forEach(modId => {
+            const module = playerData.inventory.find(m => m.id === modId);
+            if (module && module.power) {
+                if (typeof module.power === 'object') {
+                    stats.hp += Number(module.power.hp || 0);
+                    stats.maxEnergy += Number(module.power.en || 0);
+                    stats.regenBonusMs += Number(module.power.reg || 0);
+                } else {
+                    const p = Number(module.power);
+                    if (module.type === 'hp') stats.hp += p;
+                    if (module.type === 'energy_max') stats.maxEnergy += p;
+                    if (module.type === 'energy_regen') stats.regenBonusMs += p;
+                    if (module.type === 'barrier') stats.barrier += p;
+                }
+            }
+        });
+    }
+    return stats;
+}
+
+// --- РЕГЕНЕРАЦИЯ ЭНЕРГИИ ---
+function regenerateEnergy() {
+    if (!window.playerData || !window.userRef) return;
+
+    const now = Date.now();
+    let lastUpdate = Number(playerData.lastEnergyUpdate);
+
+    // Лечение "времени из будущего"
+    if (!lastUpdate || isNaN(lastUpdate) || lastUpdate > now) {
+        playerData.lastEnergyUpdate = now;
+        userRef.update({ lastEnergyUpdate: now });
+        return;
+    }
+
+    const stats = calculateCurrentStats();
+    const MS_PER_UNIT = Math.max(1000, 60000 - Number(stats.regenBonusMs || 0));
+    const timePassed = now - lastUpdate;
+
+    if (timePassed < MS_PER_UNIT) return;
+
+    const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
+
+    if (energyToAdd > 0 && playerData.energy < stats.maxEnergy) {
+        const newEnergy = Math.min(stats.maxEnergy, (playerData.energy || 0) + energyToAdd);
+        const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
+
+        playerData.energy = newEnergy;
+        playerData.lastEnergyUpdate = updatedTime;
+
+        updateUI();
+
+        userRef.update({
+            energy: playerData.energy,
+            lastEnergyUpdate: updatedTime
+        });
+    } else if (playerData.energy >= stats.maxEnergy) {
+        playerData.lastEnergyUpdate = now;
+        userRef.update({ lastEnergyUpdate: now });
+    }
+}
+
 let factoryLimit = {
     date: new Date().toLocaleDateString(),
     processedToday: 0
@@ -63,55 +136,6 @@ const db = firebase.database();
 
 const tgUser = tg.initDataUnsafe?.user || { id: "guest_user", first_name: "Pilot" };
 const userRef = db.ref('users/' + tgUser.id);
-
-function regenerateEnergy() {
-    if (!window.playerData || !window.userRef) return;
-
-    const now = Date.now();
-    let lastUpdate = Number(playerData.lastEnergyUpdate);
-
-    // ЛЕЧЕНИЕ: Сброс даты из будущего
-    if (!lastUpdate || isNaN(lastUpdate) || lastUpdate > now) {
-        playerData.lastEnergyUpdate = now;
-        userRef.update({ lastEnergyUpdate: now });
-        console.log("🛠 Время сброшено: было в будущем или пустое");
-        return;
-    }
-
-    const stats = calculateCurrentStats();
-    const bonusMs = Number(stats.regenBonusMs) || 0;
-    
-    // Интервал тика: 60 сек минус бонус (минимум 1 сек для Хроноса)
-    const MS_PER_UNIT = Math.max(1000, 60000 - bonusMs);
-    const timePassed = now - lastUpdate;
-
-    if (timePassed < MS_PER_UNIT) return;
-
-    const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
-
-    if (energyToAdd > 0 && playerData.energy < stats.maxEnergy) {
-        const newEnergy = Math.min(stats.maxEnergy, (playerData.energy || 0) + energyToAdd);
-        const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
-
-        playerData.energy = newEnergy;
-        playerData.lastEnergyUpdate = updatedTime;
-
-        // Мгновенно обновляем полоску на экране
-        updateUI();
-
-        // Пишем в облако
-        userRef.update({
-            energy: playerData.energy,
-            lastEnergyUpdate: updatedTime
-        }).then(() => {
-            console.log(`🔋 +${energyToAdd}⚡ (Всего: ${playerData.energy}/${stats.maxEnergy})`);
-        });
-    } else if (playerData.energy >= stats.maxEnergy) {
-        // Если бак полон, просто держим время актуальным
-        playerData.lastEnergyUpdate = now;
-        userRef.update({ lastEnergyUpdate: now });
-    }
-}
 
 function syncWithLeaderboard() {
     if (!playerData) return;
@@ -974,41 +998,6 @@ function isAnyModalOpen() {
         if (!el) return false;
         return window.getComputedStyle(el).display !== 'none';
     });
-}
-
-// --- ГЛАВНЫЙ МОЗГ ХАРАКТЕРИСТИК ---
-function calculateCurrentStats() {
-    let stats = {
-        hp: 100,
-        maxEnergy: 100,
-        regenBonusMs: 0, 
-        barrier: 0,
-        incomeQuant: 0,
-        incomeQubi: 0
-    };
-
-    if (playerData && playerData.equipped && playerData.inventory) {
-        playerData.equipped.forEach(modId => {
-            const module = playerData.inventory.find(m => m.id === modId);
-            if (module && module.power) {
-                // Если power — число
-                if (!isNaN(module.power)) {
-                    const p = Number(module.power);
-                    if (module.type === 'hp') stats.hp += p;
-                    if (module.type === 'energy_max') stats.maxEnergy += p;
-                    if (module.type === 'energy_regen') stats.regenBonusMs += p;
-                    if (module.type === 'barrier') stats.barrier += p;
-                } 
-                // Если power — объект (для сложных модулей)
-                else if (typeof module.power === 'object') {
-                    if (module.power.hp) stats.hp += Number(module.power.hp || 0);
-                    if (module.power.en) stats.maxEnergy += Number(module.power.en || 0);
-                    if (module.power.reg) stats.regenBonusMs += Number(module.power.reg || 0);
-                }
-            }
-        });
-    }
-    return stats;
 }
 
 // --- ЛОГИКА ОБРАБОТКИ КЛИКОВ ---
