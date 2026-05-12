@@ -57,49 +57,42 @@ let playerData = {
 };
 
 function regenerateEnergy() {
-    // 1. Проверяем, загружены ли данные игрока
-    if (!playerData || !userRef) return;
+    // 1. Проверяем, загружены ли данные
+    if (typeof playerData === 'undefined' || !playerData || !window.userRef) return;
 
     const now = Date.now();
-    const MAX_ENERGY = 100;
+    const MAX_VAL = 100;
     const REGEN_PER_HOUR = 20;
-    const MS_PER_ENERGY = (60 * 60 * 1000) / REGEN_PER_HOUR; // 180,000 мс (3 минуты) на 1 ед.
-    const STOP_LIMIT_MS = 4 * 60 * 60 * 1000; // 4 часа лимит
+    const MS_PER_UNIT = (60 * 60 * 1000) / REGEN_PER_HOUR; 
+    const STOP_LIMIT = 4 * 60 * 60 * 1000; 
 
-    // 2. Берем время из playerData или инициализируем его, если его там нет
     let lastUpdate = Number(playerData.lastEnergyUpdate);
 
     if (!lastUpdate || isNaN(lastUpdate)) {
         playerData.lastEnergyUpdate = now;
-        userRef.update({ lastEnergyUpdate: now });
+        window.userRef.update({ lastEnergyUpdate: now });
         return;
     }
 
     let timePassed = now - lastUpdate;
+    if (timePassed > STOP_LIMIT) timePassed = STOP_LIMIT;
 
-    // Ограничиваем время простоя
-    if (timePassed > STOP_LIMIT_MS) timePassed = STOP_LIMIT_MS;
+    const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
 
-    // 3. Считаем, сколько единиц накопилось
-    const energyToAdd = Math.floor(timePassed / MS_PER_ENERGY);
-
-    if (energyToAdd > 0 && (playerData.energy || 0) < MAX_ENERGY) {
-        const newEnergy = Math.min(MAX_ENERGY, (playerData.energy || 0) + energyToAdd);
-        
-        // Сдвигаем время только на количество восстановленной энергии
-        const updatedTime = lastUpdate + (energyToAdd * MS_PER_ENERGY);
+    if (energyToAdd > 0 && (playerData.energy || 0) < MAX_VAL) {
+        const newEnergy = Math.min(MAX_VAL, (playerData.energy || 0) + energyToAdd);
+        const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
         playerData.energy = newEnergy;
         playerData.lastEnergyUpdate = updatedTime;
 
-        // 4. Сохраняем в Firebase и обновляем UI
-        userRef.update({ 
+        window.userRef.update({ 
             energy: playerData.energy,
             lastEnergyUpdate: updatedTime 
         }).then(() => {
-            console.log(`🔋 Регенерация сработала: +${energyToAdd} энергии.`);
-            updateUI();
-        });
+            console.log(`🔋 Регенерация: +${energyToAdd}`);
+            if (typeof updateUI === 'function') updateUI();
+        }).catch(e => console.error("Ошибка обновления энергии:", e));
     }
 }
 
@@ -1265,3 +1258,14 @@ function closeStation() {
         updateUI();
     }
 }
+
+    // Запускаем интервал максимально безопасно
+setInterval(() => {
+    try {
+        if (typeof regenerateEnergy === 'function') {
+            regenerateEnergy();
+        }
+    } catch (e) {
+        console.error("Критическая ошибка интервала регенерации:", e);
+    }
+}, 60000);
