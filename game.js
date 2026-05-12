@@ -1208,10 +1208,3 @@ function closeStation() {
         updateUI();
     }
 }
-
-function runRegen() {
-    if (typeof regenerateEnergy === 'function' && window.playerData) {
-        regenerateEnergy();
-    }
-}
-setInterval(runRegen, 60000);
