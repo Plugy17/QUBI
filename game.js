@@ -956,15 +956,17 @@ function handleCanvasClick(e) {
 } // Закрытие handleCanvasClick
     
 function isAnyModalOpen() {
-    // Добавляем runner-window, так как во время игры клики по планетам тоже должны быть отключены
+    // Список всех твоих ID окон
     const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal', 'runner-window'];
     
     return modals.some(id => {
         const el = document.getElementById(id);
         if (!el) return false;
 
-        const style = window.getComputedStyle(el);
-        return style.display !== 'none' && style.visibility !== 'hidden';
+        // Проверяем не только стили, но и физическое отображение
+        return el.style.display === 'flex' || 
+               el.style.display === 'block' || 
+               el.offsetParent !== null; // Если элемент занимает место на экране
     });
 }
 
