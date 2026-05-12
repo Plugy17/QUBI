@@ -966,7 +966,6 @@ function handleCanvasClick(e) {
         }
     });
     
-// Функция для блокировки кликов сквозь окна
 function isAnyModalOpen() {
     // Добавляем runner-window, так как во время игры клики по планетам тоже должны быть отключены
     const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal', 'runner-window'];
@@ -975,14 +974,11 @@ function isAnyModalOpen() {
         const el = document.getElementById(id);
         if (!el) return false;
 
-        // getComputedStyle проверяет реальное состояние на экране, 
-        // даже если стиль задан в файле .css
         const style = window.getComputedStyle(el);
         return style.display !== 'none' && style.visibility !== 'hidden';
     });
 }
 
-// 2. Привязываем клики к канвасу с проверкой на открытые окна
 canvas.addEventListener('click', (e) => {
     if (isAnyModalOpen()) return; // Если окно открыто, планеты не реагируют
     handleCanvasClick(e);
@@ -994,7 +990,6 @@ canvas.addEventListener('touchstart', (e) => {
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
-// Управление кораблем (оставляем, оно работает хорошо)
 runnerWin.addEventListener('touchstart', (e) => {
     if (!isRunnerActive || isUiHit(e.target)) return;
     runnerShip.targetX = e.touches[0].clientX;
@@ -1022,7 +1017,6 @@ async function buyModule(moduleId) {
         return;
     }
 
-    // 2. Логика для оплаты через TON
     if (itemData.currency === 'TON') {
         try {
             // Вызываем оплату через кошелек
@@ -1038,22 +1032,18 @@ async function buyModule(moduleId) {
         return; // Выходим, так как для TON не нужна проверка QUANT/QUBI
     }
 
-    // 3. Логика для QUANT и QUBI
     let priceQuant = itemData.currency === 'QUANT' ? itemData.price : 0;
     let priceQubi = itemData.currency === 'QUBI' ? itemData.price : 0;
 
-    // Проверка баланса
     if (playerData.quant < priceQuant || playerData.qubi < priceQubi) {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
         alert("Недостаточно ресурсов!");
         return;
     }
 
-    // Списываем валюту
     playerData.quant -= priceQuant;
     playerData.qubi -= priceQubi;
 
-    // Выдаем предмет
     grantModule(itemData);
 }
 
@@ -1073,7 +1063,6 @@ function grantModule(itemData) {
 
     playerData.inventory.push(newModule);
 
-    // Сохраняем всё в Firebase
     userRef.update({
         quant: playerData.quant,
         qubi: playerData.qubi,
@@ -1092,7 +1081,6 @@ function calculateCurrentStats() {
         hp: 100,
         maxEnergy: 100,
         regenBonusMs: 0, // Бонус к скорости (вычитается из интервала)
-        // Поля для будущего режима "Создание"
         barrier: 0,
         incomeQuant: 0,
         incomeQubi: 0
@@ -1128,14 +1116,12 @@ function openStation() {
 
     const current = calculateCurrentStats();
 
-    // 1. Заполняем текстовые блоки
     document.getElementById('stat-hp').innerText = current.hp;
     document.getElementById('stat-barrier').innerText = current.barrier;
     document.getElementById('stat-energy').innerText = Math.floor(playerData.energy || 0) + '%';
     document.getElementById('stat-income-quant').innerText = current.incomeQuant;
     document.getElementById('stat-income-qubi').innerText = current.incomeQubi;
 
-    // 2. Отрисовка АКТИВНЫХ СЛОТОВ (верхние 5 ячеек)
     const activeContainer = document.getElementById('active-slots-container');
     if (activeContainer) {
         activeContainer.innerHTML = '';
@@ -1197,7 +1183,6 @@ function toggleModule(modId) {
         }
     }
 
-    // Сохраняем в Firebase и обновляем окно
     userRef.update({ equipped: playerData.equipped }).then(() => {
         openStation(); 
     });
@@ -1224,14 +1209,9 @@ function closeStation() {
     }
 }
 
-function safeRegenerate() {
-    try {
-        if (typeof regenerateEnergy === 'function' && window.playerData && window.userRef) {
-            regenerateEnergy();
-        }
-    } catch (e) {
-        console.warn("Регенерация пока не доступна:", e.message);
+function runRegen() {
+    if (typeof regenerateEnergy === 'function' && window.playerData) {
+        regenerateEnergy();
     }
 }
-
-setInterval(safeRegenerate, 60000);
+setInterval(runRegen, 60000);
