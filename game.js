@@ -1,8 +1,18 @@
 // --- 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И СОСТОЯНИЕ ---
 let lastEnergyUpdate = Date.now();
-const stats = calculateCurrentStats();
-const MAX_VAL = stats.maxEnergy; // Теперь лимит зависит от модулей
-const MAX_ENERGY = 100;
+
+// Функция для получения текущих лимитов (с учетом модулей)
+function getLimits() {
+    if (typeof calculateCurrentStats === 'function') {
+        return calculateCurrentStats();
+    }
+    return { maxEnergy: 100, hp: 100, regenBonusMs: 0 }; // Значения по умолчанию
+}
+
+// Теперь эти переменные будут обновляться динамически в коде
+let currentStats = getLimits();
+let MAX_ENERGY = currentStats.maxEnergy; 
+
 let quants = []; 
 let sessionQuants = 0;
 let sessionQubi = 0;
@@ -47,6 +57,8 @@ let playerData = {
     qubi: 0, 
     energy: 100, 
     level: 1,
+    inventory: [], // Добавлено для хранения модулей
+    equipped: [],  // Добавлено для активных слотов
     factoryLimit: {
         date: new Date().toLocaleDateString(),
         processedToday: 0
@@ -54,11 +66,14 @@ let playerData = {
 };
 
 function regenerateEnergy() {
-    // 1. Проверяем, загружены ли данные
     if (typeof playerData === 'undefined' || !playerData || !window.userRef) return;
 
     const now = Date.now();
-    const MAX_VAL = 100;
+    
+    // ПРИВЯЗКА К МОДУЛЯМ: берем макс. энергию из статов
+    const stats = getLimits();
+    const CURRENT_MAX = stats.maxEnergy; 
+    
     const REGEN_PER_HOUR = 20;
     const MS_PER_UNIT = (60 * 60 * 1000) / REGEN_PER_HOUR; 
     const STOP_LIMIT = 4 * 60 * 60 * 1000; 
@@ -76,8 +91,9 @@ function regenerateEnergy() {
 
     const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
 
-    if (energyToAdd > 0 && (playerData.energy || 0) < MAX_VAL) {
-        const newEnergy = Math.min(MAX_VAL, (playerData.energy || 0) + energyToAdd);
+    // Сравниваем с CURRENT_MAX (например 125), а не жестко со 100
+    if (energyToAdd > 0 && (playerData.energy || 0) < CURRENT_MAX) {
+        const newEnergy = Math.min(CURRENT_MAX, (playerData.energy || 0) + energyToAdd);
         const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
         playerData.energy = newEnergy;
@@ -87,7 +103,7 @@ function regenerateEnergy() {
             energy: playerData.energy,
             lastEnergyUpdate: updatedTime 
         }).then(() => {
-            console.log(`🔋 Регенерация: +${energyToAdd}`);
+            console.log(`🔋 Регенерация: +${energyToAdd} (Лимит: ${CURRENT_MAX})`);
             if (typeof updateUI === 'function') updateUI();
         }).catch(e => console.error("Ошибка обновления энергии:", e));
     }
@@ -100,7 +116,7 @@ function syncWithLeaderboard() {
     lbRef.set({
         name: tgUser.first_name || "Unknown Pilot",
         qubi: playerData.qubi || 0,
-        lastUpdate: Date.now() // Добавляем время, чтобы база видела обновление
+        lastUpdate: Date.now() 
     }).then(() => {
         console.log("Лидерборд успешно обновлен для:", tgUser.first_name);
     }).catch((error) => {
@@ -114,15 +130,17 @@ const runnerCanvas = document.getElementById('runnerCanvas');
 const runnerCtx = runnerCanvas.getContext('2d');
 const runnerWin = document.getElementById('runner-window');
 
+// --- ЗАГРУЗКА РЕСУРСОВ ---
 const bg = new Image(); bg.src = 'assets/background1.jpg';
 const runnerBg = new Image(); runnerBg.src = 'assets/background2.jpg';
 const shipImg = new Image(); shipImg.src = 'assets/samolet.png';
 const quantImg = new Image(); quantImg.src = 'assets/quant-icon.png';
 const qubiImg = new Image(); qubiImg.src = 'assets/qubi-icon.png';
-const meteorImg = new Image(); meteorImg.src = 'assets/meteor.png'; // Убедись, что файл лежит по этому пути
+const meteorImg = new Image(); meteorImg.src = 'assets/meteor.png'; 
 const alienImg = new Image(); alienImg.src = 'assets/alien.png';
 const lightningImg = new Image(); lightningImg.src = 'assets/molniya.png';
 
+// --- ОБЪЕКТЫ ПЛАНЕТ ---
 const planets = [
     { id: 'runner', src: 'assets/quant.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, size: 120, rotation: 0, speed: 0.002, img: new Image() },
     { id: 'build', src: 'assets/earth.png', x: window.innerWidth * 0.22, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: 0.001, img: new Image() },
@@ -132,48 +150,56 @@ const planets = [
     { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() }
 ];
 
+// Инициализация картинок планет
+planets.forEach(p => { p.img.src = p.src; });
+
+// --- КОНФИГУРАЦИЯ МАГАЗИНА ---
+// ВАЖНО: Пути к картинкам теперь соответствуют твоей папке assets/shop/
 const SHOP_MODULES = [
-    // --- Энергия (Max Energy) ---
     { id: 'mod_en_1', name: 'Медный конденсатор', type: 'energy_max', power: 25, price: 2500, currency: 'QUANT', rarity: 'common', desc: 'Увеличивает макс. запас энергии на 25 ед.', img: 'module_01.png' },
     { id: 'mod_en_2', name: 'Ионная ячейка', type: 'energy_max', power: 50, price: 5000, currency: 'QUANT', rarity: 'common', desc: 'Стабильный поток ионов дает +50 к энергии.', img: 'module_11.png' },
     { id: 'mod_en_3', name: 'Плазменный блок', type: 'energy_max', power: 100, price: 500, currency: 'QUBI', rarity: 'uncommon', desc: 'Сжатая плазма расширяет бак до +100 ед.', img: 'module_04.png' },
     { id: 'mod_en_4', name: 'Темная материя (S)', type: 'energy_max', power: 200, price: 1200, currency: 'QUBI', rarity: 'rare', desc: 'Энергия из пустоты. Дает +200 к запасу.', img: 'module_14.png' },
     { id: 'mod_en_5', name: 'Сингулярность', type: 'energy_max', power: 500, price: 0.5, currency: 'TON', rarity: 'epic', desc: 'Горизонт событий в твоем кармане: +500 энергии.', img: 'module_09.png' },
 
-    // --- Регенерация (Regen Speed) ---
     { id: 'mod_reg_1', name: 'Кварцевый чип', type: 'energy_regen', power: 30000, price: 3000, currency: 'QUANT', rarity: 'common', desc: 'Ускоряет регенерацию на 30 секунд.', img: 'module_02.png' },
     { id: 'mod_reg_2', name: 'Турбо-инъектор', type: 'energy_regen', power: 60000, price: 400, currency: 'QUBI', rarity: 'uncommon', desc: 'Впрыск топлива ускоряет реген на 1 минуту.', img: 'module_12.png' },
     { id: 'mod_reg_3', name: 'Разгонщик частот', type: 'energy_regen', power: 90000, price: 700, currency: 'QUBI', rarity: 'uncommon', desc: 'Снимает лимиты: -90 сек ожидания.', img: 'module_05.png' },
     { id: 'mod_reg_4', name: 'Квантовый резонатор', type: 'energy_regen', power: 120000, price: 1500, currency: 'QUBI', rarity: 'rare', desc: 'Регенерация энергии всего за 1 минуту.', img: 'module_15.png' },
     { id: 'mod_reg_5', name: 'Хронос-двигатель', type: 'energy_regen', power: 160000, price: 0.8, currency: 'TON', rarity: 'epic', desc: 'Почти мгновенное восстановление: реген 20 сек!', img: 'module_08.png' },
 
-    // --- Броня (HP) ---
     { id: 'mod_hp_1', name: 'Стальная пластина', type: 'hp', power: 50, price: 2000, currency: 'QUANT', rarity: 'common', desc: 'Базовая защита корпуса: +50 HP.', img: 'module_03.png' },
     { id: 'mod_hp_2', name: 'Титановый каркас', type: 'hp', power: 100, price: 4500, currency: 'QUANT', rarity: 'common', desc: 'Легкий и прочный сплав: +100 HP.', img: 'module_13.png' },
     { id: 'mod_hp_3', name: 'Керамический композит', type: 'hp', power: 150, price: 600, currency: 'QUBI', rarity: 'uncommon', desc: 'Поглощает удары метеоров: +150 HP.', img: 'module_06.png' },
     { id: 'mod_hp_4', name: 'Силовое поле v.1', type: 'hp', power: 250, price: 1800, currency: 'QUBI', rarity: 'rare', desc: 'Энергетический щит вокруг судна: +250 HP.', img: 'module_16.png' },
     { id: 'mod_hp_5', name: 'Нано-защита "Омни"', type: 'hp', power: 500, price: 0.6, currency: 'TON', rarity: 'epic', desc: 'Технологии древних: +500 HP.', img: 'module_10.png' },
 
-    // --- Гибриды (Hybrid) ---
     { id: 'mod_hyb_1', name: 'Альфа-ядро', type: 'hybrid', power: {hp: 100, en: 100}, price: 2500, currency: 'QUBI', rarity: 'rare', desc: 'Баланс во всем: +100 HP и +100 Энергии.', img: 'module_17.png' },
-    { id: 'mod_hyb_2', name: 'Прототип "Звезда"', type: 'hybrid', power: {hp: 200, reg: 120000}, price: 1.2, currency: 'TON', rarity: 'epic', desc: 'Легендарный образец: +200 HP и быстрый реген.', img: 'module_18.png' },
+    { id: 'mod_hyb_2', name: 'Прототип "Звезда"', type: 'hybrid', power: {hp: 200, reg: 120000}, price: 1.2, currency: 'TON', rarity: 'epic', desc: 'Легкий образец: +200 HP и быстрый реген.', img: 'module_18.png' },
     { id: 'mod_hyb_3', name: 'QUANT-Мастер', type: 'hybrid', power: {en: 250, reg: 120000}, price: 1.0, currency: 'TON', rarity: 'epic', desc: 'Для марафонцев: +250 энергии и реген 1 мин.', img: 'module_19.png' },
     { id: 'mod_hyb_4', name: 'Дрон Mk.1', type: 'hybrid', power: {hp: 300, en: 150}, price: 1.5, currency: 'TON', rarity: 'epic', desc: 'Верный спутник: +300 HP и +150 энергии.', img: 'module_20.png' },
     { id: 'mod_hyb_5', name: 'Бесконечность', type: 'hybrid', power: {hp: 500, en: 500, reg: 150000}, price: 2.5, currency: 'TON', rarity: 'legendary', desc: 'Абсолютная власть над космосом.', img: 'module_07.png' }
 ];
 
-// Правильная инициализация картинок для ВСЕХ объектов
-planets.forEach(p => { p.img.src = p.src; });
-
+// --- СОСТОЯНИЕ КОРАБЛЯ ---
 let runnerShip = {
     x: window.innerWidth / 2,
     y: window.innerHeight - 200, 
     w: 80, h: 80,
-    hp: 100, // Текущее здоровье
-    maxHp: 100, // Максимальное здоровье
+    hp: 100, 
+    maxHp: 100, 
     targetX: window.innerWidth / 2,
     lerpSpeed: 0.2
 };
+
+// Функция для обновления параметров корабля перед стартом
+function syncShipStats() {
+    if (typeof calculateCurrentStats === 'function') {
+        const stats = calculateCurrentStats();
+        runnerShip.maxHp = stats.hp;
+        runnerShip.hp = stats.hp;
+    }
+}
 
 const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
     manifestUrl: 'https://plugy17.github.io/QUBI/tonconnect-manifest.json',
@@ -187,18 +213,13 @@ function resizeCanvas() {
 
     [canvas, runnerCanvas].forEach(c => {
         if (!c) return;
-        
-        // Устанавливаем внутреннее разрешение
         c.width = width * dpr;
         c.height = height * dpr;
-        
-        // Устанавливаем физический размер в браузере
         c.style.width = width + 'px';
         c.style.height = height + 'px';
 
-        // Важно: масштабируем контекст рисования под DPR
         const ctx = c.getContext('2d');
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // Сброс трансформации перед масштабированием
+        ctx.setTransform(1, 0, 0, 1, 0, 0); 
         ctx.scale(dpr, dpr);
     });
 
@@ -207,12 +228,9 @@ function resizeCanvas() {
     }
 }
 
-// Слушатель событий
 window.addEventListener('resize', resizeCanvas);
-
 resizeCanvas();
 
-// И вызываем повторно через короткие паузы, когда WebView стабилизируется
 setTimeout(resizeCanvas, 100);
 setTimeout(resizeCanvas, 300);
 
@@ -224,18 +242,22 @@ function initGame() {
         if (snapshot.exists()) {
             playerData = snapshot.val();
             
-            // Проверка и инициализация данных обмена, если их нет
+            // Инициализация массивов, если их нет в базе
+            if (!playerData.inventory) playerData.inventory = [];
+            if (!playerData.equipped) playerData.equipped = [];
             if (!playerData.dailyExchangeQuant) playerData.dailyExchangeQuant = 0;
             if (!playerData.dailyExchangeQubi) playerData.dailyExchangeQubi = 0;
             
-            // ВАЖНО: Запускаем расчет энергии сразу после загрузки данных
+            // Запускаем регенерацию с учетом новых лимитов
             regenerateEnergy(); 
             
             updateUI();
             syncWithLeaderboard(); 
         } else {
-            // Если игрок новый, записываем текущее время как точку отсчета регенерации
+            // Новый игрок
             playerData.lastEnergyUpdate = Date.now();
+            playerData.inventory = [];
+            playerData.equipped = [];
             userRef.set(playerData);
         }
         hideLoading();
@@ -248,12 +270,12 @@ function openShop() {
     
     if (!shopList || !shopModal) return;
     
-    shopList.innerHTML = ''; // Очистка
+    shopList.innerHTML = ''; 
 
     SHOP_MODULES.forEach(item => {
-        // Проверяем наличие модуля в инвентаре игрока
+        // Проверка: куплен ли модуль (ищем в инвентаре по shopId)
         const isOwned = playerData.inventory && playerData.inventory.some(owned => 
-            owned.shopId === item.id || owned.id === item.id
+            owned.shopId === item.id
         );
         
         const itemEl = document.createElement('div');
@@ -290,10 +312,10 @@ async function payWithTON(amountInTon, itemId) {
     const amountInNanotons = (amountInTon * 1000000000).toString();
     
     const transaction = {
-        validUntil: Math.floor(Date.now() / 1000) + 120, // 2 минуты на оплату
+        validUntil: Math.floor(Date.now() / 1000) + 120,
         messages: [
             {
-                address: "UQAolTf91hk9X9SbfkeWcs10mOCwQCvq5iax2WgQ4H678l6r", // ЗАМЕНИ НА СВОЙ
+                address: "UQAolTf91hk9X9SbfkeWcs10mOCwQCvq5iax2WgQ4H678l6r", 
                 amount: amountInNanotons,
             }
         ]
@@ -308,13 +330,25 @@ async function payWithTON(amountInTon, itemId) {
     }
 }
 
+// --- ИСПРАВЛЕННЫЙ ИНТЕРФЕЙС ---
 function updateUI() {
     const q = document.getElementById('quant-val'),
           b = document.getElementById('qubi-val'),
-          e = document.getElementById('energy-fill');
+          e = document.getElementById('energy-fill'),
+          et = document.getElementById('energy-text'); // Если у тебя есть текст на полоске
+
     if(q) q.innerText = Math.floor(playerData.quant);
     if(b) b.innerText = Math.floor(playerData.qubi);
-    if(e) e.style.width = (playerData.energy || 0) + "%";
+    
+    if(e) {
+        // Считаем % динамически: (текущая / максимальная) * 100
+        const stats = getLimits();
+        const percent = Math.min(100, (playerData.energy / stats.maxEnergy) * 100);
+        e.style.width = percent + "%";
+        
+        // Опционально: если хочешь выводить цифры типа "125/125"
+        if(et) et.innerText = `${Math.floor(playerData.energy)}/${stats.maxEnergy}`;
+    }
 }
 
 function hideLoading() {
@@ -326,48 +360,37 @@ function hideLoading() {
 }
 
 function draw() {
-    // 1. Очищаем холст, используя ФИЗИЧЕСКИЕ пиксели (те, что с DPR)
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     if (bg.complete) {
         ctx.drawImage(bg, 0, 0, window.innerWidth, window.innerHeight);
     }
 
-    // 3. РИСУЕМ ПЛАНЕТЫ
     planets.forEach(p => {
         if (p.img && p.img.complete) {
             ctx.save();
-            
-            // Смещение (p.x и p.y теперь автоматически масштабируются благодаря resizeCanvas)
             ctx.translate(p.x, p.y); 
 
             if (p.id === 'station') {
-                // Плавное покачивание станции
                 const floatY = Math.sin(Date.now() * 0.002) * 5; 
                 ctx.translate(0, floatY);
             } else {
-                // Вращение планет
                 p.rotation += p.speed;
                 ctx.rotate(p.rotation);
             }
             
-            // Рисуем саму планету
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
-            
             ctx.restore();
         }
     });
     
-    // Запускаем следующий кадр
     requestAnimationFrame(draw);
 }
 
 function activatePlanet(id) {
-    // Если любое окно уже открыто, блокируем выполнение, чтобы не тратить энергию под интерфейсом
     if (isAnyModalOpen()) return;
 
     if (id === 'runner') {
-        // Проверка энергии только для запуска игры
         if (playerData.energy < 10) {
             if (window.Telegram && Telegram.WebApp.showAlert) {
                 Telegram.WebApp.showAlert("Недостаточно энергии! Нужно минимум 10 ⚡");
@@ -375,7 +398,6 @@ function activatePlanet(id) {
             return;
         }
         
-        // Списываем энергию и запускаем раннер
         playerData.energy -= 10;
         if (typeof updateUI === "function") updateUI();
         
@@ -387,11 +409,7 @@ function activatePlanet(id) {
             openRunnerWindow();
         }
     } 
-    // Для 'shop', 'leaderboard', 'station' и т.д. мы здесь ничего не пишем, 
-    // так как они обрабатываются напрямую в handleCanvasClick.
-    
     else if (id === 'build') {
-        // Оставляем только то, чего реально еще нет
         if (window.Telegram && Telegram.WebApp.showAlert) {
             Telegram.WebApp.showAlert("Режим «Создание» скоро!");
         }
@@ -404,11 +422,15 @@ function openRunnerWindow() {
     sessionQubi = 0; 
     quants = [];
 
-    const stats = calculateCurrentStats();
-    runnerShip.maxHp = stats.hp; 
-    runnerShip.hp = stats.hp;
+    // --- ОБНОВЛЕНИЕ HP ПЕРЕД СТАРТОМ ---
+    if (typeof syncShipStats === 'function') {
+        syncShipStats(); 
+    } else {
+        // Если функции еще нет, ставим стандарт
+        runnerShip.maxHp = 100;
+        runnerShip.hp = 100;
+    }
 
-    // Сбрасываем текст в новых ID
     const qEl = document.getElementById('runner-score-quant');
     const bEl = document.getElementById('runner-score-qubi');
     if (qEl) qEl.innerText = "0";
@@ -416,11 +438,8 @@ function openRunnerWindow() {
 
     runnerWin.style.display = 'block';
     
-    // Центрируем корабль QUBI
     runnerShip.x = window.innerWidth / 2;
     runnerShip.targetX = window.innerWidth / 2;
-    
-    // Поднимаем его (на всякий случай дублируем высоту здесь)
     runnerShip.y = window.innerHeight - 250; 
     
     spawnRunnerObject();
@@ -430,9 +449,6 @@ function openRunnerWindow() {
 function closeRunnerWindow() {
     isRunnerActive = false;
     
-    // ПРИВОДИМ КОРАБЛЬ В ПОРЯДОК ПЕРЕД СЛЕДУЮЩИМ ВЫЛЕТОМ
-    runnerShip.hp = 100; 
-
     playerData.quant += sessionQuants;
     playerData.qubi += sessionQubi;
     
@@ -442,7 +458,7 @@ function closeRunnerWindow() {
     }).then(() => {
         syncWithLeaderboard();
         updateUI(); 
-        console.log("Данные сохранены и отправлены в ТОП");
+        console.log("Данные сохранены");
     }).catch((err) => {
         console.error("Ошибка сохранения:", err);
     });
@@ -454,10 +470,8 @@ function closeRunnerWindow() {
 function runnerLoop() {
     if (!isRunnerActive) return;
 
-    // 1. Очистка по физическим пикселям
     runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
 
-    // 2. Фон
     if (runnerBg.complete) {
         runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
     }
@@ -468,7 +482,6 @@ function runnerLoop() {
     for (let i = quants.length - 1; i >= 0; i--) {
         let q = quants[i];
         
-        // Молния не падает как предметы, у нее своя логика времени
         if (q.type !== 'lightning') {
             q.y += q.speed;
         }
@@ -477,7 +490,6 @@ function runnerLoop() {
             q.timer++;
 
             if (q.timer < q.warningTime) {
-                // 1. ПРЕДУПРЕЖДЕНИЕ: Тонкий мигающий луч
                 runnerCtx.save();
                 runnerCtx.globalAlpha = (Math.sin(Date.now() * 0.05) * 0.2) + 0.3;
                 runnerCtx.fillStyle = '#00e5ff';
@@ -485,13 +497,11 @@ function runnerLoop() {
                 runnerCtx.restore();
             } 
             else if (q.timer >= q.warningTime && q.timer < q.warningTime + 10) {
-                // 2. УДАР: Вспышка изображения молнии
                 q.active = true; 
                 runnerCtx.save();
                 if (typeof lightningImg !== 'undefined' && lightningImg.complete) {
                     runnerCtx.shadowBlur = 30;
                     runnerCtx.shadowColor = '#fff';
-                    // Рисуем молнию на всю высоту
                     runnerCtx.drawImage(lightningImg, q.x - q.width, 0, q.width * 2, window.innerHeight);
                 }
                 
@@ -504,14 +514,7 @@ function runnerLoop() {
                 quants.splice(i, 1);
                 continue;
             }
-
-            if (q.active && Math.abs(q.x - runnerShip.x) < (runnerShip.w / 2.5 + q.width / 2)) {
-                runnerShip.hp = 0;
-                gameOver();
-                return;
-            }
         }
-        // --- ОТРИСОВКА МЕТЕОРА ---
         else if (q.type === 'meteor') {
             q.angle += q.rotationSpeed;
             if (meteorImg.complete) {
@@ -532,7 +535,6 @@ function runnerLoop() {
                 runnerCtx.restore();
             }
         } 
-        // --- ОТРИСОВКА АЛИЕНА ---
         else if (q.type === 'alien') {
             if (alienImg.complete) {
                 runnerCtx.drawImage(alienImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
@@ -549,7 +551,6 @@ function runnerLoop() {
                 q.lastShot = now;
             }
         }
-        // --- ОТРИСОВКА ПЛАЗМЫ ---
         else if (q.type === 'plasma') {
             runnerCtx.save();
             runnerCtx.beginPath();
@@ -567,30 +568,25 @@ function runnerLoop() {
             }
         }
 
+        // --- ЛОГИКА СТОЛКНОВЕНИЙ ---
         if (q.type === 'lightning') {
             if (q.active && Math.abs(q.x - runnerShip.x) < (runnerShip.w / 2.5 + q.width / 2)) {
-                // Выполняем смерть только если корабль еще "жив"
                 if (runnerShip.hp > 0) {
                     runnerShip.hp = 0;
                     gameOver();
                 }
-                return; // Прекращаем обработку текущего кадра
+                return;
             }
         }
-        // 2. Проверка для остальных объектов
         else if (Math.hypot(q.x - runnerShip.x, q.y - runnerShip.y) < (runnerShip.w / 3 + q.size / 2)) {
             if (q.type === 'meteor') {
                 runnerShip.hp -= 50;
-                if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-                    Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
-                }
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
                 quants.splice(i, 1);
             } 
             else if (q.type === 'plasma') {
                 runnerShip.hp -= 25;
-                if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-                    Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-                }
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
                 quants.splice(i, 1);
             }
             else if (q.type === 'alien') {
@@ -607,38 +603,40 @@ function runnerLoop() {
                 if (qEl) qEl.innerText = sessionQuants;
                 if (bEl) bEl.innerText = sessionQubi;
 
-                if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-                    Telegram.WebApp.HapticFeedback.impactOccurred(q.type === 'qubi' ? 'medium' : 'light');
-                }
+                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(q.type === 'qubi' ? 'medium' : 'light');
                 quants.splice(i, 1);
                 continue;
             }
 
-            // Если после попадания метеора/плазмы HP кончилось
             if (runnerShip.hp <= 0) {
-                runnerShip.hp = 0; // На всякий случай фиксируем в 0
+                runnerShip.hp = 0;
                 gameOver();
                 return;
             }
             continue;
         }
 
-        // Удаление объектов за экраном (кроме молнии, у неё своя логика в цикле выше)
         if (q.type !== 'lightning' && q.y > window.innerHeight + q.size) {
             quants.splice(i, 1);
         }
-    } // конец цикла for
+    }
 
+    // --- ОТРИСОВКА КОРАБЛЯ И HP BAR ---
     if (shipImg.complete) {
         runnerCtx.save();
         runnerCtx.translate(runnerShip.x, runnerShip.y);
         runnerCtx.rotate(dx * 0.02);
         runnerCtx.drawImage(shipImg, -runnerShip.w/2, -runnerShip.h/2, runnerShip.w, runnerShip.h);
         
+        // Полоска здоровья
         const barW = 60;
+        // Используем runnerShip.maxHp (который теперь может быть 500+) для расчета пропорции
         const hpRate = Math.max(0, runnerShip.hp / runnerShip.maxHp);
+        
         runnerCtx.fillStyle = 'rgba(255, 0, 0, 0.3)';
         runnerCtx.fillRect(-barW/2, -runnerShip.h/2 - 15, barW, 6);
+        
+        // Цвет меняется от зеленого к красному
         runnerCtx.fillStyle = hpRate > 0.3 ? '#00ff00' : '#ff4444'; 
         runnerCtx.fillRect(-barW/2, -runnerShip.h/2 - 15, barW * hpRate, 6);
         
@@ -650,11 +648,11 @@ function runnerLoop() {
 
 function spawnLightning() {
     quants.push({
-        x: runnerShip.x, // Целимся точно в игрока в момент появления
+        x: runnerShip.x, 
         y: 0,
-        width: 60, // Ширина поражения
+        width: 60, 
         type: 'lightning',
-        warningTime: 35, // Время мерцания (примерно 0.5-0.7 сек)
+        warningTime: 35, 
         timer: 0,
         active: false
     });
@@ -666,15 +664,7 @@ function spawnRunnerObject() {
     let rand = Math.random() * 100;
 
     if (rand < 10) {
-        quants.push({
-            x: runnerShip.x,
-            y: 0,
-            width: 60,
-            type: 'lightning',
-            warningTime: 35,
-            timer: 0,
-            active: false
-        });
+        spawnLightning(); // Используем отдельную функцию для чистоты кода
     } 
     else if (rand < 15) {
         let size = 70;
@@ -711,17 +701,20 @@ function spawnRunnerObject() {
             type: type
         });
     }
-// ⬇️ ВОТ СЮДА переносим
+
+    // Рекурсивный вызов спавна
     let nextSpawn = 700 + Math.random() * 500;
     if (spawnRunnerObject.spawnTimer) clearTimeout(spawnRunnerObject.spawnTimer);
     spawnRunnerObject.spawnTimer = setTimeout(spawnRunnerObject, nextSpawn);
 }
 
+// --- ЛУННАЯ СТАНЦИЯ (ОБМЕН) ---
+
 function openMoonMenu() {
     const modal = document.getElementById('moon-modal');
     if (modal) {
         modal.style.display = 'flex';
-        updateMoonUI(); // Чтобы сразу видеть актуальный лимит
+        updateMoonUI(); 
     }
 }
 
@@ -730,11 +723,10 @@ function closeMoon() {
     if (modal) modal.style.display = 'none';
 }
 
-// Функция самой переработки (логика)
 function exchangeEnergy(type) {
     const today = new Date().toDateString();
+    const stats = calculateCurrentStats(); // Получаем актуальный макс. лимит энергии
     
-    // Проверка смены дня (сброс лимитов)
     if (!playerData.lastExchangeDate || playerData.lastExchangeDate !== today) {
         playerData.lastExchangeDate = today;
         playerData.dailyExchangeQuant = 0;
@@ -746,14 +738,13 @@ function exchangeEnergy(type) {
     let limitMax = 0;
     let currentProcessed = 0;
 
-    // Настраиваем условия в зависимости от типа ресурса
     if (type === 'quant') {
         cost = 50;
         limitMax = 500;
         currentProcessed = playerData.dailyExchangeQuant || 0;
         
         if (playerData.quant < cost) {
-            alert("Недостаточно QUANT!");
+            if(tg.showAlert) tg.showAlert("Недостаточно QUANT!");
             return;
         }
     } else if (type === 'qubi') {
@@ -762,23 +753,22 @@ function exchangeEnergy(type) {
         currentProcessed = playerData.dailyExchangeQubi || 0;
 
         if (playerData.qubi < cost) {
-            alert("Недостаточно QUBI!");
+            if(tg.showAlert) tg.showAlert("Недостаточно QUBI!");
             return;
         }
     }
 
-    // Общие проверки
     if (currentProcessed + cost > limitMax) {
-        alert("Дневной лимит переработки исчерпан!");
-        return;
-    }
-    const stats = calculateCurrentStats();
-if (playerData.energy >= stats.maxEnergy) {
-        alert("Энергия уже на максимуме!");
+        if(tg.showAlert) tg.showAlert("Дневной лимит переработки исчерпан!");
         return;
     }
 
-    // Выполнение обмена
+    // ИСПРАВЛЕНИЕ: Проверка на макс. энергию с учетом модулей
+    if (playerData.energy >= stats.maxEnergy) {
+        if(tg.showAlert) tg.showAlert("Энергия уже на максимуме (" + stats.maxEnergy + ")!");
+        return;
+    }
+
     if (type === 'quant') {
         playerData.quant -= cost;
         playerData.dailyExchangeQuant = currentProcessed + cost;
@@ -787,9 +777,9 @@ if (playerData.energy >= stats.maxEnergy) {
         playerData.dailyExchangeQubi = currentProcessed + cost;
     }
 
-    playerData.energy = Math.min(100, (playerData.energy || 0) + reward);
+    // Добавляем энергию, но не выше расширенного лимита
+    playerData.energy = Math.min(stats.maxEnergy, (playerData.energy || 0) + reward);
 
-    // Сохранение в Firebase
     userRef.update({
         quant: playerData.quant,
         qubi: playerData.qubi,
@@ -798,36 +788,27 @@ if (playerData.energy >= stats.maxEnergy) {
         dailyExchangeQubi: playerData.dailyExchangeQubi,
         lastExchangeDate: playerData.lastExchangeDate
     }).then(() => {
-        if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-        }
-        
-        // ВАЖНО: Обновляем интерфейс после обмена
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         updateMoonUI(); 
-        updateUI(); // Обновляем статы на главном экране (энергию)
-    }).catch(err => {
-        console.error("Ошибка обмена:", err);
-    });
+        updateUI(); 
+    }).catch(err => console.error("Ошибка обмена:", err));
 }
 
-// Функция обновления текста в модалке (чтобы цифры менялись на глазах)
 function updateMoonUI() {
     const today = new Date().toDateString();
 
-    // 1. Проверяем/сбрасываем лимиты, если наступил новый день
     if (!playerData.lastExchangeDate || playerData.lastExchangeDate !== today) {
         playerData.lastExchangeDate = today;
         playerData.dailyExchangeQuant = 0;
         playerData.dailyExchangeQubi = 0;
     }
 
-    // 2. Обновляем запасы игрока в нижней части окна
     const resQuantEl = document.getElementById('res-amount-quant');
     const resQubiEl = document.getElementById('res-amount-qubi');
     if (resQuantEl) resQuantEl.innerText = Math.floor(playerData.quant || 0) + " QNT";
     if (resQubiEl) resQubiEl.innerText = Math.floor(playerData.qubi || 0) + " QUB";
 
-    // --- ЛИНИЯ QUANT (Лимит 500) ---
+    // QUANT Лимит
     const qProcessed = playerData.dailyExchangeQuant || 0;
     const qTotal = 500;
     const qPercent = Math.min(100, (qProcessed / qTotal) * 100);
@@ -840,11 +821,10 @@ function updateMoonUI() {
     if (qPercText) qPercText.innerText = Math.floor(qPercent) + "%";
     if (qFill) {
         qFill.style.width = qPercent + "%";
-        // Красный цвет, если лимит исчерпан
         qFill.style.background = (qPercent >= 100) ? '#ff4444' : 'linear-gradient(90deg, #00e5ff, #007bff)';
     }
 
-    // --- ЛИНИЯ QUBI (Лимит 50) ---
+    // QUBI Лимит
     const bProcessed = playerData.dailyExchangeQubi || 0;
     const bTotal = 50;
     const bPercent = Math.min(100, (bProcessed / bTotal) * 100);
@@ -857,7 +837,6 @@ function updateMoonUI() {
     if (bPercText) bPercText.innerText = Math.floor(bPercent) + "%";
     if (bFill) {
         bFill.style.width = bPercent + "%";
-        // Красный цвет, если лимит исчерпан
         bFill.style.background = (bPercent >= 100) ? '#ff4444' : 'linear-gradient(90deg, #a855f7, #6b21a8)';
     }
 }
@@ -869,7 +848,7 @@ function openLeaderboard() {
     if (modal) modal.style.display = 'flex';
     if (container) container.innerHTML = '<div style="text-align:center; padding:20px;">Загрузка...</div>';
 
-    // Сначала принудительно обновляем твои данные в базе перед открытием топа
+    // Принудительная синхронизация перед чтением топа
     syncWithLeaderboard();
 
     db.ref('leaderboard').orderByChild('qubi').limitToLast(100).once('value', (snap) => {
@@ -877,20 +856,18 @@ function openLeaderboard() {
             container.innerHTML = '';
             let players = [];
             
-            // Собираем данные и добавляем ID игрока для точной проверки
             snap.forEach(child => {
                 let data = child.val();
-                data.uid = child.key; // Сохраняем ID из ключа Firebase
+                data.uid = child.key; 
                 players.push(data);
             });
 
-            // Сортируем: самые богатые сверху
+            // Богатые сверху, выделяем себя синим
             players.reverse().forEach((p, i) => {
                 const row = document.createElement('div');
                 row.className = 'player-row';
                 
-                // СРАВНИВАЕМ ПО ID (это 100% точность), а не по имени
-                const isMe = p.uid === String(tgUser.id) ? 'style="color: #00e5ff; font-weight: bold; background: rgba(0,229,255,0.1);"' : '';
+                const isMe = p.uid === String(tgUser.id) ? 'style="color: #00e5ff; font-weight: bold; background: rgba(0,229,255,0.1); border-radius: 8px;"' : '';
                 
                 row.innerHTML = `
                     <span ${isMe}>${i + 1}. ${p.name || 'Unknown'}</span>
@@ -902,50 +879,53 @@ function openLeaderboard() {
     });
 }
 
-// Закрытие Лидерборда
 function closeLeaderboard() {
     const modal = document.getElementById('leaderboard-modal');
     if (modal) modal.style.display = 'none';
 }
 
 function gameOver() {
-    // 1. Сразу блокируем повторные вызовы
     if (!isRunnerActive) return; 
     isRunnerActive = false;
     runnerShip.hp = 0;
 
-    // 2. Останавливаем спавн объектов
-    if (this.spawnTimer) clearTimeout(this.spawnTimer);
-
-    // 3. Обратная связь (вибрация)
-    if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-        Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+    // Останавливаем таймер спавна
+    if (spawnRunnerObject.spawnTimer) {
+        clearTimeout(spawnRunnerObject.spawnTimer);
     }
 
-    // 4. Логируем для отладки
-    console.log("Game Over triggered. Quants:", sessionQuants, "Qubi:", sessionQubi);
+    if (tg.HapticFeedback) {
+        tg.HapticFeedback.notificationOccurred('error');
+    }
 
-    // 5. Используем небольшую задержку (300мс), чтобы игрок увидел момент взрыва/удара
+    console.log("Game Over. Quants:", sessionQuants, "Qubi:", sessionQubi);
+
     setTimeout(() => {
-        // Если у тебя нет готового HTML-окна, оставляем alert, 
-        // но теперь он не будет мешать завершению логики
+        // Здесь можно будет заменить на красивое HTML-окно результатов
         alert(`ИГРА ОКОНЧЕНА!\n\nКорабль уничтожен.\n\nСобрано QUANT: ${sessionQuants}\nСобрано QUBI: ${sessionQubi}`);
-        
-        // Закрываем режим раннера
         closeRunnerWindow(); 
     }, 300);
 }
 
-// --- 8. СОБЫТИЯ УПРАВЛЕНИЯ ---
-function isUiHit(target) { return target.closest('.exit-btn') || target.closest('.score-display'); }
+// --- УПРАВЛЕНИЕ И КЛИКИ ---
+
+function isUiHit(target) { 
+    return target.closest('.exit-btn') || target.closest('.score-display') || target.closest('button'); 
+}
+
+function isAnyModalOpen() {
+    // Список всех ID модальных окон
+    const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal', 'runner-window'];
+    return modals.some(id => {
+        const el = document.getElementById(id);
+        if (!el) return false;
+        return window.getComputedStyle(el).display !== 'none';
+    });
+}
 
 function handleCanvasClick(e) {
-    // 1. ПРЕДОХРАНИТЕЛЬ: Если клик попал в любой HTML-элемент (кнопку, меню), 
-    // а не прямо в «черное поле» игры — игнорируем его для планет.
-    if (e.target !== canvas) return;
-
-    // 2. Если какое-то окно уже открыто, планеты под ним не должны реагировать
-    if (isAnyModalOpen()) return;
+    // Если клик не по самому холсту или открыто окно — игнор
+    if (e.target !== canvas || isAnyModalOpen()) return;
 
     const rect = canvas.getBoundingClientRect();
     let clientX, clientY;
@@ -963,53 +943,28 @@ function handleCanvasClick(e) {
     planets.forEach(p => {
         const dist = Math.hypot(clickX - p.x, clickY - p.y);
         
-        // 3. УМЕНЬШАЕМ РАДИУС: p.size * 1.5 — это слишком много, 
-        // поэтому клики «наслаиваются». Ставим 0.9 или 1.0, чтобы клик был строго по планете.
+        // dist < p.size * 1.0 — точный клик по спрайту
         if (dist < p.size * 1.0) { 
-            if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-                Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-            }
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
 
-            if (p.id === 'moon') {
-                openMoonMenu();
-            } else if (p.id === 'shop') {
-                openShop();
-            } else if (p.id === 'leaderboard') {
-                openLeaderboard();
-            } else if (p.id === 'station') {
-                openStation();
-            } else if (p.id === 'core' || p.id === 'runner') { // Твое ядро
-                activatePlanet(p.id);
-            } else if (p.action) {
-                p.action();
-            }
+            if (p.id === 'moon') openMoonMenu();
+            else if (p.id === 'shop') openShop();
+            else if (p.id === 'leaderboard') openLeaderboard();
+            else if (p.id === 'station') openStation();
+            else if (p.id === 'core' || p.id === 'runner') activatePlanet('runner');
+            else if (p.action) p.action();
         }
     });
 }
 
-function isAnyModalOpen() {
-    // Проверь, чтобы все ID твоих окон были здесь
-    const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal', 'runner-window'];
-    return modals.some(id => {
-        const el = document.getElementById(id);
-        if (!el) return false;
-        const style = window.getComputedStyle(el);
-        // Если окно показано (не none), блокируем клики по планетам
-        return style.display !== 'none' && style.visibility !== 'hidden';
-    });
-}
-
-canvas.addEventListener('click', (e) => {
-    if (isAnyModalOpen()) return; // Если окно открыто, планеты не реагируют
-    handleCanvasClick(e);
-});
-
+// Слушатели для главного экрана
+canvas.addEventListener('click', handleCanvasClick);
 canvas.addEventListener('touchstart', (e) => {
-    if (isAnyModalOpen()) return; // Блокируем тач, если открыто окно
     handleCanvasClick(e);
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
+// Слушатели для раннера (движение корабля)
 runnerWin.addEventListener('touchstart', (e) => {
     if (!isRunnerActive || isUiHit(e.target)) return;
     runnerShip.targetX = e.touches[0].clientX;
@@ -1021,15 +976,23 @@ runnerWin.addEventListener('touchmove', (e) => {
     if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
-if (document.getElementById('exit-runner')) {
-    document.getElementById('exit-runner').onclick = closeRunnerWindow;
+// Кнопка выхода из раннера
+const exitRunnerBtn = document.getElementById('exit-runner');
+if (exitRunnerBtn) {
+    exitRunnerBtn.onclick = closeRunnerWindow;
 }
 
-bg.onload = () => { initGame(); draw(); };
-if (bg.complete) { initGame(); draw(); }
+// Старт игры после загрузки фона
+bg.onload = () => { 
+    initGame(); 
+    draw(); 
+};
+if (bg.complete) { 
+    initGame(); 
+    draw(); 
+}
 
 async function buyModule(moduleId) {
-    // 1. Находим данные о модуле в нашем справочнике SHOP_MODULES
     const itemData = SHOP_MODULES.find(m => m.id === moduleId);
     
     if (!itemData) {
@@ -1039,17 +1002,15 @@ async function buyModule(moduleId) {
 
     if (itemData.currency === 'TON') {
         try {
-            // Вызываем оплату через кошелек
             const success = await payWithTON(itemData.price, itemData.id);
-            
             if (success) {
-                grantModule(itemData); // Выдаем предмет
-                alert(`Успешно приобретено: ${itemData.name}!`);
+                grantModule(itemData);
+                if (tg.showAlert) tg.showAlert(`Успешно приобретено: ${itemData.name}!`);
             }
         } catch (e) {
             console.error("Ошибка TON транзакции:", e);
         }
-        return; // Выходим, так как для TON не нужна проверка QUANT/QUBI
+        return;
     }
 
     let priceQuant = itemData.currency === 'QUANT' ? itemData.price : 0;
@@ -1070,10 +1031,9 @@ async function buyModule(moduleId) {
 function grantModule(itemData) {
     if (!playerData.inventory) playerData.inventory = [];
 
-    // Создаем экземпляр модуля для инвентаря
     const newModule = {
-        id: itemData.id + "_" + Date.now(), // Уникальный ID экземпляра
-        shopId: itemData.id,               // Ссылка на тип в магазине
+        id: itemData.id + "_" + Date.now(), 
+        shopId: itemData.id,               
         name: itemData.name,
         type: itemData.type,
         power: itemData.power,
@@ -1089,18 +1049,17 @@ function grantModule(itemData) {
         inventory: playerData.inventory
     }).then(() => {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        updateUI();   // Обновить баланс на экране
-        openShop();   // Перерисовать магазин (чтобы кнопка сменилась на "КУПЛЕНО")
-        console.log(`Модуль ${itemData.name} добавлен в инвентарь`);
+        updateUI();   
+        openShop();   
     });
 }
 
+// --- ГЛАВНЫЙ МОЗГ ХАРАКТЕРИСТИК ---
 function calculateCurrentStats() {
-    // Базовые параметры игрока без модулей
     let stats = {
         hp: 100,
         maxEnergy: 100,
-        regenBonusMs: 0, // Бонус к скорости (вычитается из интервала)
+        regenBonusMs: 0, 
         barrier: 0,
         incomeQuant: 0,
         incomeQubi: 0
@@ -1110,7 +1069,7 @@ function calculateCurrentStats() {
         playerData.equipped.forEach(modId => {
             const module = playerData.inventory.find(m => m.id === modId);
             if (module) {
-                // 1. Обработка обычных модулей (где power — число)
+                // Масштабируем статы в зависимости от типа модуля
                 if (typeof module.power === 'number') {
                     if (module.type === 'hp') stats.hp += module.power;
                     if (module.type === 'energy_max') stats.maxEnergy += module.power;
@@ -1119,7 +1078,6 @@ function calculateCurrentStats() {
                     if (module.type === 'income_quant') stats.incomeQuant += module.power;
                     if (module.type === 'income_qubi') stats.incomeQubi += module.power;
                 } 
-                // 2. Обработка гибридных модулей (где power — объект {hp, en, reg})
                 else if (typeof module.power === 'object') {
                     if (module.power.hp) stats.hp += module.power.hp;
                     if (module.power.en) stats.maxEnergy += module.power.en;
@@ -1131,31 +1089,38 @@ function calculateCurrentStats() {
     return stats;
 }
 
+// --- ОКНО АНГАРА (СТАНЦИЯ) ---
 function openStation() {
-    document.getElementById('station-modal').style.display = 'flex';
+    const modal = document.getElementById('station-modal');
+    if (modal) modal.style.display = 'flex';
 
     const current = calculateCurrentStats();
 
-    // Обновляем текст статов в окне
-    if(document.getElementById('stat-hp')) document.getElementById('stat-hp').innerText = current.hp;
-    if(document.getElementById('stat-energy')) document.getElementById('stat-energy').innerText = current.maxEnergy;
-    
-    // Показываем бонус регенерации (переводим мс в минуты для красоты)
-    const regenBonusMin = (current.regenBonusMs / 60000).toFixed(1);
-    if(document.getElementById('stat-income-quant')) document.getElementById('stat-income-quant').innerText = "-" + regenBonusMin + " мин";
+    // Обновляем текст в UI
+    const hpEl = document.getElementById('stat-hp');
+    const enEl = document.getElementById('stat-energy');
+    const regEl = document.getElementById('stat-income-quant'); // Используем этот ID под реген
 
-    // Отрисовка 5 слотов экипировки
+    if (hpEl) hpEl.innerText = current.hp;
+    if (enEl) enEl.innerText = current.maxEnergy;
+    
+    if (regEl) {
+        // Переводим бонусные мс в наглядные минуты для игрока
+        const regenBonusMin = (current.regenBonusMs / 60000).toFixed(1);
+        regEl.innerText = "-" + regenBonusMin + " мин";
+    }
+
+    // Рендерим 5 слотов экипировки
     const activeContainer = document.getElementById('active-slots-container');
     if (activeContainer) {
         activeContainer.innerHTML = '';
         for (let i = 0; i < 5; i++) {
             const slot = document.createElement('div');
-            const equippedId = playerData.equipped ? playerData.equipped[i] : null;
+            const equippedId = (playerData.equipped && playerData.equipped[i]) ? playerData.equipped[i] : null;
             
             if (equippedId) {
                 const mod = playerData.inventory.find(m => m.id === equippedId);
                 slot.className = 'slot-mini filled';
-                // Ищем картинку в SHOP_MODULES по shopId
                 const shopData = SHOP_MODULES.find(sm => sm.id === mod.shopId);
                 const imgPath = shopData ? `assets/shop/${shopData.img}` : `assets/shop/module_01.png`;
                 slot.innerHTML = `<img src="${imgPath}" style="width:100%; height:100%; object-fit:contain;">`;
@@ -1166,7 +1131,7 @@ function openStation() {
         }
     }
 
-    // Отрисовка списка инвентаря
+    // Список всех модулей в инвентаре
     const scrollList = document.getElementById('inventory-scroll-list');
     if (scrollList) {
         scrollList.innerHTML = '';
@@ -1182,8 +1147,10 @@ function openStation() {
                 card.innerHTML = `
                     <img src="${imgPath}" style="width:35px; height:35px; object-fit:contain;">
                     <div style="display:flex; flex-direction:column; margin-left:10px;">
-                        <span style="font-size:12px;">${item.name}</span>
-                        <small style="color: #00e5ff; font-size:10px;">${isEquipped ? 'УСТАНОВЛЕНО' : 'В ГАРДЕРОБЕ'}</small>
+                        <span style="font-size:12px; font-weight:bold;">${item.name}</span>
+                        <small style="color: ${isEquipped ? '#00e5ff' : '#888'}; font-size:10px;">
+                            ${isEquipped ? 'УСТАНОВЛЕНО' : 'В ГАРДЕРОБЕ'}
+                        </small>
                     </div>
                 `;
                 
@@ -1191,7 +1158,7 @@ function openStation() {
                 scrollList.appendChild(card);
             });
         } else {
-            scrollList.innerHTML = '<div class="no-modules">Инвентарь пуст</div>';
+            scrollList.innerHTML = '<div class="no-modules">Ангар пуст. Купи модули в магазине!</div>';
         }
     }
 }
@@ -1201,51 +1168,32 @@ function toggleModule(modId) {
     
     const index = playerData.equipped.indexOf(modId);
     if (index > -1) {
-        // Снимаем модуль
         playerData.equipped.splice(index, 1);
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     } else {
-        // Ставим модуль (проверка на лимит 5)
         if (playerData.equipped.length < 5) {
             playerData.equipped.push(modId);
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         } else {
-            // Можно вывести сообщение, что слоты заняты
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            if (tg.showAlert) tg.showAlert("Все слоты заняты! Сними что-то старое.");
             return; 
         }
     }
 
     userRef.update({ equipped: playerData.equipped }).then(() => {
-        openStation(); 
+        openStation(); // Перерисовываем окно, чтобы обновились статы и карточки
     });
 }
 
 function closeStation() {
-    // 1. Скрываем окно
     const modal = document.getElementById('station-modal');
     if (modal) modal.style.display = 'none';
-
-    // 2. Сохраняем экипировку в Firebase
-    if (playerData.equipped) {
-        userRef.update({ 
-            equipped: playerData.equipped 
-        }).then(() => {
-            console.log("Конфигурация модулей сохранена");
-        }).catch((err) => {
-            console.error("Ошибка сохранения ангара:", err);
-        });
-    }
-
-    if (typeof updateUI === "function") {
-        updateUI();
-    }
+    if (typeof updateUI === "function") updateUI();
 }
 
-function checkRegen() {
+// --- РЕГЕНЕРАЦИЯ ---
+setInterval(() => {
     if (typeof regenerateEnergy === 'function' && window.playerData) {
         regenerateEnergy();
     }
-}
-setInterval(checkRegen, 60000);
-
+}, 60000);
