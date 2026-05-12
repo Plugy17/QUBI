@@ -409,6 +409,15 @@ function activatePlanet(id) {
             openRunnerWindow();
         }
     } 
+    else if (id === 'shop') {
+        if (typeof openShop === 'function') openShop();
+    }
+    else if (id === 'leaderboard') {
+        if (typeof openLeaderboard === 'function') openLeaderboard();
+    }
+    else if (id === 'moon') {
+        if (typeof openMoonMenu === 'function') openMoonMenu();
+    }
     else if (id === 'build') {
         if (window.Telegram && Telegram.WebApp.showAlert) {
             Telegram.WebApp.showAlert("Режим «Создание» скоро!");
