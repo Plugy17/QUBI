@@ -194,13 +194,17 @@ canvas {
 .moon-card {
     background: linear-gradient(145deg, #121212, #000);
     border: 1px solid rgba(0, 229, 255, 0.2);
-    padding: 25px;
+    padding: 20px; /* Немного уменьшили отступы, чтобы сэкономить место */
     border-radius: 24px;
     width: 85%;
     max-width: 340px;
     text-align: center;
     position: relative;
     box-shadow: 0 0 40px rgba(0, 229, 255, 0.15);
+    
+    /* ДОБАВЬ ЭТИ СТРОКИ: */
+    max-height: 90vh; /* Максимальная высота - 90% экрана */
+    overflow-y: auto; /* Включает прокрутку, если контента много */
 }
 
 .close-btn {
