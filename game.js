@@ -1336,52 +1336,59 @@ function confirmColonyName() {
 }
 
 function calculatePassiveIncome() {
-    // Проверяем, есть ли данные для расчета
     if (!playerData.buildings || !playerData.lastCollect) {
         console.log("Нет данных для начисления дохода");
+        playerData.lastCollect = Date.now(); // Инициализируем, если пусто
         return;
     }
 
     const now = Date.now();
     const diffInMs = now - playerData.lastCollect;
-    const hoursPassed = diffInMs / (1000 * 60 * 60); // Разница в часах
+    const hoursPassed = diffInMs / (1000 * 60 * 60);
 
-    // Если прошло меньше 10 секунд, не считаем (чтобы не спамить базу)
     if (diffInMs < 10000) return; 
 
     let totalQuant = 0;
     let totalQubi = 0;
 
-    // Проходим по всем слотам зданий
-    playerData.buildings.forEach(type => {
-        if (type !== 0 && buildingTypes[type]) {
-            totalQuant += (buildingTypes[type].quantRate || 0) * hoursPassed;
-            totalQubi += (buildingTypes[type].qubiRate || 0) * hoursPassed;
+    playerData.buildings.forEach(b => {
+        // Проверяем, что b - это объект и здание существует в конфиге
+        if (b && b !== 0 && buildingTypes[b.type]) {
+            const config = buildingTypes[b.type];
+            const levelMult = b.level || 1; // Множитель уровня
+
+            // Считаем доход: (Базовый доход * Уровень) * Прошедшее время
+            if (config.yieldType === "quant") {
+                totalQuant += (config.baseYield * levelMult) * hoursPassed;
+            } else if (config.yieldType === "qubi") {
+                totalQubi += (config.baseYield * levelMult) * hoursPassed;
+            }
         }
     });
 
-    if (totalQuant > 0 || totalQubi > 0) {
-        // Округляем до целых чисел
+    if (totalQuant >= 1 || totalQubi >= 1) {
         const gainedQuant = Math.floor(totalQuant);
         const gainedQubi = Math.floor(totalQubi);
 
         playerData.quant += gainedQuant;
-        playerData.qubi += gainedQubi;
-        playerData.lastCollect = now; // Обновляем время последнего сбора
+        playerData.qubi = (playerData.qubi || 0) + gainedQubi;
+        playerData.lastCollect = now;
 
-        // Синхронизируем с Firebase
         userRef.update({
             quant: playerData.quant,
             qubi: playerData.qubi,
             lastCollect: now
         }).then(() => {
-            console.log(`💰 Начислено: ${gainedQuant} QNT, ${gainedQubi} QUB`);
-            updateUI(); // Обновляем цифры на главном экране
+            console.log(`💰 Пассивный доход: +${gainedQuant} QNT, +${gainedQubi} QUBI`);
+            updateUI(); 
+            // Если мы на экране Земли, обновляем и его счетчики
+            if (document.getElementById('earth-screen').style.display === 'flex') {
+                updateEarthUI(); 
+            }
         });
     }
 }
 
-// Вход в режим стратегии
 function enterStrategyMode() {
     // 1. Начисляем монеты за время отсутствия
     calculatePassiveIncome(); 
@@ -1389,11 +1396,19 @@ function enterStrategyMode() {
     // 2. Показываем экран Земли
     document.getElementById('earth-screen').style.display = 'flex';
     
-    // 3. Выводим имя планеты
+    // 3. Выводим имя планеты и обновляем балансы в шапке
     document.getElementById('colony-name-display').innerText = playerData.colonyName || "КОЛОНИЯ";
+    
+    // Обновляем цифры QUANT, QUBI и Артефактов
+    document.getElementById('earth-quant-balance').innerText = Math.floor(playerData.quant);
+    document.getElementById('earth-qubi-balance').innerText = Math.floor(playerData.qubi || 0);
+    document.getElementById('player-artifacts').innerText = playerData.artifacts || 0;
     
     // 4. Рисуем здания в слотах
     renderBuildings();
+    
+    // 5. Пересчитываем текущий доход в час для инфо-панели
+    updateColonyStats();
 }
 
 // Выход
@@ -1416,19 +1431,31 @@ function exitEarth() {
 
 // Отрисовка зданий в слотах
 function renderBuildings() {
-    const slots = document.querySelectorAll('.slot');
-    const bData = playerData.buildings || [0,0,0,0,0,0,0,0,0];
-    
-    slots.forEach((slot, index) => {
-        if (bData[index] === 0) {
-            slot.innerHTML = '<span style="font-size:20px; opacity:0.3;">+</span>';
-            slot.classList.remove('occupied');
+    const grid = document.getElementById('building-grid');
+    const slots = grid.getElementsByClassName('slot');
+
+    playerData.buildings.forEach((b, index) => {
+        const slot = slots[index];
+        slot.innerHTML = ""; // Очищаем слот перед отрисовкой
+
+        if (b !== 0 && b !== "0") {
+            // Если здание есть (b — это объект {type: 'mine', level: 1})
+            const typeInfo = buildingTypes[b.type];
+            
+            // Создаем картинку
+            const img = document.createElement('img');
+            img.src = typeInfo.icon; // Путь к твоим PNG
+            img.alt = typeInfo.name;
+            slot.appendChild(img);
+
+            // Добавляем индикатор уровня
+            const levelTag = document.createElement('div');
+            levelTag.className = 'slot-level';
+            levelTag.innerText = `Lvl ${b.level}`;
+            slot.appendChild(levelTag);
         } else {
-            // Берем иконку из конфига по типу (mine, lab, shield)
-            const type = bData[index];
-            const icon = buildingTypes[type] ? buildingTypes[type].icon : "🏗️";
-            slot.innerHTML = `<div style="font-size:30px;">${icon}</div>`;
-            slot.classList.add('occupied');
+            // Если пусто — можно добавить плюсик или оставить прозрачным
+            slot.innerHTML = '<span style="color: rgba(0,229,255,0.2); font-size: 24px;">+</span>';
         }
     });
 }
@@ -1451,52 +1478,101 @@ function clickSlot(index) {
 }
 
 function openUpgradeMenu(index, building) {
-    const typeInfo = buildingTypes[building.type];
-    const upgradeCost = typeInfo.artifactUpgradeBase * building.level; // Цена растет с уровнем
-    
-    // Показываем красивое окно (можно использовать ту же структуру build-menu)
     const menu = document.getElementById('build-menu');
     const list = document.getElementById('buildings-list');
+    const typeInfo = buildingTypes[building.type];
+    
+    // Расчет стоимости: базовая цена * уровень (каждый уровень дороже)
+    const upgradeCost = typeInfo.artifactUpgradeBase * building.level;
+    const hasArtifacts = (playerData.artifacts || 0) >= upgradeCost;
+
     list.innerHTML = `
-        <div class="upgrade-info">
-            <img src="${typeInfo.icon}" style="width: 64px;">
-            <h4>${typeInfo.name} (Ур. ${building.level})</h4>
-            <p>Текущий доход: ${typeInfo.baseYield * building.level} ${typeInfo.yieldType}/ч</p>
-            <p style="color: #00e5ff;">Следующий уровень: ${typeInfo.baseYield * (building.level + 1)} ${typeInfo.yieldType}/ч</p>
-            <button onclick="upgradeBuilding(${index})" class="confirm-build-btn" style="margin-top:10px;">
-                УЛУЧШИТЬ ЗА ${upgradeCost} АРТЕФАКТОВ
+        <div style="padding: 10px; text-align: center;">
+            <img src="${typeInfo.icon}" style="width: 80px; margin-bottom: 10px; filter: drop-shadow(0 0 10px #00e5ff);">
+            <h3 style="color: #fff; margin: 5px 0;">${typeInfo.name}</h3>
+            <p style="color: #aaa; font-size: 12px;">Уровень: ${building.level} → <span style="color: #00e5ff;">${building.level + 1}</span></p>
+            
+            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; margin: 15px 0;">
+                <div style="font-size: 11px; color: #eee;">Стоимость улучшения:</div>
+                <div style="font-size: 18px; font-weight: bold; color: ${hasArtifacts ? '#ffca28' : '#ff4b2b'};">
+                    ${upgradeCost} 💎 Артефактов
+                </div>
+            </div>
+
+            <button onclick="upgradeBuilding(${index})" 
+                style="width: 100%; padding: 12px; background: ${hasArtifacts ? '#00e5ff' : '#444'}; 
+                color: #000; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">
+                ${hasArtifacts ? 'УЛУЧШИТЬ' : 'НУЖНО БОЛЬШЕ АРТЕФАКТОВ'}
             </button>
         </div>
     `;
+
     menu.style.display = 'flex';
 }
 
 function openBuildMenu() {
     const menu = document.getElementById('build-menu');
     const list = document.getElementById('buildings-list');
-    list.innerHTML = ""; // Очищаем список
+    list.innerHTML = ""; 
 
-    // Создаем кнопки для каждого типа здания из нашего конфига buildingTypes
     Object.keys(buildingTypes).forEach(key => {
         const b = buildingTypes[key];
         const item = document.createElement('div');
         item.className = 'build-item';
+        
+        // Проверяем, хватает ли денег, чтобы визуально подсказать игроку
+        const canAfford = playerData.quant >= b.baseCost;
+        if (!canAfford) item.style.opacity = "0.5";
+
         item.onclick = () => {
-            buildBuilding(currentSelectedSlot, key);
-            closeBuildMenu();
+            if (canAfford) {
+                buildBuilding(currentSelectedSlot, key);
+                closeBuildMenu();
+            } else {
+                tg.HapticFeedback.notificationOccurred('error');
+                alert("Недостаточно QUANT!");
+            }
         };
 
         item.innerHTML = `
-            <div class="build-icon">${b.icon}</div>
+            <div class="build-icon">
+                <img src="${b.icon}" style="width: 40px; height: 40px; object-fit: contain;">
+            </div>
             <div class="build-info">
                 <span class="build-name">${b.name}</span>
-                <span class="build-cost">Цена: ${b.cost} QUANT</span>
+                <span class="build-cost" style="color: ${canAfford ? '#00e5ff' : '#ff4b2b'}">
+                    Цена: ${b.baseCost} QNT
+                </span>
             </div>
         `;
         list.appendChild(item);
     });
 
     menu.style.display = 'flex';
+}
+
+function upgradeBuilding(index) {
+    const building = playerData.buildings[index];
+    const typeInfo = buildingTypes[building.type];
+    const upgradeCost = typeInfo.artifactUpgradeBase * building.level;
+
+    if (playerData.artifacts >= upgradeCost) {
+        playerData.artifacts -= upgradeCost;
+        playerData.buildings[index].level += 1; // Повышаем уровень!
+
+        // Синхронизируем
+        userRef.update({
+            artifacts: playerData.artifacts,
+            buildings: playerData.buildings
+        }).then(() => {
+            closeBuildMenu();
+            renderBuildings(); // Перерисовываем слоты (чтобы сменился Lvl)
+            updateEarthUI();   // Обновляем счетчики артефактов
+            tg.HapticFeedback.notificationOccurred('success');
+        });
+    } else {
+        tg.HapticFeedback.notificationOccurred('error');
+    }
 }
 
 function closeBuildMenu() {
