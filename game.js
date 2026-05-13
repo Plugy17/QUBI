@@ -488,23 +488,17 @@ function activatePlanet(id) {
     if (isAnyModalOpen()) return;
 
     if (id === 'runner') {
+        // ... твой код проверки энергии ...
         if (playerData.energy < 10) {
             if (window.Telegram && Telegram.WebApp.showAlert) {
                 Telegram.WebApp.showAlert("Недостаточно энергии! Нужно минимум 10 ⚡");
             }
             return;
         }
-        
         playerData.energy -= 10;
         if (typeof updateUI === "function") updateUI();
-        
-        if (typeof userRef !== "undefined") {
-            userRef.update({ energy: playerData.energy });
-        }
-        
-        if (typeof openRunnerWindow === "function") {
-            openRunnerWindow();
-        }
+        if (typeof userRef !== "undefined") userRef.update({ energy: playerData.energy });
+        if (typeof openRunnerWindow === "function") openRunnerWindow();
     } 
     else if (id === 'shop') {
         if (typeof openShop === 'function') openShop();
@@ -515,9 +509,12 @@ function activatePlanet(id) {
     else if (id === 'moon') {
         if (typeof openMoonMenu === 'function') openMoonMenu();
     }
+    // ВОТ ТУТ ИЗМЕНЕНИЯ:
     else if (id === 'build') {
-        if (window.Telegram && Telegram.WebApp.showAlert) {
-            Telegram.WebApp.showAlert("Режим «Создание» скоро!");
+        if (typeof openEarth === 'function') {
+            openEarth(); // Вызываем нашу логику колонизации и входа
+        } else {
+            console.error("Функция openEarth не найдена!");
         }
     }
 }
