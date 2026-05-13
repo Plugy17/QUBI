@@ -65,16 +65,17 @@ function regenerateEnergy() {
     if (!window.playerData || !window.userRef) return;
 
     const now = Date.now();
-    let lastUpdate = Number(playerData.lastEnergyUpdate);
+    // Принудительно превращаем в число, чтобы избежать NaN
+    let lastUpdate = Number(playerData.lastEnergyUpdate) || 0;
 
-    // Лечение "времени из будущего"
-    if (!lastUpdate || isNaN(lastUpdate) || lastUpdate > now) {
+    if (lastUpdate === 0 || lastUpdate > now) {
         playerData.lastEnergyUpdate = now;
         userRef.update({ lastEnergyUpdate: now });
         return;
     }
 
     const stats = calculateCurrentStats();
+    // Убеждаемся, что интервал не меньше 1 секунды
     const MS_PER_UNIT = Math.max(1000, 60000 - Number(stats.regenBonusMs || 0));
     const timePassed = now - lastUpdate;
 
@@ -83,21 +84,16 @@ function regenerateEnergy() {
     const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
 
     if (energyToAdd > 0 && playerData.energy < stats.maxEnergy) {
-        const newEnergy = Math.min(stats.maxEnergy, (playerData.energy || 0) + energyToAdd);
-        const updatedTime = lastUpdate + (energyToAdd * MS_PER_UNIT);
-
-        playerData.energy = newEnergy;
-        playerData.lastEnergyUpdate = updatedTime;
+        playerData.energy = Math.min(stats.maxEnergy, (Number(playerData.energy) || 0) + energyToAdd);
+        playerData.lastEnergyUpdate = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
         updateUI();
 
         userRef.update({
             energy: playerData.energy,
-            lastEnergyUpdate: updatedTime
+            lastEnergyUpdate: playerData.lastEnergyUpdate
         });
-    } else if (playerData.energy >= stats.maxEnergy) {
-        playerData.lastEnergyUpdate = now;
-        userRef.update({ lastEnergyUpdate: now });
+        console.log("Энергия восстановлена:", energyToAdd);
     }
 }
 
