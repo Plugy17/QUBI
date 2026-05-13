@@ -1301,6 +1301,52 @@ function openEarth() {
     }
 }
 
+function calculatePassiveIncome() {
+    // Проверяем, есть ли данные для расчета
+    if (!playerData.buildings || !playerData.lastCollect) {
+        console.log("Нет данных для начисления дохода");
+        return;
+    }
+
+    const now = Date.now();
+    const diffInMs = now - playerData.lastCollect;
+    const hoursPassed = diffInMs / (1000 * 60 * 60); // Разница в часах
+
+    // Если прошло меньше 10 секунд, не считаем (чтобы не спамить базу)
+    if (diffInMs < 10000) return; 
+
+    let totalQuant = 0;
+    let totalQubi = 0;
+
+    // Проходим по всем слотам зданий
+    playerData.buildings.forEach(type => {
+        if (type !== 0 && buildingTypes[type]) {
+            totalQuant += (buildingTypes[type].quantRate || 0) * hoursPassed;
+            totalQubi += (buildingTypes[type].qubiRate || 0) * hoursPassed;
+        }
+    });
+
+    if (totalQuant > 0 || totalQubi > 0) {
+        // Округляем до целых чисел
+        const gainedQuant = Math.floor(totalQuant);
+        const gainedQubi = Math.floor(totalQubi);
+
+        playerData.quant += gainedQuant;
+        playerData.qubi += gainedQubi;
+        playerData.lastCollect = now; // Обновляем время последнего сбора
+
+        // Синхронизируем с Firebase
+        userRef.update({
+            quant: playerData.quant,
+            qubi: playerData.qubi,
+            lastCollect: now
+        }).then(() => {
+            console.log(`💰 Начислено: ${gainedQuant} QNT, ${gainedQubi} QUB`);
+            updateUI(); // Обновляем цифры на главном экране
+        });
+    }
+}
+
 // Вход в режим стратегии
 function enterStrategyMode() {
     // 1. Начисляем монеты за время отсутствия
