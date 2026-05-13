@@ -810,3 +810,56 @@ canvas {
     border-bottom: 2px solid currentColor !important; /* Линия под кнопкой */
     opacity: 1 !important;
 }
+
+/* Экран планеты */
+.earth-screen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: url('assets/surface_bg.jpg') center/cover; /* Фон поверхности планеты */
+    display: none;
+    flex-direction: column;
+    z-index: 2000;
+}
+
+/* Сетка зданий */
+.building-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 15px;
+    padding: 20px;
+    flex-grow: 1;
+    align-items: center;
+}
+
+/* Слот для здания */
+.slot {
+    aspect-ratio: 1/1;
+    background: rgba(0, 229, 255, 0.05);
+    border: 1px dashed rgba(0, 229, 255, 0.3);
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.slot:active { transform: scale(0.95); }
+
+.slot.occupied {
+    background: rgba(0, 229, 255, 0.1);
+    border: 1px solid #00e5ff;
+}
+
+/* Панель ресурсов колонии (сверху) */
+.colony-header {
+    padding: 20px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+}
