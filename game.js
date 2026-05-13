@@ -196,6 +196,7 @@ const qubiImg = new Image(); qubiImg.src = 'assets/qubi-icon.png';
 const meteorImg = new Image(); meteorImg.src = 'assets/meteor.png'; 
 const alienImg = new Image(); alienImg.src = 'assets/alien.png';
 const lightningImg = new Image(); lightningImg.src = 'assets/molniya.png';
+const artifactImg = new Image(); artifactImg.src = 'assets/artifact.png';
 
 // --- ОБЪЕКТЫ ПЛАНЕТ ---
 const planets = [
