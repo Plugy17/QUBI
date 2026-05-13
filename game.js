@@ -1065,43 +1065,41 @@ function isAnyModalOpen() {
 
 // --- ЛОГИКА ОБРАБОТКИ КЛИКОВ ---
 function handleCanvasClick(e) {
-    // 1. ПОЛНАЯ БЛОКИРОВКА ФОНА ДЛЯ ВСЕХ ЭКРАНОВ ЗЕМЛИ
+    // 1. ПРОВЕРКА: Если клик был по интерфейсу (кнопки, инпуты, окна)
+    // мы просто выходим и даем браузеру обработать клик в HTML
+    if (e.target.tagName !== 'CANVAS') {
+        return; 
+    }
+
+    // 2. БЛОКИРОВКА ФОНА, ЕСЛИ ОКНА ОТКРЫТЫ
     const earthScreen = document.getElementById('earth-screen');
     const nameModal = document.getElementById('name-input-modal');
     const buildMenu = document.getElementById('build-menu');
 
-    // Если хоть одно из этих окон открыто — игнорируем клик по космосу
-    if (
-        (earthScreen && earthScreen.style.display === 'flex') || 
-        (nameModal && nameModal.style.display === 'flex') ||
-        (buildMenu && buildMenu.style.display === 'flex')
-    ) {
-        return; 
+    const isUIOpen = (earthScreen && earthScreen.style.display === 'flex') || 
+                     (nameModal && nameModal.style.display === 'flex') ||
+                     (buildMenu && buildMenu.style.display === 'flex');
+
+    if (isUIOpen) {
+        return; // Блокируем вибрацию и логику планет
     }
 
-    // 2. Стандартная проверка на системные модальные окна
+    // 3. Остальная стандартная логика
     if (isAnyModalOpen()) return;
 
-    // Получаем координаты клика
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
     const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
 
-    // Проверяем попадание по каждой планете
     planets.forEach(p => {
         const dx = x - p.x;
         const dy = y - p.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < p.size / 2) {
-            // Вибрация сработает только если мы не в режиме строительства/ввода
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-            
-            if (p.action) {
-                p.action();
-            } else {
-                activatePlanet(p.id);
-            }
+            if (p.action) p.action();
+            else activatePlanet(p.id);
         }
     });
 }
