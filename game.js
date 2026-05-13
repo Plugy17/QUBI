@@ -348,28 +348,27 @@ function renderShopItems(filter = 'all') {
 
 // Вспомогательная функция для выделения активной кнопки
 function updateShopTabsVisuals(activeFilter) {
-    // Ищем контейнер, где лежат твои кнопки (поправь селектор, если кнопки лежат в другом месте)
-    const navContainer = document.querySelector('.shop-nav') || document.querySelector('#shop-modal div[style*="display:flex"]');
-    if (!navContainer) return;
+    const tabsContainer = document.querySelector('.shop-tabs');
+    if (!tabsContainer) return;
 
-    const buttons = navContainer.querySelectorAll('button');
+    const buttons = tabsContainer.querySelectorAll('button');
     
     buttons.forEach(btn => {
-        const onClickAttr = btn.getAttribute('onclick');
-        
-        // Проверяем, содержит ли onclick именно наш текущий фильтр
-        if (onClickAttr && onClickAttr.includes(`'${activeFilter}'`)) {
-            // Стиль для активной кнопки
-            btn.style.color = (activeFilter === 'ton') ? '#ffa500' : '#00e5ff';
-            btn.style.fontWeight = 'bold';
-            btn.style.borderBottom = `2px solid ${activeFilter === 'ton' ? '#ffa500' : '#00e5ff'}`;
-            btn.style.opacity = '1';
+        // Проверяем, какой фильтр привязан к кнопке через атрибут onclick
+        if (btn.getAttribute('onclick').includes(`'${activeFilter}'`)) {
+            // Если это активная кнопка
+            btn.classList.add('active-tab');
+            btn.style.opacity = "1";
+            if (activeFilter === 'ton') {
+                btn.style.color = "#ffa500"; // Золотой для ТОН
+            } else {
+                btn.style.color = "#00e5ff"; // Голубой для остальных
+            }
         } else {
-            // Стиль для неактивных кнопок
-            btn.style.color = '#ffffff';
-            btn.style.fontWeight = 'normal';
-            btn.style.borderBottom = 'none';
-            btn.style.opacity = '0.5'; // Делаем чуть тусклее, чтобы активная выделялась
+            // Для неактивных кнопок
+            btn.classList.remove('active-tab');
+            btn.style.color = "#fff";
+            btn.style.opacity = "0.5";
         }
     });
 }
