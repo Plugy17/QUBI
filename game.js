@@ -1,3 +1,5 @@
+console.log("ГЕЙМ-СКРИПТ ЗАПУЩЕН");
+
 let playerData = { 
     quant: 0, 
     qubi: 0, 
@@ -66,37 +68,39 @@ function regenerateEnergy() {
 
     const now = Date.now();
     let lastUpdate = Number(playerData.lastEnergyUpdate) || now;
-
-    // --- ВОТ ЭТОТ БЛОК ИСПРАВИТ ВСЁ ---
-    // Если время в базе больше текущего более чем на 1 минуту (баг с будущим временем)
+    
+    // ЛЕЧЕНИЕ: Сброс будущего времени (твой баг 1778541...)
     if (lastUpdate > (now + 60000)) {
-        console.warn("⚠️ Обнаружено время из будущего! Сбрасываю счетчик на текущее...");
+        console.log("🛠 Исправляю время из будущего...");
         playerData.lastEnergyUpdate = now;
         userRef.update({ lastEnergyUpdate: now });
-        return; // Выходим, чтобы начать чистый отсчет со следующего кадра
+        return;
     }
-    // ---------------------------------
 
     const stats = calculateCurrentStats();
     const maxE = Number(stats.maxEnergy) || 100;
     const bonus = Number(stats.regenBonusMs) || 0;
-
     const MS_PER_UNIT = Math.max(1000, 60000 - bonus);
+    
     const timePassed = now - lastUpdate;
+
+    // Этот лог поможет понять, работает ли функция вообще
+    // Если его нет в консоли — значит draw() не вызывает regenerateEnergy()
+    if (Math.random() < 0.01) console.log("Проверка регена... Прошло мс:", timePassed);
 
     if (timePassed >= MS_PER_UNIT && playerData.energy < maxE) {
         const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
         
         if (energyToAdd > 0) {
-            playerData.energy = Math.min(maxE, Number(playerData.energy) + energyToAdd);
+            playerData.energy = Math.min(maxE, (Number(playerData.energy) || 0) + energyToAdd);
             playerData.lastEnergyUpdate = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
-            updateUI();
+            updateUI(); 
             userRef.update({
                 energy: playerData.energy,
                 lastEnergyUpdate: playerData.lastEnergyUpdate
             });
-            console.log(`🔋 Регенерация сработала: +${energyToAdd}`);
+            console.log("🔋 Энергия начислена:", energyToAdd);
         }
     }
 }
@@ -430,7 +434,7 @@ function hideLoading() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Запускаем проверку регенерации каждый кадр
+    // ПРОВЕРКА: Теперь регенерация будет вызываться 60 раз в секунду
     regenerateEnergy();
 
     if (bg.complete) {
@@ -441,7 +445,6 @@ function draw() {
         if (p.img && p.img.complete) {
             ctx.save();
             ctx.translate(p.x, p.y); 
-
             if (p.id === 'station') {
                 const floatY = Math.sin(Date.now() * 0.002) * 5; 
                 ctx.translate(0, floatY);
@@ -449,12 +452,12 @@ function draw() {
                 p.rotation += p.speed;
                 ctx.rotate(p.rotation);
             }
-            
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
     });
     
+    // ЭТА СТРОКА ЗАПУСКАЕТ БЕСКОНЕЧНЫЙ ЦИКЛ
     requestAnimationFrame(draw);
 }
 
