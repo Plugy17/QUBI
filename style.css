@@ -869,6 +869,11 @@ canvas {
     pointer-events: auto; /* Явно разрешаем клики в этой зоне */
 }
 
+#colony-name-input:focus {
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+    background: rgba(0, 229, 255, 0.1);
+}
+
 /* ОКНО СТРОИТЕЛЬСТВА */
 .build-modal {
     position: absolute;
