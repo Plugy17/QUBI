@@ -160,6 +160,30 @@ const runnerCanvas = document.getElementById('runnerCanvas');
 const runnerCtx = runnerCanvas.getContext('2d');
 const runnerWin = document.getElementById('runner-window');
 
+const buildingTypes = {
+    mine: {
+        name: "Квантовая шахта",
+        icon: "⛏️",
+        cost: 1000,
+        income: 50, // QUANT в час
+        desc: "Добывает QUANT из недр планеты"
+    },
+    lab: {
+        name: "QUBI-Лаборатория",
+        icon: "🧪",
+        cost: 2500,
+        income: 5, // QUBI в час
+        desc: "Синтезирует кристаллы QUBI"
+    },
+    shield: {
+        name: "Энерго-щит",
+        icon: "🛡️",
+        cost: 5000,
+        income: 0, 
+        desc: "Замедляет расход энергии в Раннере на 10%"
+    }
+};
+
 // --- ЗАГРУЗКА РЕСУРСОВ ---
 const bg = new Image(); bg.src = 'assets/background1.jpg';
 const runnerBg = new Image(); runnerBg.src = 'assets/background2.jpg';
@@ -1278,14 +1302,35 @@ function openEarth() {
 
 // Вход в режим стратегии
 function enterStrategyMode() {
+    // 1. Начисляем монеты за время отсутствия
+    calculatePassiveIncome(); 
+
+    // 2. Показываем экран Земли
     document.getElementById('earth-screen').style.display = 'flex';
+    
+    // 3. Выводим имя планеты
     document.getElementById('colony-name-display').innerText = playerData.colonyName || "КОЛОНИЯ";
+    
+    // 4. Рисуем здания в слотах
     renderBuildings();
 }
 
 // Выход
 function exitEarth() {
+    // 1. Скрываем экран
     document.getElementById('earth-screen').style.display = 'none';
+
+    // 2. Фиксируем время выхода, чтобы доход считался с этого момента
+    if (playerData.earthOpened) {
+        const now = Date.now();
+        playerData.lastCollect = now;
+        
+        userRef.update({
+            lastCollect: now
+        }).then(() => {
+            console.log("Время сбора синхронизировано при выходе.");
+        });
+    }
 }
 
 // Отрисовка зданий в слотах
@@ -1298,11 +1343,54 @@ function renderBuildings() {
             slot.innerHTML = '<span style="font-size:20px; opacity:0.3;">+</span>';
             slot.classList.remove('occupied');
         } else {
-            // Тут потом добавим иконки зданий
-            slot.innerHTML = '<div style="color:#00e5ff">🏗️</div>';
+            // Берем иконку из конфига по типу (mine, lab, shield)
+            const type = bData[index];
+            const icon = buildingTypes[type] ? buildingTypes[type].icon : "🏗️";
+            slot.innerHTML = `<div style="font-size:30px;">${icon}</div>`;
             slot.classList.add('occupied');
         }
     });
+}
+
+// Клик по слоту (вызывается из HTML)
+function clickSlot(index) {
+    if (!playerData.buildings) return;
+
+    // Если слот пустой (0)
+    if (playerData.buildings[index] === 0) {
+        let choice = prompt("Выберите постройку:\n1. Шахта (1000 QNT)\n2. Лаборатория (2500 QNT)\n3. Щит (5000 QNT)");
+        
+        let type = "";
+        if (choice === "1") type = "mine";
+        else if (choice === "2") type = "lab";
+        else if (choice === "3") type = "shield";
+
+        if (type) buildBuilding(index, type);
+    } else {
+        alert("Здание уже функционирует!");
+    }
+}
+
+// Логика покупки и сохранения
+function buildBuilding(index, type) {
+    const config = buildingTypes[type];
+    
+    if (playerData.quant >= config.cost) {
+        playerData.quant -= config.cost;
+        playerData.buildings[index] = type; // Записываем строку 'mine', 'lab' и т.д.
+
+        userRef.update({
+            quant: playerData.quant,
+            buildings: playerData.buildings,
+            lastCollect: Date.now() // Сбрасываем таймер сбора при постройке
+        }).then(() => {
+            renderBuildings();
+            updateUI();
+            alert(`Объект "${config.name}" возведен!`);
+        });
+    } else {
+        alert("Недостаточно QUANT!");
+    }
 }
 
 // 1. Создаем четкую функцию запуска
