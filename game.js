@@ -1065,13 +1065,21 @@ function isAnyModalOpen() {
 
 // --- ЛОГИКА ОБРАБОТКИ КЛИКОВ ---
 function handleCanvasClick(e) {
-    // 1. БЛОКИРОВКА КЛИКА, ЕСЛИ ОТКРЫТ ЭКРАН ЗЕМЛИ
+    // 1. ПОЛНАЯ БЛОКИРОВКА ФОНА ДЛЯ ВСЕХ ЭКРАНОВ ЗЕМЛИ
     const earthScreen = document.getElementById('earth-screen');
-    if (earthScreen && earthScreen.style.display === 'flex') {
-        return; // Выходим из функции, чтобы не срабатывала вибрация и логика планет
+    const nameModal = document.getElementById('name-input-modal');
+    const buildMenu = document.getElementById('build-menu');
+
+    // Если хоть одно из этих окон открыто — игнорируем клик по космосу
+    if (
+        (earthScreen && earthScreen.style.display === 'flex') || 
+        (nameModal && nameModal.style.display === 'flex') ||
+        (buildMenu && buildMenu.style.display === 'flex')
+    ) {
+        return; 
     }
 
-    // 2. Стандартная проверка на открытые модальные окна
+    // 2. Стандартная проверка на системные модальные окна
     if (isAnyModalOpen()) return;
 
     // Получаем координаты клика
@@ -1086,14 +1094,12 @@ function handleCanvasClick(e) {
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < p.size / 2) {
-            // Вибрация сработает только если мы не в режиме строительства
+            // Вибрация сработает только если мы не в режиме строительства/ввода
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             
-            // Если у планеты есть свое действие (например, Станция)
             if (p.action) {
                 p.action();
             } else {
-                // Иначе стандартная активация (Раннер и т.д.)
                 activatePlanet(p.id);
             }
         }
