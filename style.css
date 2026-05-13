@@ -257,49 +257,52 @@ canvas {
 
 .res-info span { font-weight: bold; }
 
-.exchange-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    padding: 20px;
+/* Общий контейнер для сеток обмена */
+.exchange-grid {
+    display: grid;
+    gap: 10px;
+    margin-top: 10px;
 }
 
-.exchange-button {
-    background: rgba(0, 229, 255, 0.1);
-    border: 1px solid #00e5ff;
+/* Кнопка пакета обмена (адаптировано под твой стиль) */
+.exchange-pkg-btn {
+    background: rgba(0, 229, 255, 0.05); /* Легкий неоновый фон */
+    border: 1px solid rgba(0, 229, 255, 0.3);
     border-radius: 12px;
-    padding: 15px;
+    padding: 12px 15px;
     color: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
 }
 
-.exchange-button:active {
+/* Эффект нажатия (тот самый "физический" отклик) */
+.exchange-pkg-btn:active {
     transform: scale(0.95);
-    background: rgba(0, 229, 255, 0.3);
+    background: rgba(0, 229, 255, 0.2);
+    border-color: #00e5ff;
 }
 
-.exchange-button .name {
+/* Названия пакетов (Метеоритный запас и т.д.) */
+.exchange-pkg-btn .pkg-name {
+    font-size: 11px;
     font-weight: bold;
-    color: #00e5ff;
+    color: #ffa500; /* Оранжевый акцент для QUBI */
     text-transform: uppercase;
-    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-align: left;
 }
 
-.exchange-button .details {
-    font-size: 10px;
-    opacity: 0.8;
+/* Правая часть (цифры обмена) */
+.exchange-pkg-btn .pkg-val {
+    font-size: 11px;
+    color: #fff;
+    opacity: 0.9;
     text-align: right;
-}
-
-.exchange-button .price {
-    color: #ffa500;
-    font-weight: bold;
+    font-family: monospace; /* Чтобы цифры стояли ровно */
 }
 
 /* ЛОАДЕР */
