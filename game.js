@@ -1269,39 +1269,52 @@ function closeStation() {
 }
 
 function openEarth() {
-    console.log("Попытка открыть Землю...");
-    
     if (!playerData.earthOpened) {
         if (playerData.quant < 500) {
-            if (window.Telegram && Telegram.WebApp.showAlert) {
-                Telegram.WebApp.showAlert("Для колонизации нужно 500 QUANT");
-            } else {
-                alert("Для колонизации нужно 500 QUANT");
+            if (tg.WebApp && tg.WebApp.showAlert) {
+                tg.WebApp.showAlert("Недостаточно ресурсов! Нужно 500 QUANT для терраформирования.");
             }
             return;
         }
-        // Вместо prompt открываем наше красивое окно
-        document.getElementById('name-input-modal').style.display = 'flex';
+        
+        // Показываем окно
+        const modal = document.getElementById('name-input-modal');
+        modal.style.display = 'flex';
+        
+        // Автоматически ставим фокус в поле ввода через небольшую задержку
+        setTimeout(() => {
+            const input = document.getElementById('colony-name-input');
+            input.focus();
+            input.select(); // Выделяем текст "НОВАЯ ЗЕМЛЯ", чтобы его было легко стереть
+        }, 100);
+
     } else {
         enterStrategyMode();
     }
 }
 
-// Функция, которая сработает при нажатии кнопки в новом окне
+// Новая функция для кнопки ОТМЕНА
+function closeNameModal() {
+    document.getElementById('name-input-modal').style.display = 'none';
+}
+
 function confirmColonyName() {
     const input = document.getElementById('colony-name-input');
-    let pName = input.value.trim() || "НОВАЯ ЗЕМЛЯ";
+    let pName = input.value.trim();
+    
+    if (!pName) pName = "НОВАЯ ЗЕМЛЯ";
 
-    // Скрываем окно ввода
-    document.getElementById('name-input-modal').style.display = 'none';
+    // Скрываем окно
+    closeNameModal();
 
-    // Дальше логика как была:
+    // Снимаем оплату и открываем доступ
     playerData.earthOpened = true;
     playerData.colonyName = pName;
     playerData.quant -= 500;
     playerData.buildings = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     playerData.lastCollect = Date.now();
 
+    // Сохраняем в Firebase
     userRef.update({
         earthOpened: true,
         colonyName: pName,
@@ -1311,6 +1324,7 @@ function confirmColonyName() {
     }).then(() => {
         updateUI();
         enterStrategyMode();
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     });
 }
 
