@@ -800,6 +800,43 @@ function openMoonMenu() {
     }
 }
 
+function exchangeResources(getQubi, costQuant) {
+    if (!playerData || !userRef) return;
+
+    if (playerData.quant >= costQuant) {
+        // Процесс обмена
+        playerData.quant -= costQuant;
+        playerData.qubi += getQubi;
+
+        // Сохранение в базу данных
+        userRef.update({
+            quant: playerData.quant,
+            qubi: playerData.qubi
+        }).then(() => {
+            console.log(`✅ Успешный обмен: ${getQubi} QUBI получено.`);
+            
+            // Визуальное обновление
+            updateUI();
+            
+            // Можно добавить легкое уведомление через Telegram
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            }
+            
+            alert(`Преобразование завершено!\nВы получили ${getQubi} QUBI`);
+        }).catch((err) => {
+            console.error("Ошибка при обмене:", err);
+            alert("Ошибка связи с базой данных.");
+        });
+    } else {
+        // Если денег не хватает
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+        }
+        alert(`Недостаточно QUANT!\nВам нужно еще ${costQuant - playerData.quant} для этого пакета.`);
+    }
+}
+
 function closeMoon() {
     const modal = document.getElementById('moon-modal');
     if (modal) modal.style.display = 'none';
