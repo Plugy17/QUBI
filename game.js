@@ -1407,45 +1407,51 @@ function renderBuildings() {
     });
 }
 
-// Клик по слоту (вызывается из HTML)
+let currentSelectedSlot = null; // Запоминаем, какой слот нажали
+
 function clickSlot(index) {
     if (!playerData.buildings) return;
 
-    // Если слот пустой (0)
-    if (playerData.buildings[index] === 0) {
-        let choice = prompt("Выберите постройку:\n1. Шахта (1000 QNT)\n2. Лаборатория (2500 QNT)\n3. Щит (5000 QNT)");
-        
-        let type = "";
-        if (choice === "1") type = "mine";
-        else if (choice === "2") type = "lab";
-        else if (choice === "3") type = "shield";
-
-        if (type) buildBuilding(index, type);
+    if (playerData.buildings[index] === 0 || playerData.buildings[index] === "0") {
+        currentSelectedSlot = index; // Запоминаем индекс
+        openBuildMenu();
     } else {
-        alert("Здание уже функционирует!");
+        // Тут можно будет добавить инфо о здании или его снос
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+        alert("Здание уже работает!");
     }
 }
 
-// Логика покупки и сохранения
-function buildBuilding(index, type) {
-    const config = buildingTypes[type];
-    
-    if (playerData.quant >= config.cost) {
-        playerData.quant -= config.cost;
-        playerData.buildings[index] = type; // Записываем строку 'mine', 'lab' и т.д.
+function openBuildMenu() {
+    const menu = document.getElementById('build-menu');
+    const list = document.getElementById('buildings-list');
+    list.innerHTML = ""; // Очищаем список
 
-        userRef.update({
-            quant: playerData.quant,
-            buildings: playerData.buildings,
-            lastCollect: Date.now() // Сбрасываем таймер сбора при постройке
-        }).then(() => {
-            renderBuildings();
-            updateUI();
-            alert(`Объект "${config.name}" возведен!`);
-        });
-    } else {
-        alert("Недостаточно QUANT!");
-    }
+    // Создаем кнопки для каждого типа здания из нашего конфига buildingTypes
+    Object.keys(buildingTypes).forEach(key => {
+        const b = buildingTypes[key];
+        const item = document.createElement('div');
+        item.className = 'build-item';
+        item.onclick = () => {
+            buildBuilding(currentSelectedSlot, key);
+            closeBuildMenu();
+        };
+
+        item.innerHTML = `
+            <div class="build-icon">${b.icon}</div>
+            <div class="build-info">
+                <span class="build-name">${b.name}</span>
+                <span class="build-cost">Цена: ${b.cost} QUANT</span>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+
+    menu.style.display = 'flex';
+}
+
+function closeBuildMenu() {
+    document.getElementById('build-menu').style.display = 'none';
 }
 
 // 1. Создаем четкую функцию запуска
