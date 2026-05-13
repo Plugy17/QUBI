@@ -1065,6 +1065,13 @@ function isAnyModalOpen() {
 
 // --- ЛОГИКА ОБРАБОТКИ КЛИКОВ ---
 function handleCanvasClick(e) {
+    // 1. БЛОКИРОВКА КЛИКА, ЕСЛИ ОТКРЫТ ЭКРАН ЗЕМЛИ
+    const earthScreen = document.getElementById('earth-screen');
+    if (earthScreen && earthScreen.style.display === 'flex') {
+        return; // Выходим из функции, чтобы не срабатывала вибрация и логика планет
+    }
+
+    // 2. Стандартная проверка на открытые модальные окна
     if (isAnyModalOpen()) return;
 
     // Получаем координаты клика
@@ -1079,6 +1086,7 @@ function handleCanvasClick(e) {
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance < p.size / 2) {
+            // Вибрация сработает только если мы не в режиме строительства
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
             
             // Если у планеты есть свое действие (например, Станция)
