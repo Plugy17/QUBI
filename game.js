@@ -1239,6 +1239,72 @@ function closeStation() {
     if (typeof updateUI === "function") updateUI();
 }
 
+function openEarth() {
+    // 1. Проверяем, открыта ли Земля
+    if (!playerData.earthOpened) {
+        if (playerData.quant < 500) {
+            alert("Для запуска программы 'ТЕРРАФОРМ' нужно 500 QUANT");
+            return;
+        }
+
+        // 2. Окно колонизации
+        let pName = prompt("Планета пригодна! Введите название вашей колонии:", "НОВАЯ ЗЕМЛЯ");
+        
+        if (pName && pName.trim() !== "") {
+            playerData.earthOpened = true;
+            playerData.colonyName = pName;
+            playerData.quant -= 500;
+            
+            // Инициализируем пустые здания, если их нет
+            if (!playerData.buildings) {
+                playerData.buildings = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+            }
+
+            // Сохраняем в Firebase
+            userRef.update({
+                earthOpened: true,
+                colonyName: pName,
+                quant: playerData.quant,
+                buildings: playerData.buildings
+            }).then(() => {
+                updateUI();
+                enterStrategyMode();
+            });
+        }
+    } else {
+        enterStrategyMode();
+    }
+}
+
+// Вход в режим стратегии
+function enterStrategyMode() {
+    document.getElementById('earth-screen').style.display = 'flex';
+    document.getElementById('colony-name-display').innerText = playerData.colonyName || "КОЛОНИЯ";
+    renderBuildings();
+}
+
+// Выход
+function exitEarth() {
+    document.getElementById('earth-screen').style.display = 'none';
+}
+
+// Отрисовка зданий в слотах
+function renderBuildings() {
+    const slots = document.querySelectorAll('.slot');
+    const bData = playerData.buildings || [0,0,0,0,0,0,0,0,0];
+    
+    slots.forEach((slot, index) => {
+        if (bData[index] === 0) {
+            slot.innerHTML = '<span style="font-size:20px; opacity:0.3;">+</span>';
+            slot.classList.remove('occupied');
+        } else {
+            // Тут потом добавим иконки зданий
+            slot.innerHTML = '<div style="color:#00e5ff">🏗️</div>';
+            slot.classList.add('occupied');
+        }
+    });
+}
+
 // 1. Создаем четкую функцию запуска
 function startEverything() {
     console.log("Запуск всех систем...");
