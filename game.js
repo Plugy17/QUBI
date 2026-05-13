@@ -64,7 +64,7 @@ function calculateCurrentStats() {
 
 // --- РЕГЕНЕРАЦИЯ ЭНЕРГИИ ---
 function regenerateEnergy() {
-    if (!window.playerData || !window.userRef) return;
+    if (!playerData || !userRef) return;
 
     const now = Date.now();
     let lastUpdate = Number(playerData.lastEnergyUpdate) || now;
@@ -1070,16 +1070,6 @@ if (exitRunnerBtn) {
     };
 }
 
-// Запуск отрисовки и инициализации
-bg.onload = () => { 
-    if (typeof initGame === 'function') initGame(); 
-    if (typeof draw === 'function') draw(); 
-};
-if (bg.complete) { 
-    if (typeof initGame === 'function') initGame(); 
-    if (typeof draw === 'function') draw(); 
-}
-
 // --- ФУНКЦИИ МАГАЗИНА И АНГАРА ---
 async function buyModule(moduleId) {
     const itemData = SHOP_MODULES.find(m => m.id === moduleId);
@@ -1211,4 +1201,21 @@ function closeStation() {
     const modal = document.getElementById('station-modal');
     if (modal) modal.style.display = 'none';
     if (typeof updateUI === "function") updateUI();
+}
+
+// 1. Создаем четкую функцию запуска
+function startEverything() {
+    console.log("Запуск всех систем...");
+    initGame(); 
+    // Мы НЕ вызываем здесь draw(), потому что в твоем файле 
+    // regenerateEnergy уже вызывается внутри initGame (строка 206).
+    // Но если ты хочешь, чтобы планеты крутились сразу, оставь:
+    draw(); 
+}
+
+// 2. Проверяем загрузку фона и стартуем
+if (bg.complete) {
+    startEverything();
+} else {
+    bg.onload = startEverything;
 }
