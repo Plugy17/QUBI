@@ -257,6 +257,51 @@ canvas {
 
 .res-info span { font-weight: bold; }
 
+.exchange-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+}
+
+.exchange-button {
+    background: rgba(0, 229, 255, 0.1);
+    border: 1px solid #00e5ff;
+    border-radius: 12px;
+    padding: 15px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.exchange-button:active {
+    transform: scale(0.95);
+    background: rgba(0, 229, 255, 0.3);
+}
+
+.exchange-button .name {
+    font-weight: bold;
+    color: #00e5ff;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+.exchange-button .details {
+    font-size: 10px;
+    opacity: 0.8;
+    text-align: right;
+}
+
+.exchange-button .price {
+    color: #ffa500;
+    font-weight: bold;
+}
+
 /* ЛОАДЕР */
 #loading-screen {
     position: fixed; top: 0; left: 0;
