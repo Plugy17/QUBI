@@ -204,7 +204,7 @@
             <p>Инициализация систем QUBI...</p>
         </div>
 
-        <div id="earth-screen" class="earth-screen">
+       <div id="earth-screen" class="earth-screen">
     <div class="colony-header">
         <div>
             <h2 id="colony-name-display" style="margin:0; font-size: 18px; color: #00e5ff;">---</h2>
@@ -225,8 +225,17 @@
         <div class="slot" onclick="clickSlot(8)"></div>
     </div>
 
-    <div style="padding: 20px; background: rgba(0,0,0,0.5); font-size: 11px; color: #aaa; text-align: center;">
-        Нажмите на пустой слот, чтобы начать строительство
+    <div id="build-menu" class="build-modal" style="display: none;">
+        <div class="build-content">
+            <h3 style="margin-top: 0; color: #00e5ff; font-size: 18px;">СТРОИТЕЛЬСТВО</h3>
+            <div id="buildings-list">
+                </div>
+            <button onclick="closeBuildMenu()" class="close-build-btn">ОТМЕНА</button>
+        </div>
+    </div>
+
+    <div style="padding: 20px; background: rgba(0,0,0,0.5); font-size: 11px; color: #aaa; text-align: center; z-index: 10;">
+        Выберите сектор для развертывания модуля
     </div>
 </div>
 
