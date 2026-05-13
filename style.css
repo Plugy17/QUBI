@@ -247,6 +247,21 @@ canvas {
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
 }
 
+.limit-section {
+    display: block !important;
+    width: 100%;
+    margin-top: 8px; /* Отступ от кнопки обмена */
+    opacity: 1 !important;
+}
+
+.factory-bar-bg {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    display: block !important;
+}
+
 /* ИНФО О ЗАПАСАХ */
 .res-info {
     display: flex; 
