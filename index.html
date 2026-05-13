@@ -226,14 +226,40 @@
 </div>
 
        <div id="earth-screen" class="earth-screen">
-    <div class="colony-header">
-        <div>
-            <h2 id="colony-name-display" style="margin:0; font-size: 18px; color: #00e5ff;">---</h2>
-            <div id="colony-status" style="font-size: 10px; opacity: 0.7;">СТАТУС: РАЗВИВАЕТСЯ</div>
-        </div>
-        <button onclick="exitEarth()" style="background:none; border: 1px solid #fff; color:white; border-radius: 8px; padding: 5px 10px;">ВЫХОД</button>
-    </div>
+    <div class="colony-header" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 85px 20px 20px 20px;">
+        
+        <div style="flex: 1;">
+            <h2 id="colony-name-display" style="margin:0; font-size: 18px; color: #00e5ff; text-transform: uppercase; letter-spacing: 1px;">---</h2>
+            
+            <div style="display: flex; gap: 12px; margin: 8px 0; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(0,229,255,0.1); width: fit-content;">
+                <div style="font-size: 12px; font-weight: bold; color: #fff;">
+                    <span style="color: #00e5ff;">QNT:</span> <span id="earth-quant-balance">0</span>
+                </div>
+                <div style="font-size: 12px; font-weight: bold; color: #fff;">
+                    <span style="color: #ffca28;">QUBI:</span> <span id="earth-qubi-balance">0</span>
+                </div>
+            </div>
 
+            <div id="income-info" style="font-size: 10px; color: #00e5ff; opacity: 0.9;">
+                ДОХОД: <span id="total-yield" style="font-weight: bold;">0</span> QNT/час
+            </div>
+            <div id="artifact-count-display" style="font-size: 10px; color: #ffca28; margin-top: 2px;">
+                АРТЕФАКТЫ: <span id="player-artifacts" style="font-weight: bold;">0</span> шт.
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+            <button id="collect-btn" onclick="collectResources()" 
+                style="background: #00e5ff; color: #000; border: none; border-radius: 8px; padding: 8px 16px; font-weight: bold; font-size: 12px; box-shadow: 0 0 15px rgba(0,229,255,0.4); cursor: pointer;">
+                СОБРАТЬ
+            </button>
+            <button onclick="exitEarth()" 
+                style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.5); color:white; border-radius: 8px; padding: 5px 15px; font-size: 11px; cursor: pointer;">
+                ВЫХОД
+            </button>
+        </div>
+    </div>
+           
     <div class="building-grid" id="building-grid">
         <div class="slot" onclick="clickSlot(0)"></div>
         <div class="slot" onclick="clickSlot(1)"></div>
