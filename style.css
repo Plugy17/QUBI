@@ -715,3 +715,31 @@ canvas {
     text-transform: uppercase;
     letter-spacing: 1px;
 }
+
+/* Базовый стиль для кнопок магазина */
+.shop-tabs button {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* Плавность */
+    position: relative;
+    padding: 8px 12px;
+    outline: none;
+    font-family: inherit;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Эффект при наведении (для ПК) */
+.shop-tabs button:hover {
+    opacity: 0.8;
+}
+
+/* Эффект НАЖАТИЯ (то, что ты просил) */
+.shop-tabs button:active {
+    transform: scale(0.85); /* Кнопка уменьшается при клике */
+    filter: brightness(1.2); /* Становится чуть ярче */
+}
+
+/* Активное состояние (нижняя полоска) */
+.shop-tabs button.active-tab {
+    border-bottom: 2px solid currentColor !important; /* Линия под кнопкой */
+    opacity: 1 !important;
+}
