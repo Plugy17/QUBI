@@ -935,3 +935,40 @@ canvas {
     border-radius: 10px;
     cursor: pointer;
 }
+
+/* --- Стили для системы строений и апгрейдов --- */
+
+.slot img {
+    width: 70%;
+    height: 70%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.5));
+}
+
+.slot-level {
+    position: absolute;
+    bottom: 5px;
+    right: 8px;
+    font-size: 10px;
+    color: #00e5ff;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+    pointer-events: none; /* Чтобы цифра не мешала кликать по слоту */
+}
+
+.upgrade-confirm-btn {
+    width: 100%;
+    padding: 12px;
+    background: #ffca28;
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    margin-top: 15px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.upgrade-confirm-btn:active {
+    transform: scale(0.98);
+}
