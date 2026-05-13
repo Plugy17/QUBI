@@ -162,25 +162,28 @@ const runnerWin = document.getElementById('runner-window');
 
 const buildingTypes = {
     mine: {
-        name: "Квантовая шахта",
-        icon: "⛏️",
-        cost: 1000,
-        income: 50, // QUANT в час
-        desc: "Добывает QUANT из недр планеты"
+        name: "Шахта",
+        icon: "assets/buildings/mine.png", // Путь к твоей PNG
+        baseCost: 1000,
+        baseYield: 25, // Квантов в час
+        yieldType: "quant",
+        artifactUpgradeBase: 5 // Сколько артефактов нужно для 1-го апгрейда
     },
     lab: {
-        name: "QUBI-Лаборатория",
-        icon: "🧪",
-        cost: 2500,
-        income: 5, // QUBI в час
-        desc: "Синтезирует кристаллы QUBI"
+        name: "Лаборатория",
+        icon: "assets/buildings/lab.png",
+        baseCost: 2500,
+        baseYield: 1, // QUBI в час
+        yieldType: "qubi",
+        artifactUpgradeBase: 10
     },
     shield: {
-        name: "Энерго-щит",
-        icon: "🛡️",
-        cost: 5000,
-        income: 0, 
-        desc: "Замедляет расход энергии в Раннере на 10%"
+        name: "Щит",
+        icon: "assets/buildings/shield.png",
+        baseCost: 5000,
+        baseYield: 5, // % защиты
+        yieldType: "protection",
+        artifactUpgradeBase: 15
     }
 };
 
@@ -1435,14 +1438,37 @@ let currentSelectedSlot = null; // Запоминаем, какой слот н�
 function clickSlot(index) {
     if (!playerData.buildings) return;
 
-    if (playerData.buildings[index] === 0 || playerData.buildings[index] === "0") {
-        currentSelectedSlot = index; // Запоминаем индекс
+    let bData = playerData.buildings[index];
+
+    // Если слот пустой
+    if (bData === 0 || bData === "0") {
+        currentSelectedSlot = index;
         openBuildMenu();
     } else {
-        // Тут можно будет добавить инфо о здании или его снос
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-        alert("Здание уже работает!");
+        // Если здание есть, bData будет объектом типа {type: 'mine', level: 1}
+        openUpgradeMenu(index, bData);
     }
+}
+
+function openUpgradeMenu(index, building) {
+    const typeInfo = buildingTypes[building.type];
+    const upgradeCost = typeInfo.artifactUpgradeBase * building.level; // Цена растет с уровнем
+    
+    // Показываем красивое окно (можно использовать ту же структуру build-menu)
+    const menu = document.getElementById('build-menu');
+    const list = document.getElementById('buildings-list');
+    list.innerHTML = `
+        <div class="upgrade-info">
+            <img src="${typeInfo.icon}" style="width: 64px;">
+            <h4>${typeInfo.name} (Ур. ${building.level})</h4>
+            <p>Текущий доход: ${typeInfo.baseYield * building.level} ${typeInfo.yieldType}/ч</p>
+            <p style="color: #00e5ff;">Следующий уровень: ${typeInfo.baseYield * (building.level + 1)} ${typeInfo.yieldType}/ч</p>
+            <button onclick="upgradeBuilding(${index})" class="confirm-build-btn" style="margin-top:10px;">
+                УЛУЧШИТЬ ЗА ${upgradeCost} АРТЕФАКТОВ
+            </button>
+        </div>
+    `;
+    menu.style.display = 'flex';
 }
 
 function openBuildMenu() {
