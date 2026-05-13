@@ -65,35 +65,39 @@ function regenerateEnergy() {
     if (!window.playerData || !window.userRef) return;
 
     const now = Date.now();
-    // Принудительно превращаем в число, чтобы избежать NaN
-    let lastUpdate = Number(playerData.lastEnergyUpdate) || 0;
+    let lastUpdate = Number(playerData.lastEnergyUpdate) || now;
 
-    if (lastUpdate === 0 || lastUpdate > now) {
+    // --- ВОТ ЭТОТ БЛОК ИСПРАВИТ ВСЁ ---
+    // Если время в базе больше текущего более чем на 1 минуту (баг с будущим временем)
+    if (lastUpdate > (now + 60000)) {
+        console.warn("⚠️ Обнаружено время из будущего! Сбрасываю счетчик на текущее...");
         playerData.lastEnergyUpdate = now;
         userRef.update({ lastEnergyUpdate: now });
-        return;
+        return; // Выходим, чтобы начать чистый отсчет со следующего кадра
     }
+    // ---------------------------------
 
     const stats = calculateCurrentStats();
-    // Убеждаемся, что интервал не меньше 1 секунды
-    const MS_PER_UNIT = Math.max(1000, 60000 - Number(stats.regenBonusMs || 0));
+    const maxE = Number(stats.maxEnergy) || 100;
+    const bonus = Number(stats.regenBonusMs) || 0;
+
+    const MS_PER_UNIT = Math.max(1000, 60000 - bonus);
     const timePassed = now - lastUpdate;
 
-    if (timePassed < MS_PER_UNIT) return;
+    if (timePassed >= MS_PER_UNIT && playerData.energy < maxE) {
+        const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
+        
+        if (energyToAdd > 0) {
+            playerData.energy = Math.min(maxE, Number(playerData.energy) + energyToAdd);
+            playerData.lastEnergyUpdate = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
-    const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
-
-    if (energyToAdd > 0 && playerData.energy < stats.maxEnergy) {
-        playerData.energy = Math.min(stats.maxEnergy, (Number(playerData.energy) || 0) + energyToAdd);
-        playerData.lastEnergyUpdate = lastUpdate + (energyToAdd * MS_PER_UNIT);
-
-        updateUI();
-
-        userRef.update({
-            energy: playerData.energy,
-            lastEnergyUpdate: playerData.lastEnergyUpdate
-        });
-        console.log("Энергия восстановлена:", energyToAdd);
+            updateUI();
+            userRef.update({
+                energy: playerData.energy,
+                lastEnergyUpdate: playerData.lastEnergyUpdate
+            });
+            console.log(`🔋 Регенерация сработала: +${energyToAdd}`);
+        }
     }
 }
 
