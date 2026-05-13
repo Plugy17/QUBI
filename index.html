@@ -63,52 +63,54 @@
             </div>
         </div>
 
-        <div id="moon-modal" class="modal-overlay" style="display: none;">
-            <div class="moon-card">
-                <button class="close-btn" id="close-moon" onclick="closeMoon()">×</button>
-                <div class="moon-header">
-                    <img src="assets/moon.png" alt="Moon">
-                    <h2>LUNAR REFINERY</h2>
+       <div id="moon-modal" class="modal-overlay" style="display: none;">
+    <div class="moon-card">
+        <button class="close-btn" id="close-moon" onclick="closeMoon()">×</button>
+        <div class="moon-header">
+            <img src="assets/moon.png" alt="Moon">
+            <h2>LUNAR REFINERY</h2>
+        </div>
+        <div class="refinery-body">
+            <p class="station-desc">Переработка ресурсов в чистую ЭНЕРГИЮ и КРИСТАЛЛЫ</p>
+            
+            <div class="exchange-section" style="margin-bottom: 10px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 13px; color: #fff;">50 QUANT ➔ 10 ENERGY</span>
+                    <button class="process-btn-small" onclick="exchangeEnergy('quant')" style="padding: 5px 12px; background: #00e5ff; border: none; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">ОБМЕН</button>
                 </div>
-                <div class="refinery-body">
-                    <p class="station-desc">Переработка ресурсов в чистую ЭНЕРГИЮ</p>
-                    <div class="exchange-section" style="margin-bottom: 20px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 13px; color: #fff;">50 QUANT ➔ 10 ENERGY</span>
-                            <button class="process-btn-small" onclick="exchangeEnergy('quant')" style="padding: 5px 12px; background: #00e5ff; border: none; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">ОБМЕН</button>
-                        </div>
-                        <div class="limit-section">
-                            <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px; color: rgba(255,255,255,0.6);">
-                                <span>ЛИМИТ: <b id="limit-quant-text" style="color:#00e5ff">0</b> / 500 QUANT</span>
-                                <span id="limit-quant-percent">0%</span>
-                            </div>
-                            <div class="factory-bar-bg" style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
-                                <div id="limit-quant-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00e5ff, #007bff); transition: width 0.3s ease;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="exchange-section" style="padding: 10px; background: rgba(255,255,255,0.03); border-radius: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 13px; color: #fff;">5 QUBI ➔ 10 ENERGY</span>
-                            <button class="process-btn-small" onclick="exchangeEnergy('qubi')" style="padding: 5px 12px; background: #a855f7; border: none; border-radius: 6px; color: #fff; font-size: 11px; font-weight: bold; cursor: pointer;">ОБМЕН</button>
-                        </div>
-                        <div class="limit-section">
-                            <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px; color: rgba(255,255,255,0.6);">
-                                <span>ЛИМИТ: <b id="limit-qubi-text" style="color:#a855f7">0</b> / 50 QUBI</span>
-                                <span id="limit-qubi-percent">0%</span>
-                            </div>
-                            <div class="factory-bar-bg" style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
-                                <div id="limit-qubi-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #a855f7, #6b21a8); transition: width 0.3s ease;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="res-info" style="margin-top: 15px; font-size: 11px; color: rgba(255,255,255,0.5);">
-                        Запасы: <span id="res-amount-quant" style="color:#00e5ff">0 QNT</span> | <span id="res-amount-qubi" style="color:#a855f7">0 QUB</span>
-                    </div>
                 </div>
+
+            <div class="exchange-section" style="margin-bottom: 20px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 13px; color: #fff;">5 QUBI ➔ 10 ENERGY</span>
+                    <button class="process-btn-small" onclick="exchangeEnergy('qubi')" style="padding: 5px 12px; background: #a855f7; border: none; border-radius: 6px; color: #fff; font-size: 11px; font-weight: bold; cursor: pointer;">ОБМЕН</button>
+                </div>
+                </div>
+
+            <h3 style="color: #ffa500; font-size: 11px; text-align: center; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">Квантовая Конвертация</h3>
+            
+            <div class="exchange-grid" style="display: grid; gap: 8px;">
+                <button class="exchange-pkg-btn" onclick="exchangeResources(100, 1500)">
+                    <span class="pkg-name">Метеоритный запас</span>
+                    <span class="pkg-val">1.5k ➔ 100 QUB</span>
+                </button>
+                <button class="exchange-pkg-btn" onclick="exchangeResources(500, 7500)">
+                    <span class="pkg-name">Звездный кейс</span>
+                    <span class="pkg-val">7.5k ➔ 500 QUB</span>
+                </button>
+                <button class="exchange-pkg-btn" onclick="exchangeResources(1000, 15000)">
+                    <span class="pkg-name">Галактический сейф</span>
+                    <span class="pkg-val">15k ➔ 1k QUB</span>
+                </button>
+            </div>
+
+            <div class="res-info" style="margin-top: 15px; font-size: 11px; color: rgba(255,255,255,0.5); text-align: center;">
+                Запасы: <span id="res-amount-quant" style="color:#00e5ff">0 QNT</span> | <span id="res-amount-qubi" style="color:#a855f7">0 QUB</span>
             </div>
         </div>
-
+    </div>
+</div>
+        
         <div id="station-modal" class="modal-overlay" style="display: none;">
             <div class="moon-card station-card">
                 <button class="close-btn" onclick="closeStation()">×</button>
