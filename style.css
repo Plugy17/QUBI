@@ -876,7 +876,7 @@ canvas {
 
 /* ОКНО СТРОИТЕЛЬСТВА */
 .build-modal {
-    position: absolute;
+    position: fixed; /* Используй fixed вместо absolute для надежности */
     top: 0; left: 0;
     width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.8);
@@ -885,6 +885,10 @@ canvas {
     justify-content: center;
     align-items: center;
     z-index: 3000;
+    
+    /* ДОБАВЬ ЭТИ ДВЕ СТРОЧКИ */
+    pointer-events: all !important;
+    touch-action: none; 
 }
 
 .build-content {
