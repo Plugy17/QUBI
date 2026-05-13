@@ -900,6 +900,11 @@ canvas {
     max-width: 300px;
     text-align: center;
     box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+    
+    /* ДОБАВЬ ЭТО: */
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 3001;
 }
 
 .build-item {
