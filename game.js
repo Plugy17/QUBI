@@ -1390,25 +1390,34 @@ function calculatePassiveIncome() {
 }
 
 function enterStrategyMode() {
-    // 1. Начисляем монеты за время отсутствия
-    calculatePassiveIncome(); 
+    // 1. Показываем экран Земли
+    const earthScreen = document.getElementById('earth-screen');
+    if (earthScreen) earthScreen.style.display = 'flex';
+    
+    // 2. Выводим имя планеты
+    const nameDisplay = document.getElementById('colony-name-display');
+    if (nameDisplay) nameDisplay.innerText = playerData.colonyName || "КОЛОНИЯ";
+    
+    // 3. Обновляем балансы QUANT, QUBI и Артефактов в шапке экрана
+    // Используем Math.floor, чтобы не пугать игрока длинными десятичными дробями
+    const quantLabel = document.getElementById('earth-quant-balance');
+    const qubiLabel = document.getElementById('earth-qubi-balance');
+    const artLabel = document.getElementById('player-artifacts');
 
-    // 2. Показываем экран Земли
-    document.getElementById('earth-screen').style.display = 'flex';
+    if (quantLabel) quantLabel.innerText = Math.floor(playerData.quant);
+    if (qubiLabel) qubiLabel.innerText = Math.floor(playerData.qubi || 0);
+    if (artLabel) artLabel.innerText = playerData.artifacts || 0;
     
-    // 3. Выводим имя планеты и обновляем балансы в шапке
-    document.getElementById('colony-name-display').innerText = playerData.colonyName || "КОЛОНИЯ";
-    
-    // Обновляем цифры QUANT, QUBI и Артефактов
-    document.getElementById('earth-quant-balance').innerText = Math.floor(playerData.quant);
-    document.getElementById('earth-qubi-balance').innerText = Math.floor(playerData.qubi || 0);
-    document.getElementById('player-artifacts').innerText = playerData.artifacts || 0;
-    
-    // 4. Рисуем здания в слотах
+    // 4. Пересчитываем текущий доход в час (только текст в инфо-панели)
+    updateColonyStats();
+
+    // 5. Отрисовываем PNG здания в слотах
     renderBuildings();
     
-    // 5. Пересчитываем текущий доход в час для инфо-панели
-    updateColonyStats();
+    // Опционально: легкая вибрация при входе в режим стратегии
+    if (window.tg && tg.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred('light');
+    }
 }
 
 // Выход
@@ -1577,6 +1586,70 @@ function upgradeBuilding(index) {
 
 function closeBuildMenu() {
     document.getElementById('build-menu').style.display = 'none';
+}
+
+function updateColonyStats() {
+    if (!playerData.buildings) return;
+
+    let totalQNT = 0;
+    let totalQUBI = 0;
+
+    playerData.buildings.forEach(b => {
+        if (b !== 0 && b !== "0") {
+            const config = buildingTypes[b.type];
+            if (config.yieldType === "quant") {
+                totalQNT += config.baseYield * b.level;
+            } else if (config.yieldType === "qubi") {
+                totalQUBI += config.baseYield * b.level;
+            }
+        }
+    });
+
+    // Обновляем текст в интерфейсе
+    document.getElementById('total-yield').innerText = totalQNT;
+    if (document.getElementById('player-artifacts')) {
+        document.getElementById('player-artifacts').innerText = playerData.artifacts || 0;
+    }
+}
+
+// Функция сбора (вызывается кнопкой)
+function collectResources() {
+    const now = Date.now();
+    const last = playerData.lastCollect || now;
+    const hoursPassed = (now - last) / (1000 * 60 * 60);
+
+    if (hoursPassed < 0.01) { // Защита от слишком частого нажатия (раз в 36 сек)
+        tg.HapticFeedback.notificationOccurred('warning');
+        return;
+    }
+
+    let earnedQNT = 0;
+    let earnedQUBI = 0;
+
+    playerData.buildings.forEach(b => {
+        if (b !== 0) {
+            const config = buildingTypes[b.type];
+            const yieldVal = config.baseYield * b.level * hoursPassed;
+            if (config.yieldType === "quant") earnedQNT += yieldVal;
+            if (config.yieldType === "qubi") earnedQUBI += yieldVal;
+        }
+    });
+
+    // Добавляем к балансу (округляем в меньшую сторону)
+    playerData.quant += Math.floor(earnedQNT);
+    playerData.qubi = (playerData.qubi || 0) + Math.floor(earnedQUBI);
+    playerData.lastCollect = now;
+
+    // Сохраняем в Firebase
+    userRef.update({
+        quant: playerData.quant,
+        qubi: playerData.qubi,
+        lastCollect: playerData.lastCollect
+    });
+
+    updateUI();
+    tg.HapticFeedback.notificationOccurred('success');
+    alert(`Собрано ресурсов:\n${Math.floor(earnedQNT)} QUANT\n${Math.floor(earnedQUBI)} QUBI`);
 }
 
 // 1. Создаем четкую функцию запуска
