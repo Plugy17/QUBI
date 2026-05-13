@@ -1280,33 +1280,38 @@ function openEarth() {
             }
             return;
         }
-
-        let pName = prompt("Планета пригодна! Введите название вашей колонии:", "НОВАЯ ЗЕМЛЯ");
-        
-        if (pName && pName.trim() !== "") {
-            // ОБЯЗАТЕЛЬНО обновляем локальные данные сразу
-            playerData.earthOpened = true;
-            playerData.colonyName = pName;
-            playerData.quant -= 500;
-            playerData.buildings = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-            playerData.lastCollect = Date.now();
-
-            console.log("Сохранение новой планеты в базу...");
-            userRef.update({
-                earthOpened: true,
-                colonyName: pName,
-                quant: playerData.quant,
-                buildings: playerData.buildings,
-                lastCollect: playerData.lastCollect
-            }).then(() => {
-                console.log("Данные сохранены, входим в режим...");
-                updateUI();
-                enterStrategyMode();
-            }).catch(err => console.error("Ошибка сохранения:", err));
-        }
+        // Вместо prompt открываем наше красивое окно
+        document.getElementById('name-input-modal').style.display = 'flex';
     } else {
         enterStrategyMode();
     }
+}
+
+// Функция, которая сработает при нажатии кнопки в новом окне
+function confirmColonyName() {
+    const input = document.getElementById('colony-name-input');
+    let pName = input.value.trim() || "НОВАЯ ЗЕМЛЯ";
+
+    // Скрываем окно ввода
+    document.getElementById('name-input-modal').style.display = 'none';
+
+    // Дальше логика как была:
+    playerData.earthOpened = true;
+    playerData.colonyName = pName;
+    playerData.quant -= 500;
+    playerData.buildings = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    playerData.lastCollect = Date.now();
+
+    userRef.update({
+        earthOpened: true,
+        colonyName: pName,
+        quant: playerData.quant,
+        buildings: playerData.buildings,
+        lastCollect: playerData.lastCollect
+    }).then(() => {
+        updateUI();
+        enterStrategyMode();
+    });
 }
 
 function calculatePassiveIncome() {
