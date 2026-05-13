@@ -204,6 +204,32 @@
             <p>Инициализация систем QUBI...</p>
         </div>
 
+        <div id="earth-screen" class="earth-screen">
+    <div class="colony-header">
+        <div>
+            <h2 id="colony-name-display" style="margin:0; font-size: 18px; color: #00e5ff;">---</h2>
+            <div id="colony-status" style="font-size: 10px; opacity: 0.7;">СТАТУС: РАЗВИВАЕТСЯ</div>
+        </div>
+        <button onclick="exitEarth()" style="background:none; border: 1px solid #fff; color:white; border-radius: 8px; padding: 5px 10px;">ВЫХОД</button>
+    </div>
+
+    <div class="building-grid" id="building-grid">
+        <div class="slot" onclick="clickSlot(0)"></div>
+        <div class="slot" onclick="clickSlot(1)"></div>
+        <div class="slot" onclick="clickSlot(2)"></div>
+        <div class="slot" onclick="clickSlot(3)"></div>
+        <div class="slot" onclick="clickSlot(4)"></div>
+        <div class="slot" onclick="clickSlot(5)"></div>
+        <div class="slot" onclick="clickSlot(6)"></div>
+        <div class="slot" onclick="clickSlot(7)"></div>
+        <div class="slot" onclick="clickSlot(8)"></div>
+    </div>
+
+    <div style="padding: 20px; background: rgba(0,0,0,0.5); font-size: 11px; color: #aaa; text-align: center;">
+        Нажмите на пустой слот, чтобы начать строительство
+    </div>
+</div>
+
     </div> 
 
     <script src="game.js?v=99.8"></script>
