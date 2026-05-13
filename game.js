@@ -527,21 +527,25 @@ function openRunnerWindow() {
     isRunnerActive = true;
     sessionQuants = 0; 
     sessionQubi = 0; 
+    sessionArtifacts = 0; // ОБЯЗАТЕЛЬНО: обнуляем артефакты перед началом полета
     quants = [];
 
     // --- ОБНОВЛЕНИЕ HP ПЕРЕД СТАРТОМ ---
     if (typeof syncShipStats === 'function') {
         syncShipStats(); 
     } else {
-        // Если функции еще нет, ставим стандарт
         runnerShip.maxHp = 100;
         runnerShip.hp = 100;
     }
 
+    // Сбрасываем визуальные счетчики в UI раннера
     const qEl = document.getElementById('runner-score-quant');
     const bEl = document.getElementById('runner-score-qubi');
+    const aEl = document.getElementById('runner-score-artifact'); // Наш новый счетчик
+    
     if (qEl) qEl.innerText = "0";
     if (bEl) bEl.innerText = "0";
+    if (aEl) aEl.innerText = "0";
 
     runnerWin.style.display = 'block';
     
@@ -556,16 +560,20 @@ function openRunnerWindow() {
 function closeRunnerWindow() {
     isRunnerActive = false;
     
+    // Прибавляем собранное за сессию к основным данным игрока
     playerData.quant += sessionQuants;
-    playerData.qubi += sessionQubi;
+    playerData.qubi = (playerData.qubi || 0) + sessionQubi;
+    playerData.artifacts = (playerData.artifacts || 0) + (sessionArtifacts || 0); // СОХРАНЯЕМ АРТЕФАКТЫ
     
+    // Сохраняем всё в Firebase
     userRef.update({ 
         quant: playerData.quant, 
-        qubi: playerData.qubi 
+        qubi: playerData.qubi,
+        artifacts: playerData.artifacts // ОТПРАВЛЯЕМ В ОБЛАКО
     }).then(() => {
         syncWithLeaderboard();
         updateUI(); 
-        console.log("Данные сохранены");
+        console.log("Прогресс сохранен: + " + (sessionArtifacts || 0) + " артефактов");
     }).catch((err) => {
         console.error("Ошибка сохранения:", err);
     });
@@ -669,8 +677,15 @@ function runnerLoop() {
             runnerCtx.restore();
         }
         else {
-            let currentImg = (q.type === 'qubi') ? qubiImg : quantImg;
-            if (currentImg.complete) {
+            // Отрисовка бонусов: QUANT, QUBI и ARTIFACT
+            let currentImg;
+            if (q.type === 'artifact') {
+                currentImg = artifactImg;
+            } else {
+                currentImg = (q.type === 'qubi') ? qubiImg : quantImg;
+            }
+
+            if (currentImg && currentImg.complete) {
                 runnerCtx.drawImage(currentImg, q.x - q.size/2, q.y - q.size/2, q.size, q.size);
             }
         }
@@ -701,16 +716,29 @@ function runnerLoop() {
                 quants.splice(i, 1);
             }
             else {
-                // Сбор валюты
-                if (q.type === 'qubi') sessionQubi++;
-                else sessionQuants++;
+                // Сбор ресурсов
+                if (q.type === 'artifact') {
+                    sessionArtifacts = (sessionArtifacts || 0) + 1;
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                } 
+                else if (q.type === 'qubi') {
+                    sessionQubi++;
+                    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+                } 
+                else {
+                    sessionQuants++;
+                    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                }
                 
+                // Обновление интерфейса счета
                 const qEl = document.getElementById('runner-score-quant');
                 const bEl = document.getElementById('runner-score-qubi');
+                const aEl = document.getElementById('runner-score-artifact'); 
+
                 if (qEl) qEl.innerText = sessionQuants;
                 if (bEl) bEl.innerText = sessionQubi;
+                if (aEl) aEl.innerText = sessionArtifacts || 0;
 
-                if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(q.type === 'qubi' ? 'medium' : 'light');
                 quants.splice(i, 1);
                 continue;
             }
@@ -735,15 +763,12 @@ function runnerLoop() {
         runnerCtx.rotate(dx * 0.02);
         runnerCtx.drawImage(shipImg, -runnerShip.w/2, -runnerShip.h/2, runnerShip.w, runnerShip.h);
         
-        // Полоска здоровья
         const barW = 60;
-        // Используем runnerShip.maxHp (который теперь может быть 500+) для расчета пропорции
-        const hpRate = Math.max(0, runnerShip.hp / runnerShip.maxHp);
+        const hpRate = Math.max(0, runnerShip.hp / (runnerShip.maxHp || 100));
         
         runnerCtx.fillStyle = 'rgba(255, 0, 0, 0.3)';
         runnerCtx.fillRect(-barW/2, -runnerShip.h/2 - 15, barW, 6);
         
-        // Цвет меняется от зеленого к красному
         runnerCtx.fillStyle = hpRate > 0.3 ? '#00ff00' : '#ff4444'; 
         runnerCtx.fillRect(-barW/2, -runnerShip.h/2 - 15, barW * hpRate, 6);
         
@@ -771,7 +796,7 @@ function spawnRunnerObject() {
     let rand = Math.random() * 100;
 
     if (rand < 10) {
-        spawnLightning(); // Используем отдельную функцию для чистоты кода
+        spawnLightning(); 
     } 
     else if (rand < 15) {
         let size = 70;
@@ -797,9 +822,21 @@ function spawnRunnerObject() {
             rotationSpeed: (Math.random() - 0.5) * 0.1
         });
     } 
+    // БЛОК БОНУСОВ
     else {
-        let type = (Math.random() * 100 < 5) ? 'qubi' : 'quant';
-        let newSize = type === 'qubi' ? 60 : 50; 
+        let bonusRand = Math.random() * 100;
+        let type;
+        
+        if (bonusRand < 5) {
+            type = 'artifact'; // Те самые 5% на артефакт
+        } else if (bonusRand < 15) { 
+            type = 'qubi';     // Оставляем шанс на QUBI
+        } else {
+            type = 'quant';    // Всё остальное - обычный QUANT
+        }
+
+        let newSize = (type === 'artifact') ? 65 : (type === 'qubi' ? 60 : 50); 
+        
         quants.push({
             x: Math.random() * (window.innerWidth - newSize) + newSize / 2,
             y: -newSize,
