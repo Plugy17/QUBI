@@ -1261,36 +1261,40 @@ function closeStation() {
 }
 
 function openEarth() {
-    // 1. Проверяем, открыта ли Земля
+    console.log("Попытка открыть Землю...");
+    
     if (!playerData.earthOpened) {
         if (playerData.quant < 500) {
-            alert("Для запуска программы 'ТЕРРАФОРМ' нужно 500 QUANT");
+            if (window.Telegram && Telegram.WebApp.showAlert) {
+                Telegram.WebApp.showAlert("Для колонизации нужно 500 QUANT");
+            } else {
+                alert("Для колонизации нужно 500 QUANT");
+            }
             return;
         }
 
-        // 2. Окно колонизации
         let pName = prompt("Планета пригодна! Введите название вашей колонии:", "НОВАЯ ЗЕМЛЯ");
         
         if (pName && pName.trim() !== "") {
+            // ОБЯЗАТЕЛЬНО обновляем локальные данные сразу
             playerData.earthOpened = true;
             playerData.colonyName = pName;
             playerData.quant -= 500;
-            
-            // Инициализируем пустые здания, если их нет
-            if (!playerData.buildings) {
-                playerData.buildings = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-            }
+            playerData.buildings = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+            playerData.lastCollect = Date.now();
 
-            // Сохраняем в Firebase
+            console.log("Сохранение новой планеты в базу...");
             userRef.update({
                 earthOpened: true,
                 colonyName: pName,
                 quant: playerData.quant,
-                buildings: playerData.buildings
+                buildings: playerData.buildings,
+                lastCollect: playerData.lastCollect
             }).then(() => {
+                console.log("Данные сохранены, входим в режим...");
                 updateUI();
                 enterStrategyMode();
-            });
+            }).catch(err => console.error("Ошибка сохранения:", err));
         }
     } else {
         enterStrategyMode();
