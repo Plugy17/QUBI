@@ -1087,21 +1087,21 @@ function gameOver() {
             <img src="assets/quant-icon.png" class="res-icon">
             <span>QUANT:</span>
         </div>
-        <span class="res-value" style="color: #fff;">+${sessionQuants}</span>
+        <span class="res-value" style="color: #00e5ff;">+${sessionQuants}</span>
     </div>
     <div class="result-row">
         <div class="result-label">
             <img src="assets/qubi-icon.png" class="res-icon">
             <span>QUBI:</span>
         </div>
-        <span class="res-value" style="color: #00e5ff;">+${sessionQubi}</span>
+        <span class="res-value" style="color: #ffca28;">+${sessionQubi}</span>
     </div>
     <div class="result-row">
         <div class="result-label">
             <img src="assets/artifact.png" class="res-icon">
             <span>АРТЕФАКТЫ:</span>
         </div>
-        <span class="res-value" style="color: #ffca28;">+${sessionArtifacts || 0}</span>
+        <span class="res-value" style="color: #fff;">+${sessionArtifacts || 0}</span>
     </div>
 `;
         // ТЕПЕРЬ ПОКАЗЫВАЕМ ОКНО
