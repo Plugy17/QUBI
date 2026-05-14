@@ -860,16 +860,20 @@ canvas {
 
 /* Панель ресурсов колонии (сверху) */
 .colony-header {
-    padding: 85px 20px 20px 20px; /* Опускаем контент ниже кнопок управления ТГ */
+    /* Увеличили первый параметр (верхний отступ) с 85px до 110px */
+    padding: 110px 20px 20px 20px; 
     background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
     display: flex;
     justify-content: space-between;
     align-items: center;
     color: white;
-    pointer-events: auto; /* Явно разрешаем клики в этой зоне */
+    position: relative; /* Добавим для стабильности позиционирования */
+    z-index: 10;        /* Чтобы панель всегда была поверх фона */
+    pointer-events: auto;
 }
 
 #colony-name-input:focus {
+    outline: none; /* Хорошая практика — убрать стандартную рамку при фокусе */
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
     background: rgba(0, 229, 255, 0.1);
 }
