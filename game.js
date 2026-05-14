@@ -1082,29 +1082,28 @@ function gameOver() {
         const sArt = window.sessionArtifacts || 0; 
         
         report.innerHTML = `
-            <div class="result-item">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="assets/quant-icon.png" style="width: 42px; height: 42px;">
-                    <span>QUANT:</span>
-                </div>
-                <span style="color: #fff;">+${sessionQuants}</span>
-            </div>
-            <div class="result-item">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="assets/qubi-icon.png" style="width: 42px; height: 42px;">
-                    <span>QUBI:</span>
-                </div>
-                <span style="color: #00e5ff;">+${sessionQubi}</span>
-            </div>
-            <div class="result-item">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="assets/artifact.png" style="width: 50px; height: 50px;">
-                    <span>АРТЕФАКТЫ:</span>
-                </div>
-                <span style="color: #ffca28;">+${sArt}</span>
-            </div>
-        `;
-
+    <div class="result-row">
+        <div class="result-label">
+            <img src="assets/quant-icon.png" class="res-icon">
+            <span>QUANT:</span>
+        </div>
+        <span class="res-value" style="color: #fff;">+${sessionQuants}</span>
+    </div>
+    <div class="result-row">
+        <div class="result-label">
+            <img src="assets/qubi-icon.png" class="res-icon">
+            <span>QUBI:</span>
+        </div>
+        <span class="res-value" style="color: #00e5ff;">+${sessionQubi}</span>
+    </div>
+    <div class="result-row">
+        <div class="result-label">
+            <img src="assets/artifact.png" class="res-icon">
+            <span>АРТЕФАКТЫ:</span>
+        </div>
+        <span class="res-value" style="color: #ffca28;">+${sessionArtifacts || 0}</span>
+    </div>
+`;
         // ТЕПЕРЬ ПОКАЗЫВАЕМ ОКНО
         document.getElementById('game-over-modal').style.display = 'flex';
         
