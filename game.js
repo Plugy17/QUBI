@@ -65,12 +65,13 @@ function calculateCurrentStats() {
 
 // --- РЕГЕНЕРАЦИЯ ЭНЕРГИИ ---
 function regenerateEnergy() {
-    if (!playerData || !userRef) return;
+    // 1. Базовые проверки + проверка на активность в раннере
+    if (!playerData || !userRef || isRunnerActive) return;
 
     const now = Date.now();
     let lastUpdate = Number(playerData.lastEnergyUpdate) || now;
     
-    // ЛЕЧЕНИЕ: Сброс будущего времени (твой баг 1778541...)
+    // 2. Исправление "будущего" времени
     if (lastUpdate > (now + 60000)) {
         console.log("🛠 Исправляю время из будущего...");
         playerData.lastEnergyUpdate = now;
@@ -81,27 +82,34 @@ function regenerateEnergy() {
     const stats = calculateCurrentStats();
     const maxE = Number(stats.maxEnergy) || 100;
     const bonus = Number(stats.regenBonusMs) || 0;
+    
+    // 3. Рассчитываем время восстановления 1 единицы (минимум 1 секунда)
     const MS_PER_UNIT = Math.max(1000, 60000 - bonus);
     
     const timePassed = now - lastUpdate;
 
-    // Этот лог поможет понять, работает ли функция вообще
-    // Если его нет в консоли — значит draw() не вызывает regenerateEnergy()
+    // Редкий лог для отладки
     if (Math.random() < 0.01) console.log("Проверка регена... Прошло мс:", timePassed);
 
+    // 4. Логика начисления
     if (timePassed >= MS_PER_UNIT && playerData.energy < maxE) {
         const energyToAdd = Math.floor(timePassed / MS_PER_UNIT);
         
         if (energyToAdd > 0) {
+            // Прибавляем энергию, но не выше максимума
             playerData.energy = Math.min(maxE, (Number(playerData.energy) || 0) + energyToAdd);
+            
+            // СДВИГАЕМ время последнего обновления вперед на количество начисленной энергии
             playerData.lastEnergyUpdate = lastUpdate + (energyToAdd * MS_PER_UNIT);
 
+            // 5. Синхронизация с UI и базой
             updateUI(); 
             userRef.update({
                 energy: playerData.energy,
                 lastEnergyUpdate: playerData.lastEnergyUpdate
             });
-            console.log("🔋 Энергия начислена:", energyToAdd);
+            
+            console.log("🔋 Энергия начислена:", energyToAdd, "| Всего:", playerData.energy);
         }
     }
 }
@@ -525,11 +533,34 @@ function activatePlanet(id) {
 }
 
 function openRunnerWindow() {
+    // 1. ПРОВЕРКА ЭНЕРГИИ (Минимум 20 для старта)
+    if (playerData.energy < 20) {
+        alert("Недостаточно энергии для вылета! Нужно 20.");
+        return; 
+    }
+
+    // 2. СПИСАНИЕ И СБРОС ТАЙМЕРА РЕГЕНА
+    const now = Date.now();
+    playerData.energy -= 20;
+    playerData.lastEnergyUpdate = now; // Важно: реген начнет считать от этого момента
+
+    // Сразу сохраняем списание в базу, чтобы игрок не схитрил, обновив страницу
+    if (typeof userRef !== 'undefined' && userRef.update) {
+        userRef.update({
+            energy: playerData.energy,
+            lastEnergyUpdate: playerData.lastEnergyUpdate
+        });
+    }
+
+    // 3. СТАНДАРТНАЯ ЛОГИКА ЗАПУСКА
     isRunnerActive = true;
     sessionQuants = 0; 
     sessionQubi = 0; 
-    sessionArtifacts = 0; // ОБЯЗАТЕЛЬНО: обнуляем артефакты перед началом полета
+    sessionArtifacts = 0; 
     quants = [];
+
+    // Обновление UI (энергия на главном экране)
+    if (typeof updateUI === 'function') updateUI();
 
     // --- ОБНОВЛЕНИЕ HP ПЕРЕД СТАРТОМ ---
     if (typeof syncShipStats === 'function') {
@@ -542,7 +573,7 @@ function openRunnerWindow() {
     // Сбрасываем визуальные счетчики в UI раннера
     const qEl = document.getElementById('runner-score-quant');
     const bEl = document.getElementById('runner-score-qubi');
-    const aEl = document.getElementById('runner-score-artifact'); // Наш новый счетчик
+    const aEl = document.getElementById('runner-score-artifact'); 
     
     if (qEl) qEl.innerText = "0";
     if (bEl) bEl.innerText = "0";
@@ -556,6 +587,8 @@ function openRunnerWindow() {
     
     spawnRunnerObject();
     requestAnimationFrame(runnerLoop);
+
+    console.log("🚀 Полет начат. Списано 20 энергии. Остаток:", playerData.energy);
 }
 
 function closeRunnerWindow() {
