@@ -1719,8 +1719,8 @@ function collectResources() {
     const last = playerData.lastCollect || now;
     const hoursPassed = (now - last) / (1000 * 60 * 60);
 
-    if (hoursPassed < 0.01) { // Защита от слишком частого нажатия (раз в 36 сек)
-        tg.HapticFeedback.notificationOccurred('warning');
+    if (hoursPassed < 0.01) { 
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
         return;
     }
 
@@ -1728,29 +1728,52 @@ function collectResources() {
     let earnedQUBI = 0;
 
     playerData.buildings.forEach(b => {
-        if (b !== 0) {
+        if (b && b !== 0) {
             const config = buildingTypes[b.type];
-            const yieldVal = config.baseYield * b.level * hoursPassed;
+            const yieldVal = config.baseYield * (b.level || 1) * hoursPassed;
             if (config.yieldType === "quant") earnedQNT += yieldVal;
             if (config.yieldType === "qubi") earnedQUBI += yieldVal;
         }
     });
 
-    // Добавляем к балансу (округляем в меньшую сторону)
-    playerData.quant += Math.floor(earnedQNT);
-    playerData.qubi = (playerData.qubi || 0) + Math.floor(earnedQUBI);
+    const finalQNT = Math.floor(earnedQNT);
+    const finalQUBI = Math.floor(earnedQUBI);
+
+    playerData.quant += finalQNT;
+    playerData.qubi = (playerData.qubi || 0) + finalQUBI;
     playerData.lastCollect = now;
 
-    // Сохраняем в Firebase
+    // Сохраняем и обновляем UI
     userRef.update({
         quant: playerData.quant,
         qubi: playerData.qubi,
-        lastCollect: playerData.lastCollect
+        lastCollect: now
+    }).then(() => {
+        updateUI();
+        updateEarthUI();
+        showCollectModal(finalQNT, finalQUBI); // Вызываем красивое окно
     });
 
-    updateUI();
-    tg.HapticFeedback.notificationOccurred('success');
-    alert(`Собрано ресурсов:\n${Math.floor(earnedQNT)} QUANT\n${Math.floor(earnedQUBI)} QUBI`);
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+}
+
+// Функции для управления окном сбора
+function showCollectModal(qnt, qubi) {
+    const report = document.getElementById('collect-report');
+    let html = `
+        <div class="resource-line"><span>💰 QUANT:</span> <span style="color: #fff;">+${qnt}</span></div>
+    `;
+    
+    if (qubi > 0) {
+        html += `<div class="resource-line"><span>💎 QUBI:</span> <span style="color: #00e5ff;">+${qubi}</span></div>`;
+    }
+
+    report.innerHTML = html;
+    document.getElementById('collect-modal').style.display = 'flex';
+}
+
+function closeCollectModal() {
+    document.getElementById('collect-modal').style.display = 'none';
 }
 
 // 1. Создаем четкую функцию запуска
