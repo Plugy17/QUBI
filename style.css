@@ -938,11 +938,23 @@ canvas {
 
 /* --- Стили для системы строений и апгрейдов --- */
 
+/* Удали старый .slot img и поставь этот */
 .slot img {
-    width: 70%;
-    height: 70%;
-    object-fit: contain;
-    filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.5));
+    width: 80%;           /* Оптимальный размер, чтобы не впритык */
+    height: 80%;
+    object-fit: contain;  /* Не дает картинке искажаться */
+    display: block;       /* Убирает странные зазоры */
+    margin: auto;         /* Центрирует здание в слоте */
+    filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.6)); /* Твой фирменный неон */
+}
+
+/* На всякий случай убедись, что сам слот имеет размер */
+.slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;    /* Обрезает всё, что вылезает за границы */
+    position: relative;
 }
 
 .slot-level {
