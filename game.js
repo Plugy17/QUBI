@@ -1112,8 +1112,27 @@ function gameOver() {
 
 // Эту функцию привяжи к кнопке "ПОПРОБОВАТЬ СНОВА" в окне Game Over
 function restartGame() {
+    // 1. Скрываем модальное окно результатов
     document.getElementById('game-over-modal').style.display = 'none';
-    closeRunnerWindow(); // Либо твоя логика полного перезапуска раннера
+
+    // 2. Закрываем старое окно раннера (очистка памяти и старых объектов)
+    closeRunnerWindow(); 
+
+    // 3. Через небольшую паузу запускаем игру заново
+    setTimeout(() => {
+        if (typeof openRunnerWindow === "function") {
+            openRunnerWindow();
+        } else {
+            console.error("Функция openRunnerWindow не найдена!");
+        }
+    }, 100); // Пауза 100мс, чтобы браузер успел корректно закрыть старое окно
+}
+
+// А это для второй кнопки "В МЕНЮ"
+function goToMenu() {
+    document.getElementById('game-over-modal').style.display = 'none';
+    closeRunnerWindow(); 
+    // Здесь ничего больше вызывать не нужно, игрок просто останется в главном меню
 }
 
 // --- УПРАВЛЕНИЕ И КЛИКИ ---
