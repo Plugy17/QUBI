@@ -1768,7 +1768,7 @@ function showCollectModal(qnt, qubi) {
     let html = `
         <div class="resource-line">
             <div style="display: flex; align-items: center; gap: 8px;">
-                <img src="assets/quant_icon.png" class="modal-icon">
+                <img src="assets/quant-icon.png" class="modal-icon">
                 <span>QUANT:</span>
             </div>
             <span style="color: #fff; font-weight: bold;">+${finalQNT}</span>
@@ -1781,7 +1781,7 @@ function showCollectModal(qnt, qubi) {
         html += `
             <div class="resource-line" style="margin-top: 10px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <img src="assets/qubi_icon.png" class="modal-icon">
+                    <img src="assets/qubi-icon.png" class="modal-icon">
                     <span>QUBI:</span>
                 </div>
                 <span style="color: #00e5ff; font-weight: bold;">+${finalQUBI}</span>
