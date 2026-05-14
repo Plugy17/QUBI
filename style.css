@@ -1021,3 +1021,25 @@ canvas {
     object-fit: contain;
     filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.4));
 }
+
+/* Это "фундамент" окна. В JS его нет, поэтому в CSS он обязан быть */
+.game-over-overlay {
+    position: fixed;   /* Чтобы окно замерло поверх экрана */
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); /* Затемнение фона */
+    display: none;     /* ЧТОБЫ ОКНО НЕ ТОРЧАЛО НА ГЛАВНОМ ЭКРАНЕ */
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;    /* Чтобы было поверх планет */
+}
+
+/* Это дизайн самой рамки окна */
+.game-over-content {
+    background: #1a0000; 
+    border: 2px solid #ff4b2b; 
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+    width: 280px;
+}
