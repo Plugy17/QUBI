@@ -1016,8 +1016,8 @@ canvas {
 
 /* Стиль для иконок (просто добавь это ниже) */
 .modal-icon {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     object-fit: contain;
     filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.4));
 }
