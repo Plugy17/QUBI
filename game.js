@@ -1542,26 +1542,29 @@ function openUpgradeMenu(index, building) {
     const list = document.getElementById('buildings-list');
     const typeInfo = buildingTypes[building.type];
     
+    // Расчет стоимости: базовая цена * уровень
     const upgradeCost = typeInfo.artifactUpgradeBase * building.level;
     const hasArtifacts = (playerData.artifacts || 0) >= upgradeCost;
 
     list.innerHTML = `
         <div style="padding: 10px; text-align: center;">
             <img src="${typeInfo.icon}" style="width: 80px; margin-bottom: 10px; filter: drop-shadow(0 0 10px #00e5ff);">
+            
             <h3 style="color: #fff; margin: 5px 0;">${typeInfo.name}</h3>
             <p style="color: #aaa; font-size: 12px;">Уровень: ${building.level} → <span style="color: #00e5ff;">${building.level + 1}</span></p>
             
-            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; margin: 15px 0;">
-                <div style="font-size: 11px; color: #eee;">Стоимость улучшения:</div>
-                <div style="font-size: 18px; font-weight: bold; color: ${hasArtifacts ? '#ffca28' : '#ff4b2b'}; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    <img src="assets/artifact.png" style="width: 20px; height: 20px; object-fit: contain;">
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; margin: 15px 0;">
+                <div style="font-size: 11px; color: #eee; margin-bottom: 8px;">Стоимость улучшения:</div>
+                
+                <div style="font-size: 20px; font-weight: bold; color: ${hasArtifacts ? '#ffca28' : '#ff4b2b'}; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                    <img src="assets/artifact.png" style="width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(255, 202, 40, 0.4));">
                     <span>${upgradeCost} Артефактов</span>
                 </div>
             </div>
 
             <button onclick="upgradeBuilding(${index})" 
-                style="width: 100%; padding: 12px; background: ${hasArtifacts ? '#00e5ff' : '#444'}; 
-                color: #000; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">
+                style="width: 100%; padding: 14px; background: ${hasArtifacts ? '#00e5ff' : '#444'}; 
+                color: #000; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s;">
                 ${hasArtifacts ? 'УЛУЧШИТЬ' : 'НУЖНО БОЛЬШЕ АРТЕФАКТОВ'}
             </button>
         </div>
