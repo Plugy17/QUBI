@@ -1070,53 +1070,42 @@ function gameOver() {
     isRunnerActive = false;
     runnerShip.hp = 0;
 
-    // Останавливаем таймер спавна
-    if (spawnRunnerObject.spawnTimer) {
-        clearTimeout(spawnRunnerObject.spawnTimer);
-    }
+    if (spawnRunnerObject.spawnTimer) clearTimeout(spawnRunnerObject.spawnTimer);
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
 
-    if (tg.HapticFeedback) {
-        tg.HapticFeedback.notificationOccurred('error');
-    }
-
-    console.log("Game Over. Quants:", sessionQuants, "Qubi:", sessionQubi);
-
-    // Пауза перед показом окна для драматизма
     setTimeout(() => {
-        // 1. Заполняем данные в нашем новом HTML окне
-        // Если у тебя есть переменная для артефактов за сессию, используй её вместо 0
-        const sessionArtifacts = window.sessionArtifacts || 0; 
-
-        document.getElementById('final-score').innerText = sessionQuants; // Можно вывести QUANT как основной счет
-        document.getElementById('final-artifacts').innerText = `+${sessionArtifacts}`;
-        
-        // Если хочешь показать и QUBI в этом же окне, можно добавить еще один элемент
+        // Находим контейнер
         const report = document.querySelector('.results-container');
+        if (!report) return; // Страховка от ошибок
+
+        // Наполняем его данными (убедись, что переменные session... существуют)
+        const sArt = window.sessionArtifacts || 0; 
+        
         report.innerHTML = `
             <div class="result-item">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="assets/quant-icon.png" style="width: 40px; height: 40px; object-fit: contain;">
+                    <img src="assets/quant-icon.png" style="width: 42px; height: 42px;">
                     <span>QUANT:</span>
                 </div>
                 <span style="color: #fff;">+${sessionQuants}</span>
             </div>
             <div class="result-item">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="assets/qubi-icon.png" style="width: 40px; height: 40px; object-fit: contain;">
+                    <img src="assets/qubi-icon.png" style="width: 42px; height: 42px;">
                     <span>QUBI:</span>
                 </div>
                 <span style="color: #00e5ff;">+${sessionQubi}</span>
             </div>
             <div class="result-item">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="assets/artifact.png" style="width: 52px; height: 52px; object-fit: contain;">
+                    <img src="assets/artifact.png" style="width: 50px; height: 50px;">
                     <span>АРТЕФАКТЫ:</span>
                 </div>
-                <span style="color: #ffca28;">+${sessionArtifacts}</span>
+                <span style="color: #ffca28;">+${sArt}</span>
             </div>
         `;
 
-        // 2. Показываем наше стильное красное окно
+        // ТЕПЕРЬ ПОКАЗЫВАЕМ ОКНО
         document.getElementById('game-over-modal').style.display = 'flex';
         
     }, 500);
