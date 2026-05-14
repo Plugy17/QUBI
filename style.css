@@ -988,3 +988,21 @@ canvas {
 .upgrade-confirm-btn:active {
     transform: scale(0.98);
 }
+
+@keyframes modalFade {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+#collect-modal .build-content {
+    animation: modalFade 0.3s ease-out;
+    border-color: #00e5ff;
+    box-shadow: 0 0 30px rgba(0, 229, 255, 0.2);
+}
+
+.resource-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 229, 255, 0.1);
+}
