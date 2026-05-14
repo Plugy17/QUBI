@@ -1542,7 +1542,6 @@ function openUpgradeMenu(index, building) {
     const list = document.getElementById('buildings-list');
     const typeInfo = buildingTypes[building.type];
     
-    // Расчет стоимости: базовая цена * уровень (каждый уровень дороже)
     const upgradeCost = typeInfo.artifactUpgradeBase * building.level;
     const hasArtifacts = (playerData.artifacts || 0) >= upgradeCost;
 
@@ -1554,8 +1553,9 @@ function openUpgradeMenu(index, building) {
             
             <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; margin: 15px 0;">
                 <div style="font-size: 11px; color: #eee;">Стоимость улучшения:</div>
-                <div style="font-size: 18px; font-weight: bold; color: ${hasArtifacts ? '#ffca28' : '#ff4b2b'};">
-                    ${upgradeCost} 💎 Артефактов
+                <div style="font-size: 18px; font-weight: bold; color: ${hasArtifacts ? '#ffca28' : '#ff4b2b'}; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <img src="assets/artifact.png" style="width: 20px; height: 20px; object-fit: contain;">
+                    <span>${upgradeCost} Артефактов</span>
                 </div>
             </div>
 
