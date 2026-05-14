@@ -164,18 +164,18 @@ const buildingTypes = {
     mine: {
         name: "Шахта",
         icon: "assets/buildings/mine.png", // Путь к твоей PNG
-        baseCost: 1000,
-        baseYield: 25, // Квантов в час
+        baseCost: 1500,
+        baseYield: 15, // Квантов в час
         yieldType: "quant",
-        artifactUpgradeBase: 5 // Сколько артефактов нужно для 1-го апгрейда
+        artifactUpgradeBase: 20 // Сколько артефактов нужно для 1-го апгрейда
     },
     lab: {
         name: "Лаборатория",
         icon: "assets/buildings/lab.png",
         baseCost: 2500,
-        baseYield: 1, // QUBI в час
+        baseYield: 5, // QUBI в час
         yieldType: "qubi",
-        artifactUpgradeBase: 10
+        artifactUpgradeBase: 30
     },
     shield: {
         name: "Щит",
@@ -183,7 +183,7 @@ const buildingTypes = {
         baseCost: 5000,
         baseYield: 5, // % защиты
         yieldType: "protection",
-        artifactUpgradeBase: 15
+        artifactUpgradeBase: 40
     }
 };
 
