@@ -861,7 +861,7 @@ canvas {
 /* Панель ресурсов колонии (сверху) */
 .colony-header {
     /* Увеличили первый параметр (верхний отступ) с 85px до 110px */
-    padding: 110px 20px 20px 20px; 
+    padding: 130px 20px 20px 20px; 
     background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
     display: flex;
     justify-content: space-between;
