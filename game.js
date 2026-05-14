@@ -1476,6 +1476,19 @@ function exitEarth() {
     }
 }
 
+function updateEarthUI() {
+    const quantLabel = document.getElementById('earth-quant-balance');
+    const qubiLabel = document.getElementById('earth-qubi-balance');
+    const artLabel = document.getElementById('player-artifacts');
+
+    if (quantLabel) quantLabel.innerText = Math.floor(playerData.quant);
+    if (qubiLabel) qubiLabel.innerText = Math.floor(playerData.qubi || 0);
+    if (artLabel) artLabel.innerText = playerData.artifacts || 0;
+
+    // Также обновляем статистику дохода в час
+    updateColonyStats();
+}
+
 // Отрисовка зданий в слотах
 function renderBuildings() {
     const grid = document.getElementById('building-grid');
@@ -1596,6 +1609,45 @@ function openBuildMenu() {
     });
 
     menu.style.display = 'flex';
+}
+
+function buildBuilding(slotIndex, type) {
+    const config = buildingTypes[type];
+
+    // 1. Проверяем баланс еще раз (на всякий случай)
+    if (playerData.quant >= config.baseCost) {
+        
+        // 2. Списываем валюту
+        playerData.quant -= config.baseCost;
+
+        // 3. Создаем объект здания в нужном слоте
+        // Устанавливаем тип и 1-й уровень
+        playerData.buildings[slotIndex] = {
+            type: type,
+            level: 1
+        };
+
+        // 4. Сохраняем обновленный массив зданий и баланс в Firebase
+        userRef.update({
+            quant: playerData.quant,
+            buildings: playerData.buildings
+        }).then(() => {
+            // 5. Обновляем интерфейс
+            renderBuildings();   // Перерисовываем иконки на планете
+            updateColonyStats(); // Пересчитываем доход в час
+            updateUI();          // Обновляем общий баланс в шапке
+            
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            console.log(`Здание ${config.name} успешно построено!`);
+        }).catch((err) => {
+            console.error("Ошибка при сохранении постройки:", err);
+        });
+
+    } else {
+        // Если вдруг денег не хватило
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        alert("Недостаточно ресурсов!");
+    }
 }
 
 function upgradeBuilding(index) {
