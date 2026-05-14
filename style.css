@@ -1110,3 +1110,28 @@ canvas {
     cursor: pointer;
     text-transform: uppercase;
 }
+
+/* Группа кнопок */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Основная кнопка (Белая) */
+.restart-btn.primary {
+    background: #fff;
+    color: #000;
+}
+
+/* Вторая кнопка (Контурная) */
+.restart-btn.secondary {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.restart-btn:active {
+    transform: scale(0.95);
+}
