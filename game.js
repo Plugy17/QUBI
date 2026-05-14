@@ -1761,9 +1761,9 @@ function collectResources() {
 function showCollectModal(qnt, qubi) {
     const report = document.getElementById('collect-report');
     
-    // Округляем значения
-    const finalQNT = Math.floor(qnt || 0);
-    const finalQUBI = Math.floor(qubi || 0);
+    // Показываем 1 знак после запятой, чтобы видеть даже +0.1
+    const finalQNT = Number(qnt || 0).toFixed(1);
+    const finalQUBI = Number(qubi || 0).toFixed(1);
 
     let html = `
         <div class="resource-line">
@@ -1775,9 +1775,10 @@ function showCollectModal(qnt, qubi) {
         </div>
     `;
     
-    // Проверяем: если есть лаборатория (доход QUBI > 0) 
-    // ИЛИ если накоплено хотя бы немного QUBI
-    if (finalQUBI >= 0 && playerData.buildings.some(b => b && b.type === 'laboratory')) {
+    // Теперь ищем 'lab', так как ты переименовал тип здания
+    const hasLab = playerData.buildings && playerData.buildings.some(b => b && b.type === 'lab');
+
+    if (hasLab) {
         html += `
             <div class="resource-line" style="margin-top: 10px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
