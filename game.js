@@ -1685,20 +1685,31 @@ function updateColonyStats() {
     let totalQUBI = 0;
 
     playerData.buildings.forEach(b => {
-        if (b !== 0 && b !== "0") {
+        if (b && b !== 0 && b !== "0") {
             const config = buildingTypes[b.type];
-            if (config.yieldType === "quant") {
-                totalQNT += config.baseYield * b.level;
-            } else if (config.yieldType === "qubi") {
-                totalQUBI += config.baseYield * b.level;
+            // Проверяем, существует ли конфиг для этого типа здания
+            if (config) {
+                if (config.yieldType === "quant") {
+                    totalQNT += config.baseYield * (b.level || 1);
+                } else if (config.yieldType === "qubi") {
+                    totalQUBI += config.baseYield * (b.level || 1);
+                }
             }
         }
     });
 
-    // Обновляем текст в интерфейсе
-    document.getElementById('total-yield').innerText = totalQNT;
-    if (document.getElementById('player-artifacts')) {
-        document.getElementById('player-artifacts').innerText = playerData.artifacts || 0;
+    // 1. Обновляем доход QUANT
+    const qntYieldEl = document.getElementById('total-yield');
+    if (qntYieldEl) qntYieldEl.innerText = totalQNT;
+
+    // 2. ОБНОВЛЯЕМ ДОХОД QUBI (добавлено)
+    const qubiYieldEl = document.getElementById('total-qubi-yield');
+    if (qubiYieldEl) qubiYieldEl.innerText = totalQUBI;
+
+    // 3. Обновляем артефакты
+    const artEl = document.getElementById('player-artifacts');
+    if (artEl) {
+        artEl.innerText = playerData.artifacts || 0;
     }
 }
 
