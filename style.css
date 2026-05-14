@@ -1032,7 +1032,10 @@ canvas {
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 10000;
+    /* Увеличиваем до максимума, чтобы быть выше всех канвасов */
+    z-index: 999999 !important; 
+    /* Разрешаем окну принимать клики */
+    pointer-events: auto !important; 
 }
 
 /* Рамка окна */
@@ -1044,6 +1047,8 @@ canvas {
     text-align: center;
     width: 300px;
     box-shadow: 0 0 30px rgba(255, 75, 43, 0.3);
+    /* Добавляем на всякий случай здесь тоже */
+    pointer-events: auto !important;
 }
 
 /* Заголовок */
@@ -1109,6 +1114,10 @@ canvas {
     font-weight: 900;
     cursor: pointer;
     text-transform: uppercase;
+    /* Явно указываем, что кнопка должна реагировать */
+    pointer-events: all !important;
+    position: relative;
+    z-index: 10;
 }
 
 /* Группа кнопок */
