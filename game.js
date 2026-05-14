@@ -29,6 +29,7 @@ let quants = [];
 let sessionQuants = 0;
 let sessionQubi = 0;
 let isRunnerActive = false;
+let sessionArtifacts = 0;
 
 // --- ЕДИНАЯ ФУНКЦИЯ РАСЧЕТА ХАРАКТЕРИСТИК ---
 function calculateCurrentStats() {
@@ -1111,28 +1112,42 @@ function gameOver() {
 }
 
 // Эту функцию привяжи к кнопке "ПОПРОБОВАТЬ СНОВА" в окне Game Over
+// --- ВСТАВЬ ЭТО В САМЫЙ КОНЕЦ ТЕГА <script> ---
+
 function restartGame() {
-    // 1. Скрываем модальное окно результатов
-    document.getElementById('game-over-modal').style.display = 'none';
+    console.log("Попытка перезапуска...");
+    
+    // 1. Скрываем окно
+    const modal = document.getElementById('game-over-modal');
+    if (modal) modal.style.display = 'none';
 
-    // 2. Закрываем старое окно раннера (очистка памяти и старых объектов)
-    closeRunnerWindow(); 
+    // 2. ВЫЗЫВАЕМ СОХРАНЕНИЕ (если у тебя есть такая функция)
+    // saveGameResults(); 
 
-    // 3. Через небольшую паузу запускаем игру заново
+    // 3. Закрываем и открываем заново
+    if (typeof closeRunnerWindow === "function") {
+        closeRunnerWindow();
+    }
+    
     setTimeout(() => {
         if (typeof openRunnerWindow === "function") {
             openRunnerWindow();
-        } else {
-            console.error("Функция openRunnerWindow не найдена!");
         }
-    }, 100); // Пауза 100мс, чтобы браузер успел корректно закрыть старое окно
+    }, 100);
 }
 
-// А это для второй кнопки "В МЕНЮ"
 function goToMenu() {
-    document.getElementById('game-over-modal').style.display = 'none';
-    closeRunnerWindow(); 
-    // Здесь ничего больше вызывать не нужно, игрок просто останется в главном меню
+    console.log("Возврат в меню...");
+    
+    const modal = document.getElementById('game-over-modal');
+    if (modal) modal.style.display = 'none';
+
+    // Сохраняем результаты перед выходом
+    // saveGameResults();
+
+    if (typeof closeRunnerWindow === "function") {
+        closeRunnerWindow();
+    }
 }
 
 // --- УПРАВЛЕНИЕ И КЛИКИ ---
