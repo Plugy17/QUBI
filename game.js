@@ -294,31 +294,28 @@ function initGame() {
     const nameEl = document.getElementById('player-name');
     if(nameEl) nameEl.innerText = tgUser.first_name;
 
-    userRef.on('value', (snapshot) => {
+    // Используем .once, чтобы загрузить данные ПРИ ВХОДЕ один раз
+    userRef.once('value').then((snapshot) => {
         if (snapshot.exists()) {
             playerData = snapshot.val();
             
-            // ПРОВЕРКА ВРЕМЕНИ: Если метки нет, создаем её сейчас
-            if (!playerData.lastEnergyUpdate || isNaN(playerData.lastEnergyUpdate)) {
-                playerData.lastEnergyUpdate = Date.now();
-                userRef.update({ lastEnergyUpdate: playerData.lastEnergyUpdate });
+            // Проверка и инициализация данных
+            const now = Date.now();
+            if (!playerData.lastEnergyUpdate) {
+                playerData.lastEnergyUpdate = now;
+                userRef.update({ lastEnergyUpdate: now });
             }
 
-            // Инициализация массивов
             if (!playerData.inventory) playerData.inventory = [];
             if (!playerData.equipped) playerData.equipped = [];
-            if (!playerData.dailyExchangeQuant) playerData.dailyExchangeQuant = 0;
-            if (!playerData.dailyExchangeQubi) playerData.dailyExchangeQubi = 0;
             
-            // После того как время точно есть, запускаем цикл
-            regenerateEnergy(); 
+            // СТАРТУЕМ ТАЙМЕРЫ ОДИН РАЗ
+            // Если таймер уже запущен где-то в другом месте, здесь его не дублируем!
             updateUI();
             syncWithLeaderboard(); 
         } else {
             // Новый игрок
             playerData.lastEnergyUpdate = Date.now();
-            playerData.inventory = [];
-            playerData.equipped = [];
             userRef.set(playerData);
         }
         hideLoading();
