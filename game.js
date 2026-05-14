@@ -1760,12 +1760,28 @@ function collectResources() {
 // Функции для управления окном сбора
 function showCollectModal(qnt, qubi) {
     const report = document.getElementById('collect-report');
+    
+    // Используем твои пути к иконкам (проверь, чтобы названия файлов совпадали)
     let html = `
-        <div class="resource-line"><span>💰 QUANT:</span> <span style="color: #fff;">+${qnt}</span></div>
+        <div class="resource-line">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="assets/quant_icon.png" class="modal-icon">
+                <span>QUANT:</span>
+            </div>
+            <span style="color: #fff; font-weight: bold;">+${qnt}</span>
+        </div>
     `;
     
     if (qubi > 0) {
-        html += `<div class="resource-line"><span>💎 QUBI:</span> <span style="color: #00e5ff;">+${qubi}</span></div>`;
+        html += `
+            <div class="resource-line" style="margin-top: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <img src="assets/qubi_icon.png" class="modal-icon">
+                    <span>QUBI:</span>
+                </div>
+                <span style="color: #00e5ff; font-weight: bold;">+${qubi}</span>
+            </div>
+        `;
     }
 
     report.innerHTML = html;
