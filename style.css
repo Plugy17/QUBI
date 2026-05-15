@@ -1144,3 +1144,17 @@ canvas {
 .restart-btn:active {
     transform: scale(0.95);
 }
+
+#pvp-countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 100px;
+    font-weight: bold;
+    color: #ff0033;
+    text-shadow: 0 0 20px #ff0033, 0 0 40px #000;
+    font-family: 'Orbitron', sans-serif; /* Или любой другой футуристичный шрифт */
+    z-index: 10000;
+    pointer-events: none; /* Чтобы клики проходили сквозь текст */
+}
