@@ -223,15 +223,12 @@ const planets = [
     
     // --- НОВАЯ ПЛАНЕТА PVP ---
     { 
-        id: 'pvp', 
-        src: 'assets/star-pvp.png', 
-        x: window.innerWidth * 0.8,  // Справа
-        y: window.innerHeight * 0.3, // Сверху
-        size: 85, 
-        rotation: 0, 
-        speed: 0.001, 
-        img: new Image(), 
-        action: () => openPvPMenu() 
+    id: 'pvp', 
+    src: 'assets/star-pvp.png', 
+    x: window.innerWidth * 0.12, 
+    y: window.innerHeight * 0.82, 
+    size: 90, 
+    action: () => openPvPMenu() 
     }
 ];
 
