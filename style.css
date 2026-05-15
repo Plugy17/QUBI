@@ -1144,3 +1144,14 @@ canvas {
 .restart-btn:active {
     transform: scale(0.95);
 }
+
+#planet-pvp img {
+    filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.6));
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.5)); }
+    50% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.5)); }
+}
