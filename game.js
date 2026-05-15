@@ -37,6 +37,9 @@ let pvpTargetDistance = 2000;
 let pvpWalls = [];
 let pvpOpponent = null;
 
+const pvpCanvas = document.getElementById('pvpCanvas');
+const pvpCtx = pvpCanvas ? pvpCanvas.getContext('2d') : null;
+
 // --- ЕДИНАЯ ФУНКЦИЯ РАСЧЕТА ХАРАКТЕРИСТИК ---
 function calculateCurrentStats() {
     let stats = {
