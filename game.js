@@ -229,7 +229,7 @@ const planets = [
     y: window.innerHeight * 0.82, 
     size: 90, 
     action: () => openPvPMenu() 
-    }
+    },
 ];
 
 // Инициализация картинок планет
