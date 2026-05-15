@@ -1944,21 +1944,61 @@ function closeCollectModal() {
 }
 
 // 1. Открытие поиска
-function openPvPSearch() {
-    console.log("Поиск цели...");
-    // Имитация поиска противника
-    pvpOpponent = {
-        name: "RAIDER_" + Math.floor(Math.random() * 999),
-        resources: playerData.quant * 0.5 // Видим часть его ресурсов
-    };
-    
-    if(confirm(`Цель найдена: ${pvpOpponent.name}. Начать захват? (Нужно 40 энергии)`)) {
-        if (playerData.energy >= 40) {
-            playerData.energy -= 40;
-            startPvPMode();
+async function openPvPSearch() {
+    const radar = document.getElementById('pvp-radar-overlay');
+    const status = document.getElementById('radar-status');
+    radar.style.display = 'flex';
+    status.innerText = "SCANNING FOR TARGETS...";
+
+    try {
+        // 1. Запрос к Firebase: берем всех игроков
+        // Если у тебя много игроков, лучше фильтровать по активности или уровню
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const allPlayers = [];
+        
+        usersSnapshot.forEach(doc => {
+            const data = doc.data();
+            // Не добавляем в список себя (сравниваем по Telegram ID или name)
+            if (data.name !== playerData.name) {
+                allPlayers.push({
+                    name: data.name,
+                    resources: data.quant || 0,
+                    id: doc.id
+                });
+            }
+        });
+
+        // Имитируем время на сканирование (2-3 секунды для красоты)
+        await new Promise(resolve => setTimeout(resolve, 2500));
+
+        if (allPlayers.length > 0) {
+            // Выбираем случайного игрока
+            const randomPlayer = allPlayers[Math.floor(Math.random() * allPlayers.length)];
+            pvpOpponent = randomPlayer;
+
+            status.innerText = "TARGET ACQUIRED!";
+            
+            // Ждем секунду и показываем подтверждение
+            setTimeout(() => {
+                radar.style.display = 'none';
+                if(confirm(`Target found: ${pvpOpponent.name}\nQuant: ${Math.floor(pvpOpponent.resources)}\nStart raid? (40 Energy)`)) {
+                    if (playerData.energy >= 40) {
+                        playerData.energy -= 40;
+                        startPvPMode();
+                    } else {
+                        alert("Not enough energy!");
+                    }
+                }
+            }, 1000);
         } else {
-            alert("Недостаточно энергии!");
+            status.innerText = "NO TARGETS FOUND IN SECTOR";
+            setTimeout(() => radar.style.display = 'none', 2000);
         }
+
+    } catch (error) {
+        console.error("Search failed:", error);
+        status.innerText = "SENSOR FAILURE";
+        setTimeout(() => radar.style.display = 'none', 2000);
     }
 }
 
