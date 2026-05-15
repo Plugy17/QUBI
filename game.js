@@ -1968,7 +1968,6 @@ function startPvPMode() {
     pvpDistance = 0;
     pvpWalls = [];
 
-    // Устанавливаем имя противника в HTML
     if (pvpOpponent) {
         document.getElementById('pvp-target-name').innerText = pvpOpponent.name;
     }
@@ -1976,45 +1975,61 @@ function startPvPMode() {
     const container = document.getElementById('pvp-window');
     container.style.display = 'block';
 
-    // 1. ПРИНУДИТЕЛЬНОЕ РАСШИРЕНИЕ (для горизонтального режима)
-    // Используем Math.max и Math.min, чтобы ширина всегда была больше высоты, 
-    // если мы ожидаем развернутый экран
     pvpCanvas.width = window.innerWidth;
     pvpCanvas.height = window.innerHeight;
 
-    // 2. ПОДГОТОВКА ФОНА
-    // Убедись, что эта переменная pvpBgImg объявлена в начале твоего файла!
     if (!pvpBgImg.src) {
         pvpBgImg.src = 'assets/pvp-bg.png'; 
     }
 
-    // 3. СБРОС КОРАБЛЯ (Центрируем относительно текущего экрана)
     runnerShip.x = pvpCanvas.width * 0.2; 
     runnerShip.y = pvpCanvas.height / 2; 
     runnerShip.vy = 0;
-    runnerShip.hp = runnerShip.maxHp; // Восстанавливаем HP для нового боя
+    runnerShip.hp = runnerShip.maxHp;
 
-    // 4. УПРАВЛЕНИЕ (Touch)
     const handleJump = (e) => {
-    if (!isPvPActive) return;
-    if (e.cancelable) e.preventDefault(); 
-    
-    // БЫЛО: -5.5
-    // СТАЛО: -7.0 (чем меньше число, тем выше прыжок)
-    runnerShip.vy = -9.0; 
-    
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-    }
-};
-    
-    // Очищаем старые события и вешаем новые
+        if (!isPvPActive) return;
+        if (e.cancelable) e.preventDefault(); 
+        runnerShip.vy = -9.0; 
+        if (window.Telegram?.WebApp?.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        }
+    };
+
     container.replaceWith(container.cloneNode(true)); 
     const newContainer = document.getElementById('pvp-window');
     newContainer.addEventListener('touchstart', handleJump, { passive: false });
 
-    // 5. ЗАПУСК
-    spawnPvPWallsLoop();
+    // --- ЛОГИКА ОБРАТНОГО ОТСЧЕТА ---
+    
+    // Проверяем/создаем элемент текста в центре экрана
+    let countdownElem = document.getElementById('pvp-countdown');
+    if (!countdownElem) {
+        countdownElem = document.createElement('div');
+        countdownElem.id = 'pvp-countdown';
+        newContainer.appendChild(countdownElem);
+    }
+    
+    countdownElem.style.display = 'block';
+    let timeLeft = 3;
+    countdownElem.innerText = timeLeft;
+
+    const countdownInterval = setInterval(() => {
+        timeLeft -= 1;
+        if (timeLeft > 0) {
+            countdownElem.innerText = timeLeft;
+        } else if (timeLeft === 0) {
+            countdownElem.innerText = "GO!";
+        } else {
+            clearInterval(countdownInterval);
+            countdownElem.style.display = 'none';
+            
+            // ЗАПУСК СТЕН только после завершения отсчета
+            spawnPvPWallsLoop(); 
+        }
+    }, 1000);
+
+    // ЗАПУСК ОТРИСОВКИ (сразу, чтобы игрок мог летать во время отсчета)
     pvpMainLoop();
 }
 
