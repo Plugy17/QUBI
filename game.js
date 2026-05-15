@@ -1708,6 +1708,17 @@ function openBuildMenu() {
 function buildBuilding(slotIndex, type) {
     const config = buildingTypes[type];
 
+    // --- ПРОВЕРКА НА ДУБЛИКАТЫ ---
+    // Проверяем, есть ли уже здание такого типа в любом из слотов
+    const alreadyHasThisType = playerData.buildings && playerData.buildings.some(b => b && b.type === type);
+
+    if (alreadyHasThisType) {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        alert(`Здание типа "${config.name}" уже построено! Нельзя ставить одинаковые здания.`);
+        return; // Останавливаем выполнение функции
+    }
+    // -----------------------------
+
     // 1. Проверяем баланс еще раз (на всякий случай)
     if (playerData.quant >= config.baseCost) {
         
@@ -1715,7 +1726,9 @@ function buildBuilding(slotIndex, type) {
         playerData.quant -= config.baseCost;
 
         // 3. Создаем объект здания в нужном слоте
-        // Устанавливаем тип и 1-й уровень
+        // Убедимся, что массив существует
+        if (!playerData.buildings) playerData.buildings = [];
+
         playerData.buildings[slotIndex] = {
             type: type,
             level: 1
