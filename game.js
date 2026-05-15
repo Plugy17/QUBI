@@ -1946,9 +1946,19 @@ function closeCollectModal() {
 // 1. Открытие поиска
 // 1. Открытие поиска (Версия для Realtime Database)
 async function openPvPSearch() {
+   // Сначала показываем само родительское окно, если оно скрыто
+    const pvpWin = document.getElementById('pvp-window');
+    pvpWin.style.display = 'block'; 
+
     const radar = document.getElementById('pvp-radar-overlay');
     const status = document.getElementById('radar-status');
-    radar.style.display = 'flex';
+
+    if (radar) {
+        radar.style.display = 'flex';
+        // Принудительно выводим на передний план
+        radar.style.zIndex = "9999"; 
+    }
+    
     status.innerText = "SCANNING FOR TARGETS...";
 
     try {
@@ -2175,15 +2185,37 @@ function endPvP(isWin) {
     isPvPActive = false;
     document.getElementById('pvp-window').style.display = 'none';
 
-    if (isWin) {
-        // Рассчитываем награду (10% от запасов врага)
-        let loot = Math.floor(pvpOpponent.resources * 0.1);
-        playerData.quant += loot;
-        alert(`РЕЙД УСПЕШЕН! Вы захватили ${loot} QUANT`);
-        saveData(); // Сохраняем в Firebase
-    } else {
-        alert("КОРАБЛЬ УНИЧТОЖЕН. Рейд провален.");
+    if (isWin && pvpOpponent) {
+        // 1. Рассчитываем 10%
+        const loot = Math.floor(pvpOpponent.resources * 0.1);
+
+        if (loot > 0) {
+            // 2. Начисляем тебе (в локальную переменную и в базу)
+            playerData.quant += loot;
+            userRef.update({ quant: playerData.quant });
+
+            // 3. СПИСЫВАЕМ У ПРОТИВНИКА (Самый важный блок)
+            // Создаем ссылку на папку врага в базе
+            const opponentRef = firebase.database().ref('users/' + pvpOpponent.id);
+            
+            // Используем транзакцию, чтобы точно списать (безопасный метод)
+            opponentRef.child('quant').transaction((currentQuant) => {
+                if (currentQuant) {
+                    return currentQuant - loot; // Вычитаем награбленное
+                }
+                return currentQuant;
+            });
+
+            alert(`Рейд успешен! Вы украли ${loot} QUANT у ${pvpOpponent.name}`);
+        } else {
+            alert("У цели слишком мало ресурсов. Красть нечего.");
+        }
+    } else if (!isWin) {
+        alert("Рейд провален! Вы потеряли связь с базой.");
     }
+
+    // Сброс оппонента
+    pvpOpponent = null;
 }
 
 // Функция обновления интерфейса ПВП (полоска прогресса и метры)
