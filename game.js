@@ -1950,11 +1950,15 @@ async function openPvPSearch() {
     const pvpWin = document.getElementById('pvp-window');
     pvpWin.style.display = 'block'; 
 
+    // 1. СКРЫВАЕМ ЛИШНЕЕ: Прячем полоску прогресса и кнопку "Отступить"
+    const pvpHeader = document.querySelector('.pvp-ui-header');
+    if (pvpHeader) pvpHeader.style.visibility = 'hidden'; 
+
     const radar = document.getElementById('pvp-radar-overlay');
     const targetCard = document.getElementById('pvp-target-card');
     const status = document.getElementById('radar-status');
 
-    targetCard.style.display = 'none'; // Скрываем карточку, если была
+    targetCard.style.display = 'none'; 
     radar.style.display = 'flex';
     status.innerText = "SCANNING FOR TARGETS...";
 
@@ -1968,8 +1972,10 @@ async function openPvPSearch() {
             Object.keys(usersData).forEach(userId => {
                 if (userId !== myId) {
                     const user = usersData[userId];
+                    
+                    // 2. ИМЯ КОЛОНИИ: Ставим colonyName на первое место в проверке
                     allPlayers.push({
-                        name: user.name || user.first_name || "Unknown Pilot", // Берем любое доступное имя
+                        name: user.colonyName || user.name || user.first_name || "Unknown Colony",
                         resources: user.quant || 0,
                         id: userId
                     });
@@ -1977,24 +1983,26 @@ async function openPvPSearch() {
             });
         }
 
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Эффект поиска
+        await new Promise(resolve => setTimeout(resolve, 3000)); 
 
         if (allPlayers.length > 0) {
             pvpOpponent = allPlayers[Math.floor(Math.random() * allPlayers.length)];
             
-            // Заполняем красивую карточку данными
             document.getElementById('target-name-display').innerText = pvpOpponent.name;
             document.getElementById('target-loot-display').innerText = Math.floor(pvpOpponent.resources) + " QUANT";
             
-            // Скрываем радар и показываем карточку
             radar.style.display = 'none';
             targetCard.style.display = 'block';
         } else {
             status.innerText = "NO TARGETS IN SECTOR";
-            setTimeout(() => { pvpWin.style.display = 'none'; }, 2000);
+            setTimeout(() => { 
+                pvpWin.style.display = 'none'; 
+                if (pvpHeader) pvpHeader.style.visibility = 'visible'; // Возвращаем, если цель не найдена
+            }, 2000);
         }
     } catch (error) {
         status.innerText = "SENSORS OFFLINE";
+        if (pvpHeader) pvpHeader.style.visibility = 'visible';
         console.error(error);
     }
 }
@@ -2010,12 +2018,22 @@ function confirmRaid() {
     if (playerData.energy >= 40) {
         playerData.energy -= 40;
         userRef.update({ energy: playerData.energy }); // Сохраняем трату энергии
+        
+        // 1. Скрываем карточку цели
         document.getElementById('pvp-target-card').style.display = 'none';
         
-        // Обновляем имя цели в верхнем интерфейсе перед началом
+        // 2. ВОЗВРАЩАЕМ ИНТЕРФЕЙС (Полоска прогресса и кнопка "Отступить")
+        const pvpHeader = document.querySelector('.pvp-ui-header');
+        if (pvpHeader) {
+            pvpHeader.style.visibility = 'visible'; 
+            pvpHeader.style.opacity = '1'; // На всякий случай, если использовал opacity
+        }
+        
+        // 3. Обновляем имя цели в верхнем интерфейсе перед началом
         document.getElementById('pvp-target-name').innerText = pvpOpponent.name;
         
-        startPvPMode(); // Запуск отсчета и игры
+        // 4. Запуск игры
+        startPvPMode(); 
     } else {
         alert("NEED MORE ENERGY!");
     }
