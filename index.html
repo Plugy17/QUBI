@@ -24,6 +24,27 @@
         <p id="radar-status">SCANNING FREQUENCIES...</p>
     </div>
 
+       <div id="pvp-target-card" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 280px; background: rgba(20, 0, 0, 0.95); border: 2px solid #ff4b2b; border-radius: 15px; padding: 20px; z-index: 10005; text-align: center; box-shadow: 0 0 30px rgba(255, 75, 43, 0.4);">
+    <div style="color: #ff4b2b; font-size: 12px; letter-spacing: 2px; margin-bottom: 10px;">TARGET ACQUIRED</div>
+    
+    <div id="target-avatar" style="width: 80px; height: 80px; margin: 0 auto 15px; border: 1px solid #ff4b2b; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255, 75, 43, 0.1);">
+        <span style="font-size: 30px;">👤</span>
+    </div>
+
+    <div id="target-name-display" style="color: #fff; font-size: 20px; font-weight: bold; margin-bottom: 5px; font-family: 'Orbitron', sans-serif;">---</div>
+    <div id="target-rank" style="color: #aaa; font-size: 10px; margin-bottom: 15px;">CLASS: TRADER</div>
+
+    <div style="background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+        <div style="color: #ff4b2b; font-size: 10px;">AVAILABLE LOOT:</div>
+        <div id="target-loot-display" style="color: #fff; font-size: 18px; font-weight: bold;">0 QUANT</div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <button onclick="closeTargetCard()" style="flex: 1; background: transparent; border: 1px solid #666; color: #ccc; padding: 10px; border-radius: 5px; cursor: pointer;">SKIP</button>
+        <button onclick="confirmRaid()" style="flex: 1; background: #ff4b2b; border: none; color: #fff; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; box-shadow: 0 0 10px #ff4b2b;">RAID (-40⚡)</button>
+    </div>
+</div>
+
     <div class="pvp-ui-header" style="position: absolute; top: 20px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10;">
         <div class="opponent-info" style="color: #ff4b2b; font-weight: bold; text-shadow: 0 0 10px rgba(255,75,43,0.5);">
             ЦЕЛЬ: <span id="pvp-target-name">ПОИСК...</span>
