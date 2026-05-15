@@ -2534,6 +2534,7 @@ async function joinClan(clanId) {
 }
 
 // 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2)
+// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2) - С ПРОВЕРКОЙ НА ПРАВА ЛИДЕРА
 function loadMyClanData() {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
 
@@ -2550,12 +2551,26 @@ function loadMyClanData() {
             const nameEl = document.getElementById('clan-my-name');
             const scoreEl = document.getElementById('clan-my-total-score');
             const membersContainer = document.getElementById('clan-members-list');
+            const leaveBtn = document.getElementById('clan-leave-btn');
+            const deleteBtn = document.getElementById('clan-delete-btn');
 
             if (nameEl) nameEl.innerText = clan.name.toUpperCase();
             if (scoreEl) scoreEl.innerText = Math.floor(clan.totalQuant);
             if (!membersContainer) return;
 
             membersContainer.innerHTML = "";
+
+            const myId = String(tgUser.id);
+            const isAmILeader = (clan.leaderId === myId);
+
+            // УПРАВЛЕНИЕ КНОПКАМИ: Лидер видит "Распустить", обычный игрок - "Покинуть"
+            if (isAmILeader) {
+                if (leaveBtn) leaveBtn.style.display = 'none';
+                if (deleteBtn) deleteBtn.style.display = 'block';
+            } else {
+                if (leaveBtn) leaveBtn.style.display = 'block';
+                if (deleteBtn) deleteBtn.style.display = 'none';
+            }
 
             if (clan.members) {
                 Object.keys(clan.members).forEach(mId => {
@@ -2575,6 +2590,57 @@ function loadMyClanData() {
             console.error("Ошибка отображения своего клана:", err);
         }
     });
+}
+
+// 7. ПОЛНОЕ УДАЛЕНИЕ КЛАНА (ДОСТУПНО ТОЛЬКО ЛИДЕРУ)
+async function deleteClanAction() {
+    if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
+    
+    const confirmFirst = confirm("ВНИМАНИЕ! Вы действительно хотите ПОЛНОСТЬЮ УДАЛИТЬ эту гильдию? Все участники будут исключены!");
+    if (!confirmFirst) return;
+
+    const confirmSecond = confirm("Это действие необратимо! Подтвердить уничтожение сектора гильдии?");
+    if (!confirmSecond) return;
+
+    const clanId = playerData.clanId;
+    const myId = String(tgUser.id);
+
+    try {
+        // 1. Получаем список всех участников, чтобы очистить им поле clanId в базе
+        const snapshot = await db.ref(`clans/${clanId}`).once('value');
+        const clanData = snapshot.val();
+
+        if (!clanData) return;
+
+        // Защитная проверка: если вызвать функцию пытается не лидер
+        if (clanData.leaderId !== myId) {
+            alert("Ошибка безопасности: Вы не являетесь создателем этой гильдии!");
+            return;
+        }
+
+        // 2. Проходимся по всем участникам клана и стираем clanId из их профилей пользователей
+        if (clanData.members) {
+            const memberIds = Object.keys(clanData.members);
+            const updates = {};
+            memberIds.forEach(id => {
+                updates[`users/${id}/clanId`] = "";
+            });
+            // Выполняем массовое обновление пользователей
+            await db.ref().update(updates);
+        }
+
+        // 3. Полностью удаляем саму ветку клана из Firebase
+        await db.ref(`clans/${clanId}`).remove();
+
+        // 4. Обнуляем данные у себя локально
+        playerData.clanId = "";
+        
+        alert("Гильдия была официально ликвидирована.");
+        openGuildWindow(); // Перезапускаем окно, вернет на Экран 1
+    } catch (e) {
+        console.error("Критическая ошибка при удалении гильдии:", e);
+        alert("Не удалось распустить гильдию. Попробуйте позже.");
+    }
 }
 
 // 6. ВЫХОД ИЗ КЛАНА
