@@ -2022,15 +2022,14 @@ function startPvPMode() {
 function pvpMainLoop() {
     if (!isPvPActive) return;
 
+    // Используем один и тот же контекст
     const canvas = document.getElementById('pvpCanvas');
     const ctx = canvas.getContext('2d');
 
-    // 1. РИСУЕМ ТВОЙ ГОТОВЫЙ ФОН
+    // 1. РИСУЕМ ФОН (Всегда первым)
     if (pvpBgImg.complete) {
-        // Рисуем фон на весь экран
         ctx.drawImage(pvpBgImg, 0, 0, canvas.width, canvas.height);
     } else {
-        // Если вдруг картинка еще грузится, закрасим темным, чтобы не было глюков
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -2038,56 +2037,79 @@ function pvpMainLoop() {
     // 2. ФИЗИКА КОРАБЛЯ
     runnerShip.vy += 0.25; 
     runnerShip.y += runnerShip.vy;
-    
-    // Позиция корабля (20% от левого края)
     const shipRenderX = canvas.width * 0.2;
 
-    // 3. ОТРИСОВКА СТЕН
-    // Создаем градиент для эффекта лазерного барьера
-    let gradient = pvpCtx.createLinearGradient(wall.x, wall.y, wall.x + wall.w, wall.y);
-    gradient.addColorStop(0, "rgba(255, 0, 51, 0.2)"); // Полупрозрачный красный слева
-    gradient.addColorStop(0.5, "#ff0033");             // Яркий центр барьера
-    gradient.addColorStop(1, "rgba(255, 0, 51, 0.2)"); // Полупрозрачный красный справа
+    // 3. ОТРИСОВКА СТЕН И КОЛЛИЗИИ (Цикл только для стен!)
+    for (let i = pvpWalls.length - 1; i >= 0; i--) {
+        let wall = pvpWalls[i];
+        wall.x -= 5; 
 
-    pvpCtx.fillStyle = gradient;
-    pvpCtx.shadowBlur = 20;            // Свечение стен
-    pvpCtx.shadowColor = "#ff0033";
+        // Эффект лазерного барьера
+        let gradient = ctx.createLinearGradient(wall.x, wall.y, wall.x + wall.w, wall.y);
+        gradient.addColorStop(0, "rgba(255, 0, 51, 0.2)");
+        gradient.addColorStop(0.5, "#ff0033");
+        gradient.addColorStop(1, "rgba(255, 0, 51, 0.2)");
 
-    // Рисуем тело стены
-    pvpCtx.fillRect(wall.x, wall.y, wall.w, wall.h);
+        ctx.fillStyle = gradient;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#ff0033";
+        ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+        
+        // Белая линия в центре
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(wall.x + (wall.w / 2) - 1, wall.y, 2, wall.h);
+        ctx.shadowBlur = 0;
 
-    // Добавляем тонкую яркую линию посередине для эффекта "лезвия"
-    pvpCtx.fillStyle = "#fff"; 
-    pvpCtx.fillRect(wall.x + (wall.w / 2) - 1, wall.y, 2, wall.h);
-    
-    // ВАЖНО: Сбрасываем тень сразу после отрисовки, иначе игра начнет тормозить
-    pvpCtx.shadowBlur
-    
-    // 4. ОТРИСОВКА КОРАБЛЯ
+        // Проверка столкновения
+        if (shipRenderX + 15 > wall.x && shipRenderX - 15 < wall.x + wall.w &&
+            runnerShip.y + 15 > wall.y && runnerShip.y - 15 < wall.y + wall.h) {
+            endPvP(false);
+            return;
+        }
+
+        // Удаление старых стен
+        if (wall.x < -100) pvpWalls.splice(i, 1);
+    }
+
+    // 4. ОТРИСОВКА САМОЛЕТА (Теперь ВНЕ цикла стен!)
     ctx.save();
     ctx.translate(shipRenderX, runnerShip.y);
-    ctx.rotate(runnerShip.vy * 0.05); // Наклон носа корабля
+    ctx.rotate(runnerShip.vy * 0.05);
     
     if (shipImg.complete) {
-        // Рисуем сам корабль
         ctx.drawImage(shipImg, -25, -25, 50, 50);
     } else {
-        // Если корабль не виден — рисуем яркий квадрат для теста
-        ctx.fillStyle = "#00f0ff";
+        ctx.fillStyle = "#00e5ff"; // Яркий бирюзовый если не загрузился
         ctx.fillRect(-20, -20, 40, 40);
     }
+    
+    // Полоска HP над самолетом
+    const hpRatio = runnerShip.hp / runnerShip.maxHp;
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(-30, -35, 60, 4);
+    ctx.fillStyle = hpRatio > 0.3 ? "#00ff00" : "#ff0000";
+    ctx.fillRect(-30, -35, 60 * hpRatio, 4);
     ctx.restore();
 
-    // 5. ОБНОВЛЕНИЕ UI И УСЛОВИЯ
+    // 5. ОБНОВЛЕНИЕ ПРОГРЕССА И УСЛОВИЯ ПОБЕДЫ/СМЕРТИ
     pvpDistance += 2;
     updatePvPUI();
 
-    if (runnerShip.y > canvas.height || runnerShip.y < 0) { endPvP(false); return; }
-    if (pvpDistance >= pvpTargetDistance) { endPvP(true); return; }
+    // Смерть об верх/низ экрана
+    if (runnerShip.y > canvas.height || runnerShip.y < 0) {
+        endPvP(false);
+        return;
+    }
+
+    // Победа
+    if (pvpDistance >= pvpTargetDistance) {
+        endPvP(true);
+        return;
+    }
 
     requestAnimationFrame(pvpMainLoop);
 }
-
+    
 function endPvP(isWin) {
     isPvPActive = false;
     document.getElementById('pvp-window').style.display = 'none';
@@ -2129,16 +2151,18 @@ function updatePvPUI() {
 function spawnPvPWallsLoop() {
     if (!isPvPActive) return;
     
-    const gap = 170;
+    const canvas = document.getElementById('pvpCanvas');
+    const gap = 180; // Проход стал чуть шире для честности
     const wallW = 50;
-    const h = Math.random() * (window.innerHeight - 300) + 50;
+    // Высота верхней стены
+    const h = Math.random() * (canvas.height - 300) + 100;
 
     pvpWalls.push(
-        { x: window.innerWidth, y: 0, w: wallW, h: h },
-        { x: window.innerWidth, y: h + gap, w: wallW, h: window.innerHeight }
+        { x: canvas.width, y: 0, w: wallW, h: h },
+        { x: canvas.width, y: h + gap, w: wallW, h: canvas.height - (h + gap) }
     );
 
-    setTimeout(spawnPvPWallsLoop, 1400);
+    setTimeout(spawnPvPWallsLoop, 1500); // Чуть реже спавн для баланса
 }
 
 // 1. Создаем четкую функцию запуска
