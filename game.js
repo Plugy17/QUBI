@@ -219,7 +219,20 @@ const planets = [
     { id: 'shop', src: 'assets/mars.png', x: window.innerWidth * 0.78, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: -0.001, img: new Image() },
     { id: 'moon', src: 'assets/moon.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.72, size: 60, rotation: 0, speed: 0.003, img: new Image() },
     { id: 'leaderboard', src: 'assets/neptun.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.32, size: 70, rotation: 0, speed: -0.0015, img: new Image() },
-    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() }
+    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() },
+    
+    // --- НОВАЯ ПЛАНЕТА PVP ---
+    { 
+        id: 'pvp', 
+        src: 'assets/star-pvp.png', 
+        x: window.innerWidth * 0.8,  // Справа
+        y: window.innerHeight * 0.3, // Сверху
+        size: 85, 
+        rotation: 0, 
+        speed: 0.001, 
+        img: new Image(), 
+        action: () => openPvPMenu() 
+    }
 ];
 
 // Инициализация картинок планет
@@ -503,7 +516,6 @@ function activatePlanet(id) {
     if (isAnyModalOpen()) return;
 
     if (id === 'runner') {
-        // ... твой код проверки энергии ...
         if (playerData.energy < 10) {
             if (window.Telegram && Telegram.WebApp.showAlert) {
                 Telegram.WebApp.showAlert("Недостаточно энергии! Нужно минимум 10 ⚡");
@@ -515,6 +527,23 @@ function activatePlanet(id) {
         if (typeof userRef !== "undefined") userRef.update({ energy: playerData.energy });
         if (typeof openRunnerWindow === "function") openRunnerWindow();
     } 
+    // --- НОВЫЙ БЛОК ДЛЯ PVP ---
+    else if (id === 'pvp') {
+        if (playerData.energy < 40) {
+            if (window.Telegram && Telegram.WebApp.showAlert) {
+                Telegram.WebApp.showAlert("Недостаточно энергии для рейда! Нужно 40 ⚡");
+            }
+            return;
+        }
+        // Энергию лучше списывать внутри openPvPMenu или startPvPRaid после подтверждения цели,
+        // но если хочешь сразу при клике — оставь здесь:
+        if (typeof openPvPMenu === 'function') {
+            openPvPMenu(); 
+        } else {
+            console.error("Функция openPvPMenu не найдена!");
+        }
+    }
+    // --------------------------
     else if (id === 'shop') {
         if (typeof openShop === 'function') openShop();
     }
@@ -524,13 +553,15 @@ function activatePlanet(id) {
     else if (id === 'moon') {
         if (typeof openMoonMenu === 'function') openMoonMenu();
     }
-    // ВОТ ТУТ ИЗМЕНЕНИЯ:
     else if (id === 'build') {
         if (typeof openEarth === 'function') {
-            openEarth(); // Вызываем нашу логику колонизации и входа
+            openEarth(); 
         } else {
             console.error("Функция openEarth не найдена!");
         }
+    }
+    else if (id === 'station') {
+        if (typeof openStation === 'function') openStation();
     }
 }
 
@@ -813,36 +844,117 @@ function runnerLoop() {
         runnerCtx.restore();
     }
 
-    // --- ЛОГИКА PVP ДИСТАНЦИИ ---
+   // 1. Очистка и фон
+    runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+    if (runnerBg.complete) {
+        runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
+    }
+
+    // 2. ФИЗИКА ПРЫЖКА (PVP MODE)
     if (isPvPRaid) {
-        pvpDistance += 1; // Увеличиваем путь
-
-        // Рисуем шкалу прогресса PvP вверху экрана
-        const padding = 50;
-        const barWidth = canvas.width - (padding * 2);
-        const progress = Math.min(1, pvpDistance / targetDistance);
-
-        // Фон шкалы
-        runnerCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-        runnerCtx.fillRect(padding, 30, barWidth, 10);
+        runnerShip.vy += (runnerShip.gravity || 0.25); // Постоянное падение
+        runnerShip.y += runnerShip.vy;
         
-        // Полоска прогресса (красная, как набег)
-        runnerCtx.fillStyle = '#ff4b2b';
-        runnerCtx.fillRect(padding, 30, barWidth * progress, 10);
+        // Плавное удержание корабля в левой части экрана (для Flappy-стиля)
+        const targetXp = window.innerWidth * 0.2;
+        runnerShip.x += (targetXp - runnerShip.x) * 0.1;
 
-        // Иконка финиша
-        runnerCtx.fillStyle = '#ffffff';
-        runnerCtx.fillText("🏁 Вражеская база", canvas.width - 120, 25);
-
-        // Проверка победы
-        if (pvpDistance >= targetDistance) {
-            isRunnerActive = false; // Останавливаем игру
-            winPvPRaid();          // Вызываем победу
-            return;                // Выходим из цикла
+        // Ограничения экрана
+        if (runnerShip.y < 0) { runnerShip.y = 0; runnerShip.vy = 0; }
+        if (runnerShip.y > runnerCanvas.height) { 
+            runnerShip.hp = 0; // Упал в бездну — смерть
         }
     }
 
-    // Это должно быть внутри функции, в самом конце!
+    // 3. ЦИКЛ ОБЪЕКТОВ (ТОЛЬКО СТЕНЫ)
+    for (let i = quants.length - 1; i >= 0; i--) {
+        let q = quants[i];
+        
+        // Движение стен навстречу кораблю
+        q.x -= (q.speed || 4); 
+
+        // Отрисовка Энергетической стены
+        if (q.type === 'wall') {
+            runnerCtx.fillStyle = '#ff4b2b';
+            runnerCtx.shadowBlur = 15;
+            runnerCtx.shadowColor = '#ff4b2b';
+            runnerCtx.fillRect(q.x, q.y, q.w, q.h);
+            runnerCtx.shadowBlur = 0;
+
+            // ПРОВЕРКА СТОЛКНОВЕНИЯ (Прямоугольная)
+            if (runnerShip.x + runnerShip.w/2 > q.x && 
+                runnerShip.x - runnerShip.w/2 < q.x + q.w &&
+                runnerShip.y + runnerShip.h/2 > q.y && 
+                runnerShip.y - runnerShip.h/2 < q.y + q.h) {
+                
+                runnerShip.hp -= 100; // Стены убивают сразу или сильно дамажат
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            }
+        }
+
+        // Удаление стен, улетевших за левый край
+        if (q.x + (q.w || 50) < 0) {
+            quants.splice(i, 1);
+        }
+    }
+
+    // Проверка на смерть
+    if (runnerShip.hp <= 0) {
+        runnerShip.hp = 0;
+        gameOver(); // Твоя функция окончания игры
+        return;
+    }
+
+    // 4. ОТРИСОВКА КОРАБЛЯ
+    if (shipImg.complete) {
+        runnerCtx.save();
+        runnerCtx.translate(runnerShip.x, runnerShip.y);
+        
+        // Наклон носа корабля: вверх при прыжке, вниз при падении
+        let angle = runnerShip.vy * 0.05;
+        runnerCtx.rotate(angle);
+        
+        runnerCtx.drawImage(shipImg, -runnerShip.w/2, -runnerShip.h/2, runnerShip.w, runnerShip.h);
+        
+        // Полоска HP над кораблем
+        const barW = 60;
+        const hpRate = Math.max(0, runnerShip.hp / 100);
+        runnerCtx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+        runnerCtx.fillRect(-barW/2, -runnerShip.h/2 - 15, barW, 6);
+        runnerCtx.fillStyle = hpRate > 0.3 ? '#00ff00' : '#ff4444'; 
+        runnerCtx.fillRect(-barW/2, -runnerShip.h/2 - 15, barW * hpRate, 6);
+        
+        runnerCtx.restore();
+    }
+
+    // 5. ШКАЛА ДИСТАНЦИИ ДО БАЗЫ
+    if (isPvPRaid) {
+        pvpDistance += 1.5; 
+        const padding = 50;
+        const barWidth = runnerCanvas.width - (padding * 2);
+        const progress = Math.min(1, pvpDistance / targetDistance);
+
+        // Бекграунд шкалы
+        runnerCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        runnerCtx.fillRect(padding, 30, barWidth, 10);
+        
+        // Заполнение (Красный неон)
+        runnerCtx.fillStyle = '#ff4b2b';
+        runnerCtx.fillRect(padding, 30, barWidth * progress, 10);
+
+        // Текст финиша
+        runnerCtx.fillStyle = '#ffffff';
+        runnerCtx.font = "bold 14px Arial";
+        runnerCtx.fillText("🏁 ВРАЖЕСКАЯ БАЗА", runnerCanvas.width - 150, 25);
+
+        // Проверка победы (долетел)
+        if (pvpDistance >= targetDistance) {
+            isRunnerActive = false;
+            winPvPRaid(); // Твоя функция победы
+            return;
+        }
+    }
+
     requestAnimationFrame(runnerLoop);
 }
 
@@ -1272,6 +1384,22 @@ function handleCanvasClick(e) {
         }
     });
 }
+
+// Используем pointerdown — он понимает и клик мыши, и тап пальцем
+runnerCanvas.addEventListener('pointerdown', (e) => {
+    // Предотвращаем лишнее поведение (например, выделение текста)
+    e.preventDefault();
+
+    if (isRunnerActive && isPvPRaid) {
+        // Даем импульс вверх
+        runnerShip.vy = runnerShip.jumpPower;
+
+        // Если хочешь добавить вибрацию при прыжке (для кайфа)
+        if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+            Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        }
+    }
+}, { passive: false });
 
 // --- СЛУШАТЕЛИ СОБЫТИЙ ---
 if (typeof canvas !== 'undefined' && canvas) {
@@ -1952,6 +2080,34 @@ function calculateTargetDistance(opponentData) {
         });
     }
     return base;
+}
+
+function openPvPMenu() {
+    console.log("Открываем меню поиска противников...");
+    // Пока просто для теста запустим рейд вхолостую:
+    isPvPRaid = true;
+    pvpDistance = 0;
+    targetDistance = 2000; // Для теста 2км
+    runnerShip.y = canvas.height / 2; // Центрируем корабль
+    runnerShip.vy = 0;
+    
+    openRunnerWindow(); 
+}
+
+function startPvPRaid(opponent) {
+    currentOpponent = opponent;
+    isPvPRaid = true;
+    pvpDistance = 0;
+    
+    // Рассчитываем дистанцию на основе зданий врага
+    targetDistance = 1000 + ( (opponent.buildings ? opponent.buildings.filter(b=>b).length : 0) * 500 );
+
+    // Сбрасываем позицию корабля в центр для Flappy-режима
+    runnerShip.y = canvas.height / 2;
+    runnerShip.vy = 0;
+
+    // Открываем окно раннера
+    openRunnerWindow(); 
 }
 
 function winPvPRaid() {
