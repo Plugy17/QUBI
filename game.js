@@ -232,6 +232,18 @@ const planets = [
         isStationary: true,
         action: () => openPvPSearch() 
     },
+
+    { 
+        id: 'guild', 
+        src: 'assets/guild.png', // Замени на имя своего ассета в папке assets
+        x: window.innerWidth * 0.8, // Свободная зона справа вверху
+        y: window.innerHeight * 0.35, 
+        size: 75, 
+        rotation: 0, 
+        speed: 0.001, // Слегка вращается для красоты
+        img: new Image(), 
+        action: () => openGuildWindow() // Открывает наше новое окно
+    },
     // ТЕПЕРЬ ТУТ КВАНТ ЯДРО (МЕЖДУ ЗЕМЛЕЙ И ЛУНОЙ)
     { 
         id: 'runner', 
@@ -2357,6 +2369,192 @@ function spawnPvPWallsLoop() {
     // 4. ТАЙМЕР СЛЕДУЮЩЕЙ ВОЛНЫ
     // Оставил 1500 (1.5 сек), этого достаточно при широком проходе.
     setTimeout(spawnPvPWallsLoop, 1500); 
+}
+
+// --- ЛОГИКА ГИЛЬДИЙ И КЛАНОВ ---
+
+// 1. ОТКРЫТИЕ ОКНА И ПРОВЕРКА СТАТУСА
+async function openGuildWindow() {
+    document.getElementById('clan-window').style.display = 'block';
+    
+    const noClanScreen = document.getElementById('clan-no-clan-screen');
+    const mainScreen = document.getElementById('clan-main-screen');
+    
+    if (!playerData.clanId) {
+        // Игрок без клана -> показываем форму создания и список
+        noClanScreen.style.display = 'block';
+        mainScreen.style.display = 'none';
+        loadClansList();
+    } else {
+        // Игрок в клане -> показываем инфо о его клане
+        noClanScreen.style.display = 'none';
+        mainScreen.style.display = 'block';
+        loadMyClanData();
+    }
+}
+
+// Вспомогательная функция для кнопки создания из HTML
+function createClanAction() {
+    const input = document.getElementById('new-clan-name-input');
+    const clanName = input.value.trim();
+    
+    if (clanName.length < 3) return alert("Название должно быть от 3 символов!");
+    if (clanName.length > 20) return alert("Максимум 20 символов!");
+    
+    createClan(clanName);
+    input.value = "";
+}
+
+// 2. СОЗДЕНИЕ КЛАНА В БАЗЕ
+async function createClan(clanName) {
+    const PRICE = 10000; // Стоимость создания клана
+    if (playerData.quant < PRICE) return alert("Недостаточно QUANT! Нужно 10,000.");
+
+    playerData.quant -= PRICE;
+    
+    const clansRef = db.ref('clans');
+    const newClanRef = clansRef.push(); // Генерируем уникальный ID для клана
+    const clanId = newClanRef.key;
+
+    const myId = String(tgUser.id);
+    const myName = playerData.colonyName || tgUser.first_name || "Командир";
+
+    const clanData = {
+        name: clanName,
+        leaderId: myId,
+        leaderName: myName,
+        totalQuant: playerData.quant, // Лидер сразу вносит свой баланс в рейтинг клана
+        members: {
+            [myId]: { name: myName, role: "leader" }
+        }
+    };
+
+    try {
+        await newClanRef.set(clanData);
+        await userRef.update({ 
+            quant: playerData.quant,
+            clanId: clanId 
+        });
+        playerData.clanId = clanId;
+        
+        alert(`Гильдия "${clanName}" успешно зарегистрирована!`);
+        openGuildWindow(); // Перезапускаем окно, чтобы включился Экран 2
+    } catch (e) {
+        console.error("Ошибка создания клана:", e);
+    }
+}
+
+// 3. ЗАГРУЗКА ТОП-ЛИСТА КЛАНОВ
+function loadClansList() {
+    db.ref('clans').orderByChild('totalQuant').limitToLast(10).once('value', (snapshot) => {
+        const clansData = snapshot.val();
+        const listContainer = document.getElementById('clans-list-container');
+        listContainer.innerHTML = "";
+
+        if (!clansData) {
+            listContainer.innerHTML = "<p style='color: #666; font-size: 13px;'>Пока нет созданных гильдий. Будьте первыми!</p>";
+            return;
+        }
+
+        // Сортируем по убыванию очков
+        const sortedClans = Object.keys(clansData).map(id => ({ id, ...clansData[id] }))
+            .sort((a, b) => b.totalQuant - a.totalQuant);
+
+        sortedClans.forEach((clan, index) => {
+            const row = document.createElement('div');
+            row.style = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 6px; border: 1px solid #222;";
+            row.innerHTML = `
+                <div>
+                    <span style="color: #ff8100; font-weight: bold; margin-right: 10px;">#${index + 1}</span>
+                    <span style="font-weight: bold;">${clan.name}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span style="color: #00e5ff; font-size: 14px;">${Math.floor(clan.totalQuant)} Q</span>
+                    <button onclick="joinClan('${clan.id}')" style="background: #00e5ff; border: none; color: #000; padding: 4px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">ВСТУПИТЬ</button>
+                </div>
+            `;
+            listContainer.appendChild(row);
+        });
+    });
+}
+
+// 4. ВСТУПЛЕНИЕ В КЛАН
+async function joinClan(clanId) {
+    const myId = String(tgUser.id);
+    const myName = playerData.colonyName || tgUser.first_name || "Командир";
+
+    try {
+        // Добавляем себя в список участников клана
+        await db.ref(`clans/${clanId}/members/${myId}`).set({ name: myName, role: "member" });
+        // Прибавляем свои очки к общему счету клана
+        await db.ref(`clans/${clanId}/totalQuant`).transaction((current) => (current || 0) + playerData.quant);
+        // Записываем ID клана в свой профиль
+        await userRef.update({ clanId: clanId });
+        playerData.clanId = clanId;
+
+        alert("Вы успешно вступили в гильдию!");
+        openGuildWindow();
+    } catch (e) {
+        console.error("Ошибка вступления:", e);
+    }
+}
+
+// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2)
+function loadMyClanData() {
+    db.ref('clans/' + playerData.clanId).once('value', (snapshot) => {
+        const clan = snapshot.val();
+        if (!clan) {
+            // Если клан вдруг удален из базы
+            userRef.update({ clanId: "" });
+            playerData.clanId = "";
+            openGuildWindow();
+            return;
+        }
+
+        document.getElementById('clan-my-name').innerText = clan.name.toUpperCase();
+        document.getElementById('clan-my-total-score').innerText = Math.floor(clan.totalQuant);
+
+        const membersContainer = document.getElementById('clan-members-list');
+        membersContainer.innerHTML = "";
+
+        if (clan.members) {
+            Object.keys(clan.members).forEach(mId => {
+                const member = clan.members[mId];
+                const item = document.createElement('div');
+                item.style = "display: flex; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 4px; font-size: 14px;";
+                
+                const isLeader = member.role === 'leader';
+                item.innerHTML = `
+                    <span style="${isLeader ? 'color: #ff8100; font-weight: bold;' : ''}">${member.name}</span>
+                    <span style="color: #666; font-size: 12px;">${isLeader ? 'ЛИДЕР' : 'ПИРАТ'}</span>
+                `;
+                membersContainer.appendChild(item);
+            });
+        }
+    });
+}
+
+// 6. ВЫХОД ИЗ КЛАНА
+async function leaveClanAction() {
+    if (!confirm("Вы уверены, что хотите покинуть эту гильдию?")) return;
+
+    const myId = String(tgUser.id);
+    const clanId = playerData.clanId;
+
+    try {
+        // Удаляем себя из участников клана
+        await db.ref(`clans/${clanId}/members/${myId}`).remove();
+        // Вычитаем свои очки из рейтинга клана
+        await db.ref(`clans/${clanId}/totalQuant`).transaction((current) => Math.max(0, (current || 0) - playerData.quant));
+        // Обнуляем clanId у себя
+        await userRef.update({ clanId: "" });
+        playerData.clanId = "";
+
+        alert("Вы покинули гильдию.");
+        openGuildWindow();
+    } catch (e) {
+        console.error("Ошибка выхода из клана:", e);
+    }
 }
 
 // 1. Создаем четкую функцию запуска
