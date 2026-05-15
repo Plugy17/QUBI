@@ -791,20 +791,23 @@ function runnerLoop() {
             runnerShip.h
         );
 
-        // --- ПОЛОСКА HP НАД КОРАБЛЕМ (Опционально) ---
-        const barW = 60;
-        const hpRate = Math.max(0, runnerShip.hp / 100);
-        
-        // Фон полоски (красный полупрозрачный)
-        runnerCtx.fillStyle = 'rgba(255, 0, 0, 0.3)';
-        runnerCtx.fillRect(-barW / 2, -runnerShip.h / 2 - 15, barW, 6);
-        
-        // Текущее здоровье (зеленое/красное)
-        runnerCtx.fillStyle = hpRate > 0.3 ? '#00ff00' : '#ff4444'; 
-        runnerCtx.fillRect(-barW / 2, -runnerShip.h / 2 - 15, barW * hpRate, 6);
+        // --- ОТРИСОВКА ПОЛОСКИ HP ---
+const barMaxWidth = 60; // ЖЕСТКО задаем максимальную ширину рамки в пикселях
+const barHeight = 6;
+const hpPercentage = Math.max(0, runnerShip.hp / runnerShip.maxHp); // Отношение текущего к макс.
 
-        runnerCtx.restore();
-    }
+// Центрируем полоску над кораблем
+const barX = -barMaxWidth / 2; 
+const barY = -runnerShip.h / 2 - 15; // Высота над спрайтом
+
+// 1. Рисуем подложку (серый или красный фон полоски)
+runnerCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+runnerCtx.fillRect(barX, barY, barMaxWidth, barHeight);
+
+// 2. Рисуем саму жизнь (Зеленая часть)
+// Теперь длина полоски ВСЕГДА будет в пределах 60 пикселей
+runnerCtx.fillStyle = hpPercentage > 0.3 ? '#00ff00' : '#ff4444';
+runnerCtx.fillRect(barX, barY, barMaxWidth * hpPercentage, barHeight);
 
         // --- ЛОГИКА СТОЛКНОВЕНИЙ ---
         if (q.type === 'lightning') {
