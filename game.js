@@ -31,6 +31,11 @@ let sessionQubi = 0;
 let isRunnerActive = false;
 let sessionArtifacts = 0;
 
+let isPvPRaid = false;       // Режим ПВП
+let pvpDistance = 0;         // Текущий пройденный путь
+let targetDistance = 0;      // Дистанция до финиша (зависит от врага)
+let currentOpponent = null;  // Данные жертвы
+
 // --- ЕДИНАЯ ФУНКЦИЯ РАСЧЕТА ХАРАКТЕРИСТИК ---
 function calculateCurrentStats() {
     let stats = {
@@ -787,7 +792,9 @@ function runnerLoop() {
         }
     }
 
-    // --- ОТРИСОВКА КОРАБЛЯ И HP BAR ---
+   // ... (внутри функции runnerLoop, после отрисовки корабля) ...
+
+    // --- ОТРИСОВКА КОРАБЛЯ И HP BAR (завершение) ---
     if (shipImg.complete) {
         runnerCtx.save();
         runnerCtx.translate(runnerShip.x, runnerShip.y);
@@ -805,7 +812,37 @@ function runnerLoop() {
         
         runnerCtx.restore();
     }
-    
+
+    // --- ЛОГИКА PVP ДИСТАНЦИИ ---
+    if (isPvPRaid) {
+        pvpDistance += 1; // Увеличиваем путь
+
+        // Рисуем шкалу прогресса PvP вверху экрана
+        const padding = 50;
+        const barWidth = canvas.width - (padding * 2);
+        const progress = Math.min(1, pvpDistance / targetDistance);
+
+        // Фон шкалы
+        runnerCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        runnerCtx.fillRect(padding, 30, barWidth, 10);
+        
+        // Полоска прогресса (красная, как набег)
+        runnerCtx.fillStyle = '#ff4b2b';
+        runnerCtx.fillRect(padding, 30, barWidth * progress, 10);
+
+        // Иконка финиша
+        runnerCtx.fillStyle = '#ffffff';
+        runnerCtx.fillText("🏁 Вражеская база", canvas.width - 120, 25);
+
+        // Проверка победы
+        if (pvpDistance >= targetDistance) {
+            isRunnerActive = false; // Останавливаем игру
+            winPvPRaid();          // Вызываем победу
+            return;                // Выходим из цикла
+        }
+    }
+
+    // Это должно быть внутри функции, в самом конце!
     requestAnimationFrame(runnerLoop);
 }
 
@@ -1903,6 +1940,25 @@ function showCollectModal(qnt, qubi) {
 
 function closeCollectModal() {
     document.getElementById('collect-modal').style.display = 'none';
+}
+
+function calculateTargetDistance(opponentData) {
+    let base = 1500; // Базовые 1500 метров
+    
+    // Если у врага есть здания, каждое увеличивает путь на 500м
+    if (opponentData.buildings) {
+        opponentData.buildings.forEach(b => {
+            if (b) base += 500; 
+        });
+    }
+    return base;
+}
+
+function winPvPRaid() {
+    console.log("РЕЙД ЗАВЕРШЕН ПОБЕДОЙ!");
+    // Пока просто выходим в меню, позже добавим кражу ресурсов
+    alert("Вы успешно достигли базы противника!");
+    closeRunnerWindow();
 }
 
 // 1. Создаем четкую функцию запуска
