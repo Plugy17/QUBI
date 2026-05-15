@@ -2101,26 +2101,24 @@ function pvpMainLoop() {
         if (wall.x < -100) pvpWalls.splice(i, 1);
     }
 
-    // 4. ОТРИСОВКА САМОЛЕТА
+   // 4. ОТРИСОВКА САМОЛЕТА (Увеличенный размер, без HP)
     ctx.save();
     ctx.translate(shipRenderX, runnerShip.y);
     ctx.rotate(runnerShip.vy * 0.05);
     
+    // shipSize = 70 (был 50). Это сделает его заметнее.
+    const shipSize = 70; 
+    const halfSize = shipSize / 2;
+
     if (shipImg.complete) {
-        ctx.drawImage(shipImg, -25, -25, 50, 50);
+        // Рисуем картинку из твоего массива
+        ctx.drawImage(shipImg, -halfSize, -halfSize, shipSize, shipSize);
     } else {
+        // Запасной вариант, если картинка не прогрузилась
         ctx.fillStyle = "#00e5ff";
-        ctx.fillRect(-20, -20, 40, 40);
+        ctx.fillRect(-halfSize + 5, -halfSize + 5, shipSize - 10, shipSize - 10);
     }
     
-    // Полоска HP над самолетом
-    const hpRatio = runnerShip.hp / runnerShip.maxHp;
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(-30, -35, 60, 4);
-    ctx.fillStyle = hpRatio > 0.3 ? "#00ff00" : "#ff0000";
-    ctx.fillRect(-30, -35, 60 * hpRatio, 4);
-    ctx.restore();
-
     // 5. ОБНОВЛЕНИЕ ПРОГРЕССА И УСЛОВИЯ ПОБЕДЫ/СМЕРТИ
     pvpDistance += 2;
     updatePvPUI();
