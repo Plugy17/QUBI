@@ -1967,6 +1967,11 @@ function startPvPMode() {
     isPvPActive = true;
     pvpDistance = 0;
     pvpWalls = [];
+
+    // Устанавливаем имя противника в HTML
+    if (pvpOpponent) {
+        document.getElementById('pvp-target-name').innerText = pvpOpponent.name;
+    }
     
     const container = document.getElementById('pvp-window');
     container.style.display = 'block';
