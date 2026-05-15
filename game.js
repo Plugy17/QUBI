@@ -249,7 +249,7 @@ const planets = [
         id: 'runner', 
         src: 'assets/quant.png', 
         x: window.innerWidth * 0.5, // Позиция между Землей (0.22) и Центром
-        y: window.innerHeight * 0.4, // Позиция между Центром и Луной (0.72)
+        y: window.innerHeight * 0.45, // Позиция между Центром и Луной (0.72)
         size: 110, 
         rotation: 0, 
         speed: 0.002, 
