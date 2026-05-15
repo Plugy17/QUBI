@@ -2535,6 +2535,7 @@ async function joinClan(clanId) {
 
 // 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2)
 // 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2) - С ПРОВЕРКОЙ НА ПРАВА ЛИДЕРА
+// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С ОБРАБОТКОЙ ЗАПРОСОВ РЕСУРСОВ
 function loadMyClanData() {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
 
@@ -2553,6 +2554,9 @@ function loadMyClanData() {
             const membersContainer = document.getElementById('clan-members-list');
             const leaveBtn = document.getElementById('clan-leave-btn');
             const deleteBtn = document.getElementById('clan-delete-btn');
+            
+            const requestBlock = document.getElementById('clan-request-resources-block');
+            const leaderBlock = document.getElementById('clan-leader-requests-block');
 
             if (nameEl) nameEl.innerText = clan.name.toUpperCase();
             if (scoreEl) scoreEl.innerText = Math.floor(clan.totalQuant);
@@ -2563,13 +2567,20 @@ function loadMyClanData() {
             const myId = String(tgUser.id);
             const isAmILeader = (clan.leaderId === myId);
 
-            // УПРАВЛЕНИЕ КНОПКАМИ: Лидер видит "Распустить", обычный игрок - "Покинуть"
+            // РАЗГРАНИЧЕНИЕ ИНТЕРФЕЙСА ЛИДЕРА И ПИРАТА
             if (isAmILeader) {
                 if (leaveBtn) leaveBtn.style.display = 'none';
                 if (deleteBtn) deleteBtn.style.display = 'block';
+                if (requestBlock) requestBlock.style.display = 'none'; // Лидер не запрашивает у самого себя
+                if (leaderBlock) {
+                    leaderBlock.style.display = 'block';
+                    renderLeaderRequests(clan.requests, clan.totalQuant); // Отрисовка запросов для лидера
+                }
             } else {
                 if (leaveBtn) leaveBtn.style.display = 'block';
                 if (deleteBtn) deleteBtn.style.display = 'none';
+                if (requestBlock) requestBlock.style.display = 'block'; // Пират может отправить запрос
+                if (leaderBlock) leaderBlock.style.display = 'none';
             }
 
             if (clan.members) {
@@ -2590,6 +2601,101 @@ function loadMyClanData() {
             console.error("Ошибка отображения своего клана:", err);
         }
     });
+}
+
+// 8. ОТПРАВКА ЗАПРОСА НА РЕСУРСЫ (ОТ ИГРОКА)
+async function sendClanRequestAction() {
+    const input = document.getElementById('clan-request-amount-input');
+    if (!input) return;
+    
+    const amount = parseInt(input.value);
+    if (isNaN(amount) || amount <= 0) return alert("Введите корректное число ресурсов!");
+    
+    const clanId = playerData.clanId;
+    const myId = String(tgUser.id);
+    const myName = playerData.colonyName || tgUser.first_name || "Командир";
+
+    try {
+        const reqRef = db.ref(`clans/${clanId}/requests`).push();
+        await reqRef.set({
+            userId: myId,
+            userName: myName,
+            amount: amount,
+            timestamp: Date.now()
+        });
+
+        alert(`Запрос на ${amount} QUANT успешно отправлен Лидеру гильдии!`);
+        input.value = "";
+    } catch(e) {
+        console.error("Ошибка отправки запроса:", e);
+        alert("Не удалось отправить запрос.");
+    }
+}
+
+// 9. ОТРЕСОВКА СПИСКА ЗАПРОСОВ ДЛЯ ЛИДЕРА
+function renderLeaderRequests(requestsData, totalQuant) {
+    const container = document.getElementById('clan-requests-list');
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!requestsData) {
+        container.innerHTML = "<p style='color: #666; font-size: 12px; margin: 0;'>Активных запросов нет</p>";
+        return;
+    }
+
+    Object.keys(requestsData).forEach(reqId => {
+        const req = requestsData[reqId];
+        const row = document.createElement('div');
+        row.style = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 4px; border: 1px solid #444; font-size: 13px;";
+        row.innerHTML = `
+            <div>
+                <span style="color: #00e5ff; font-weight: bold;">${req.userName}</span> просит 
+                <span style="color: #ff8100; font-weight: bold;">${req.amount} Q</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="answerClanRequest('${reqId}', true, ${req.amount}, '${req.userId}', ${totalQuant})" style="background: #00e5ff; border: none; color: #000; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 11px; cursor: pointer;">ОДОБРИТЬ</button>
+                <button onclick="answerClanRequest('${reqId}', false, ${req.amount}, '${req.userId}', ${totalQuant})" style="background: #ff4b2b; border: none; color: #fff; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 11px; cursor: pointer;">ОТКАЗАТЬ</button>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+// 10. ОБРАБОТКА РЕШЕНИЯ ЛИДЕРА (ОДОБРИТЬ / ОТКАЗАТЬ)
+async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQuant) {
+    const clanId = playerData.clanId;
+
+    if (isApproved && totalQuant < amount) {
+        return alert("В казне гильдии недостаточно QUANT для одобрения этого запроса!");
+    }
+
+    try {
+        if (isApproved) {
+            // ИСПОЛНЕНИЕ ЗАПРОСА:
+            // 1. Снимаем кванты со счета клана
+            await db.ref(`clans/${clanId}/totalQuant`).transaction(current => Math.max(0, (current || 0) - amount));
+            // 2. Начисляем кванты в профиль одобренного игрока прямо в Firebase
+            await db.ref(`users/${targetUserId}/quant`).transaction(current => (current || 0) + amount);
+            
+            // Если лидер одобряет запрос самому себе (на всякий случай проверка локального баланса)
+            if (targetUserId === String(tgUser.id)) {
+                playerData.quant += amount;
+            }
+            alert("Запрос успешно одобрен, ресурсы переведены игроку.");
+        } else {
+            alert("Запрос отклонен.");
+        }
+
+        // Удаляем обработанную заявку из списка запросов клана
+        await db.ref(`clans/${clanId}/requests/${reqId}`).remove();
+        
+        // Обновляем экран
+        loadMyClanData();
+    } catch (e) {
+        console.error("Ошибка обработки решения по запросу:", e);
+        alert("Произошла ошибка при обработке запроса.");
+    }
 }
 
 // 7. ПОЛНОЕ УДАЛЕНИЕ КЛАНА (ДОСТУПНО ТОЛЬКО ЛИДЕРУ)
