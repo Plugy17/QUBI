@@ -569,12 +569,19 @@ function activatePlanet(id) {
     else if (id === 'moon') {
         if (typeof openMoonMenu === 'function') openMoonMenu();
     }
-    // ВОТ ТУТ ИЗМЕНЕНИЯ:
     else if (id === 'build') {
         if (typeof openEarth === 'function') {
-            openEarth(); // Вызываем нашу логику колонизации и входа
+            openEarth(); 
         } else {
             console.error("Функция openEarth не найдена!");
+        }
+    }
+    // ДОБАВЛЯЕМ ПРОВЕРКУ ДЛЯ НАШЕЙ НОВОЙ ПЛАНЕТЫ
+    else if (id === 'guild') {
+        if (typeof openGuildWindow === 'function') {
+            openGuildWindow();
+        } else {
+            console.error("Функция openGuildWindow не найдена!");
         }
     }
 }
