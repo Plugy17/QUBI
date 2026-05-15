@@ -224,7 +224,7 @@ const planets = [
         src: 'assets/star-pvp.png', 
         x: window.innerWidth * 0.5, // Центр экрана по X
         y: window.innerHeight * 0.5, // Центр экрана по Y
-        size: 130, // Сделал чуть больше, так как это центр
+        size: 100, // Сделал чуть больше, так как это центр
         rotation: 0, 
         speed: 0, 
         img: new Image(),
