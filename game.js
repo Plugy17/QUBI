@@ -2051,62 +2051,85 @@ function calculateTargetDistance(opponentData) {
     return base;
 }
 
+    function updatePvPUI() {
+    const progress = Math.min(100, (pvpDistance / targetDistance) * 100);
+    
+    // Обновляем ширину полоски в HTML
+    const fill = document.getElementById('pvp-progress-fill');
+    if (fill) fill.style.width = progress + "%";
+    
+    // Обновляем текст с метрами
+    const distText = document.getElementById('pvp-current-dist');
+    if (distText) distText.innerText = Math.floor(pvpDistance);
+}
+
 // 1. ГЛАВНЫЙ ЦИКЛ PVP (Вместо runnerLoop)
 function pvpRaidLoop() {
+    // Если вышли из режима — стопаем цикл
     if (!isRunnerActive || !isPvPRaid) return;
 
-    runnerCtx.clearRect(0, 0, runnerCanvas.width, runnerCanvas.height);
+    // 1. Очищаем НОВЫЙ канвас
+    pvpCtx.clearRect(0, 0, pvpCanvas.width, pvpCanvas.height);
     
-    // Рисуем фон
-    if (runnerBg.complete) runnerCtx.drawImage(runnerBg, 0, 0, window.innerWidth, window.innerHeight);
+    // 2. Рисуем фон (на pvpCtx)
+    if (runnerBg.complete) {
+        pvpCtx.drawImage(runnerBg, 0, 0, pvpCanvas.width, pvpCanvas.height);
+    }
 
-    // ФИЗИКА: Падение корабля
-    runnerShip.vy += 0.25; // Гравитация
+    // 3. ФИЗИКА
+    runnerShip.vy += 0.25; 
     runnerShip.y += runnerShip.vy;
-    
-    // Корабль зафиксирован слева
-    runnerShip.x = window.innerWidth * 0.2;
+    runnerShip.x = pvpCanvas.width * 0.2; // Позиция слева
 
-    // Отрисовка и логика стен
+    // 4. СТЕНЫ
     for (let i = quants.length - 1; i >= 0; i--) {
         let wall = quants[i];
-        wall.x -= 4; // Скорость движения стен
+        wall.x -= 4; 
 
-        // Рисуем стены (красный неон)
-        runnerCtx.fillStyle = '#ff4b2b';
-        runnerCtx.shadowBlur = 15;
-        runnerCtx.shadowColor = '#ff4b2b';
-        runnerCtx.fillRect(wall.x, wall.y, wall.w, wall.h);
-        runnerCtx.shadowBlur = 0;
+        pvpCtx.fillStyle = '#ff4b2b';
+        pvpCtx.shadowBlur = 15;
+        pvpCtx.shadowColor = '#ff4b2b';
+        pvpCtx.fillRect(wall.x, wall.y, wall.w, wall.h);
+        pvpCtx.shadowBlur = 0;
 
-        // КОЛЛИЗИЯ: Если задели стену
+        // Коллизия
         if (runnerShip.x + 20 > wall.x && runnerShip.x - 20 < wall.x + wall.w &&
             runnerShip.y + 20 > wall.y && runnerShip.y - 20 < wall.y + wall.h) {
-            gameOver(); // Или своя функция проигрыша
+            gameOver(); 
             return;
         }
 
         if (wall.x < -100) quants.splice(i, 1);
     }
 
-    // ОТРИСОВКА КОРАБЛЯ (с наклоном)
-    runnerCtx.save();
-    runnerCtx.translate(runnerShip.x, runnerShip.y);
-    runnerCtx.rotate(runnerShip.vy * 0.05);
-    if (shipImg.complete) runnerCtx.drawImage(shipImg, -25, -25, 50, 50);
-    runnerCtx.restore();
+    // 5. КОРАБЛЬ (на pvpCtx)
+    pvpCtx.save();
+    pvpCtx.translate(runnerShip.x, runnerShip.y);
+    pvpCtx.rotate(runnerShip.vy * 0.05);
+    if (shipImg.complete) {
+        pvpCtx.drawImage(shipImg, -25, -25, 50, 50);
+    }
+    
+    // Рисуем полоску HP над кораблем (нормального размера!)
+    const hpRate = Math.max(0, runnerShip.hp / runnerShip.maxHp);
+    pvpCtx.fillStyle = 'rgba(0,0,0,0.5)';
+    pvpCtx.fillRect(-30, -40, 60, 6);
+    pvpCtx.fillStyle = hpRate > 0.3 ? '#00ff00' : '#ff4444';
+    pvpCtx.fillRect(-30, -40, 60 * hpRate, 6);
+    
+    pvpCtx.restore();
 
-    // ШКАЛА ПРОГРЕССА
+    // 6. ОБНОВЛЕНИЕ UI (Метры и шкала в HTML)
     pvpDistance += 1.5;
-    drawPvPProgressBar(); 
+    updatePvPUI(); // Твоя новая функция для HTML-элементов
 
-    // ПРОВЕРКА ГРАНИЦ И ФИНИША
-    if (runnerShip.y > runnerCanvas.height || runnerShip.y < 0) { gameOver(); return; }
+    // ПРОВЕРКА ФИНИША
+    if (runnerShip.y > pvpCanvas.height || runnerShip.y < 0) { gameOver(); return; }
     if (pvpDistance >= targetDistance) { winPvPRaid(); return; }
 
     requestAnimationFrame(pvpRaidLoop);
 }
-
+    
 // 2. ОТДЕЛЬНЫЙ СПАВНЕР СТЕН
 function spawnPvPWalls() {
     if (!isRunnerActive || !isPvPRaid) return;
@@ -2114,7 +2137,7 @@ function spawnPvPWalls() {
     const gap = 180; // Проход
     const wallW = 60;
     const minH = 50;
-    const topH = Math.random() * (runnerCanvas.height - gap - (minH * 2)) + minH;
+    const topH = Math.random() * (pvpCanvas.height - gap - (minH * 2)) + minH;
 
     quants.push(
         { x: runnerCanvas.width, y: 0, w: wallW, h: topH, type: 'wall' },
@@ -2122,22 +2145,6 @@ function spawnPvPWalls() {
     );
 
     setTimeout(spawnPvPWalls, 1500);
-}
-
-// 3. ОТРИСОВКА ШКАЛЫ
-function drawPvPProgressBar() {
-    const pad = 50;
-    const w = runnerCanvas.width - (pad * 2);
-    const progress = Math.min(1, pvpDistance / targetDistance);
-
-    runnerCtx.fillStyle = 'rgba(255,255,255,0.1)';
-    runnerCtx.fillRect(pad, 40, w, 12);
-    runnerCtx.fillStyle = '#ff4b2b';
-    runnerCtx.fillRect(pad, 40, w * progress, 12);
-    
-    runnerCtx.fillStyle = '#fff';
-    runnerCtx.font = "bold 14px Arial";
-    runnerCtx.fillText("🏁 ЦЕЛЬ: БАЗА ВРАГА", runnerCanvas.width / 2 - 70, 30);
 }
 
 // 1. Создаем четкую функцию запуска
