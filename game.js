@@ -2115,6 +2115,29 @@ function endPvP(isWin) {
     }
 }
 
+// Функция обновления интерфейса ПВП (полоска прогресса и метры)
+function updatePvPUI() {
+    const progress = Math.min(100, (pvpDistance / pvpTargetDistance) * 100);
+    
+    // 1. Находим полоску заполнения
+    const fill = document.getElementById('pvp-progress-fill');
+    if (fill) {
+        fill.style.width = progress + "%";
+    }
+    
+    // 2. Обновляем текстовое значение текущей дистанции
+    const distText = document.getElementById('pvp-current-dist');
+    if (distText) {
+        distText.innerText = Math.floor(pvpDistance);
+    }
+
+    // 3. Обновляем макс. дистанцию (если она вдруг изменилась)
+    const maxDistText = document.getElementById('pvp-max-dist');
+    if (maxDistText) {
+        maxDistText.innerText = Math.floor(pvpTargetDistance);
+    }
+}
+
 function spawnPvPWallsLoop() {
     if (!isPvPActive) return;
     
