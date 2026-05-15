@@ -1971,25 +1971,44 @@ function startPvPMode() {
     const container = document.getElementById('pvp-window');
     container.style.display = 'block';
 
-    // НАСТРОЙКА КАНВАСА ПОД ЭКРАН ТЕЛЕФОНА
+    // 1. ПРИНУДИТЕЛЬНОЕ РАСШИРЕНИЕ (для горизонтального режима)
+    // Используем Math.max и Math.min, чтобы ширина всегда была больше высоты, 
+    // если мы ожидаем развернутый экран
     pvpCanvas.width = window.innerWidth;
     pvpCanvas.height = window.innerHeight;
 
-    // СБРОС КОРАБЛЯ
-    runnerShip.x = pvpCanvas.width * 0.2; // Слева
-    runnerShip.y = pvpCanvas.height / 2; // В центре по вертикали
-    runnerShip.vy = 0;
+    // 2. ПОДГОТОВКА ФОНА
+    // Убедись, что эта переменная pvpBgImg объявлена в начале твоего файла!
+    if (!pvpBgImg.src) {
+        pvpBgImg.src = 'assets/pvp-bg.png'; 
+    }
 
-    // СЛУШАТЕЛЬ ТАПА (Взлет)
+    // 3. СБРОС КОРАБЛЯ (Центрируем относительно текущего экрана)
+    runnerShip.x = pvpCanvas.width * 0.2; 
+    runnerShip.y = pvpCanvas.height / 2; 
+    runnerShip.vy = 0;
+    runnerShip.hp = runnerShip.maxHp; // Восстанавливаем HP для нового боя
+
+    // 4. УПРАВЛЕНИЕ (Touch)
     const handleJump = (e) => {
         if (!isPvPActive) return;
-        e.preventDefault();
-        runnerShip.vy = -5; // Сила прыжка вверх
+        // Чтобы не срабатывало стандартное меню браузера при долгом нажатии
+        if (e.cancelable) e.preventDefault(); 
+        
+        runnerShip.vy = -5.5; // Чуть увеличил силу взлета для динамики
+        
+        // Вибрация при тапе (для Telegram WebApp)
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        }
     };
 
-    container.removeEventListener('touchstart', handleJump); // Убираем старые, если были
-    container.addEventListener('touchstart', handleJump);
+    // Очищаем старые события и вешаем новые
+    container.replaceWith(container.cloneNode(true)); 
+    const newContainer = document.getElementById('pvp-window');
+    newContainer.addEventListener('touchstart', handleJump, { passive: false });
 
+    // 5. ЗАПУСК
     spawnPvPWallsLoop();
     pvpMainLoop();
 }
