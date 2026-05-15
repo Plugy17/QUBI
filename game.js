@@ -218,24 +218,36 @@ const artifactImg = new Image(); artifactImg.src = 'assets/artifact.png';
 
 // --- ОБЪЕКТЫ ПЛАНЕТ ---
 const planets = [
-    { id: 'runner', src: 'assets/quant.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, size: 120, rotation: 0, speed: 0.002, img: new Image() },
+    // ТЕПЕРЬ ТУТ PVP СТАНЦИЯ (В ЦЕНТРЕ)
+    { 
+        id: 'pvp_planet', 
+        src: 'assets/star-pvp.png', 
+        x: window.innerWidth * 0.5, // Центр экрана по X
+        y: window.innerHeight * 0.5, // Центр экрана по Y
+        size: 150, // Сделал чуть больше, так как это центр
+        rotation: 0, 
+        speed: 0, 
+        img: new Image(),
+        isStationary: true,
+        action: () => openPvPSearch() 
+    },
+    // ТЕПЕРЬ ТУТ КВАНТ ЯДРО (МЕЖДУ ЗЕМЛЕЙ И ЛУНОЙ)
+    { 
+        id: 'runner', 
+        src: 'assets/quant.png', 
+        x: window.innerWidth * 0.35, // Позиция между Землей (0.22) и Центром
+        y: window.innerHeight * 0.65, // Позиция между Центром и Луной (0.72)
+        size: 110, 
+        rotation: 0, 
+        speed: 0.002, 
+        img: new Image() 
+    },
+    // ОСТАЛЬНЫЕ ПЛАНЕТЫ БЕЗ ИЗМЕНЕНИЙ
     { id: 'build', src: 'assets/earth.png', x: window.innerWidth * 0.22, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: 0.001, img: new Image() },
     { id: 'shop', src: 'assets/mars.png', x: window.innerWidth * 0.78, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: -0.001, img: new Image() },
     { id: 'moon', src: 'assets/moon.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.72, size: 60, rotation: 0, speed: 0.003, img: new Image() },
     { id: 'leaderboard', src: 'assets/neptun.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.32, size: 70, rotation: 0, speed: -0.0015, img: new Image() },
-    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() },
-    { 
-    id: 'pvp_planet', 
-    src: 'assets/star-pvp.png', 
-    x: window.innerWidth * 0.18, 
-    y: window.innerHeight * 0.82, 
-    size: 140, // Увеличили размер (был 85)
-    rotation: 0, 
-    speed: 0, // Скорость вращения теперь 0
-    img: new Image(),
-    isStationary: true, // Флаг, чтобы функция отрисовки знала, что делать
-    action: () => openPvPSearch() 
-}
+    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() }
 ];
 
 // Инициализация картинок планет
