@@ -1996,18 +1996,18 @@ function startPvPMode() {
 
     // 4. УПРАВЛЕНИЕ (Touch)
     const handleJump = (e) => {
-        if (!isPvPActive) return;
-        // Чтобы не срабатывало стандартное меню браузера при долгом нажатии
-        if (e.cancelable) e.preventDefault(); 
-        
-        runnerShip.vy = -5.5; // Чуть увеличил силу взлета для динамики
-        
-        // Вибрация при тапе (для Telegram WebApp)
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-        }
-    };
-
+    if (!isPvPActive) return;
+    if (e.cancelable) e.preventDefault(); 
+    
+    // БЫЛО: -5.5
+    // СТАЛО: -7.0 (чем меньше число, тем выше прыжок)
+    runnerShip.vy = -7.0; 
+    
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+    }
+};
+    
     // Очищаем старые события и вешаем новые
     container.replaceWith(container.cloneNode(true)); 
     const newContainer = document.getElementById('pvp-window');
@@ -2035,30 +2035,45 @@ function pvpMainLoop() {
     }
 
     // 2. ФИЗИКА КОРАБЛЯ
-    runnerShip.vy += 0.25; 
+    runnerShip.vy += 0.35; 
     runnerShip.y += runnerShip.vy;
+    if (runnerShip.vy > 8) runnerShip.vy = 8;
     const shipRenderX = canvas.width * 0.2;
 
-    // 3. ОТРИСОВКА СТЕН И КОЛЛИЗИИ (Цикл только для стен!)
+    // 3. ОТРИСОВКА СТЕН И КОЛЛИЗИИ
     for (let i = pvpWalls.length - 1; i >= 0; i--) {
         let wall = pvpWalls[i];
         wall.x -= 5; 
 
-        // Эффект лазерного барьера
+        // --- УЛУЧШЕННАЯ ОТРИСОВКА СТЕНЫ ---
+        // А. Рисуем аккуратную металлическую раму
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(255, 75, 43, 0.6)"; 
+        ctx.strokeRect(wall.x, wall.y, wall.w, wall.h);
+
+        // Б. Создаем слоистый градиент для энергетического ядра
         let gradient = ctx.createLinearGradient(wall.x, wall.y, wall.x + wall.w, wall.y);
-        gradient.addColorStop(0, "rgba(255, 0, 51, 0.2)");
-        gradient.addColorStop(0.5, "#ff0033");
-        gradient.addColorStop(1, "rgba(255, 0, 51, 0.2)");
+        gradient.addColorStop(0, "rgba(255, 0, 51, 0.1)");
+        gradient.addColorStop(0.5, "#ff0033"); // Яркий центр
+        gradient.addColorStop(1, "rgba(255, 0, 51, 0.1)");
 
         ctx.fillStyle = gradient;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 20; // Неоновое свечение
         ctx.shadowColor = "#ff0033";
-        ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+        ctx.fillRect(wall.x + 2, wall.y + 2, wall.w - 4, wall.h - 4);
         
-        // Белая линия в центре
+        // В. Добавляем аккуратную сегментацию (эффект панелей)
+        ctx.shadowBlur = 0; // Сбрасываем тень для мелких деталей
+        ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+        const segmentH = 25; // Высота каждого сегмента
+        for (let sY = wall.y + segmentH; sY < wall.y + wall.h; sY += segmentH) {
+            ctx.fillRect(wall.x + 2, sY, wall.w - 4, 1);
+        }
+
+        // Г. Белая линия в центре (основной луч)
         ctx.fillStyle = "#fff";
-        ctx.fillRect(wall.x + (wall.w / 2) - 1, wall.y, 2, wall.h);
-        ctx.shadowBlur = 0;
+        ctx.fillRect(wall.x + (wall.w / 2) - 1, wall.y + 2, 2, wall.h - 4);
+        // --- КОНЕЦ ОТРИСОВКИ СТЕНЫ ---
 
         // Проверка столкновения
         if (shipRenderX + 15 > wall.x && shipRenderX - 15 < wall.x + wall.w &&
@@ -2071,7 +2086,7 @@ function pvpMainLoop() {
         if (wall.x < -100) pvpWalls.splice(i, 1);
     }
 
-    // 4. ОТРИСОВКА САМОЛЕТА (Теперь ВНЕ цикла стен!)
+    // 4. ОТРИСОВКА САМОЛЕТА
     ctx.save();
     ctx.translate(shipRenderX, runnerShip.y);
     ctx.rotate(runnerShip.vy * 0.05);
@@ -2079,7 +2094,7 @@ function pvpMainLoop() {
     if (shipImg.complete) {
         ctx.drawImage(shipImg, -25, -25, 50, 50);
     } else {
-        ctx.fillStyle = "#00e5ff"; // Яркий бирюзовый если не загрузился
+        ctx.fillStyle = "#00e5ff";
         ctx.fillRect(-20, -20, 40, 40);
     }
     
@@ -2095,13 +2110,11 @@ function pvpMainLoop() {
     pvpDistance += 2;
     updatePvPUI();
 
-    // Смерть об верх/низ экрана
     if (runnerShip.y > canvas.height || runnerShip.y < 0) {
         endPvP(false);
         return;
     }
 
-    // Победа
     if (pvpDistance >= pvpTargetDistance) {
         endPvP(true);
         return;
