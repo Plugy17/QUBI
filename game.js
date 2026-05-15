@@ -522,12 +522,16 @@ function activatePlanet(id) {
             }
             return;
         }
+
+        // --- КРИТИЧЕСКИ ВАЖНО: СБРОС PVP ПЕРЕД ОБЫЧНЫМ РЕЖИМОМ ---
+        isPvPRaid = false; 
+        // -------------------------------------------------------
+
         playerData.energy -= 10;
         if (typeof updateUI === "function") updateUI();
         if (typeof userRef !== "undefined") userRef.update({ energy: playerData.energy });
         if (typeof openRunnerWindow === "function") openRunnerWindow();
     } 
-    // --- НОВЫЙ БЛОК ДЛЯ PVP ---
     else if (id === 'pvp') {
         if (playerData.energy < 40) {
             if (window.Telegram && Telegram.WebApp.showAlert) {
@@ -535,15 +539,18 @@ function activatePlanet(id) {
             }
             return;
         }
-        // Энергию лучше списывать внутри openPvPMenu или startPvPRaid после подтверждения цели,
-        // но если хочешь сразу при клике — оставь здесь:
+
+        // --- КРИТИЧЕСКИ ВАЖНО: ВКЛЮЧАЕМ PVP РЕЖИМ ---
+        isPvPRaid = true;
+        // --------------------------------------------
+
         if (typeof openPvPMenu === 'function') {
             openPvPMenu(); 
         } else {
             console.error("Функция openPvPMenu не найдена!");
         }
     }
-    // --------------------------
+    // Остальные блоки (shop, leaderboard и т.д.) конфликтов не вызывают
     else if (id === 'shop') {
         if (typeof openShop === 'function') openShop();
     }
@@ -554,11 +561,7 @@ function activatePlanet(id) {
         if (typeof openMoonMenu === 'function') openMoonMenu();
     }
     else if (id === 'build') {
-        if (typeof openEarth === 'function') {
-            openEarth(); 
-        } else {
-            console.error("Функция openEarth не найдена!");
-        }
+        if (typeof openEarth === 'function') openEarth();
     }
     else if (id === 'station') {
         if (typeof openStation === 'function') openStation();
@@ -757,6 +760,50 @@ function runnerLoop() {
             }
         }
 
+        // --- ОТРИСОВКА КОРАБЛЯ ---
+    if (shipImg.complete) {
+        runnerCtx.save();
+        
+        // Перемещаем центр рисования в координаты корабля
+        runnerCtx.translate(runnerShip.x, runnerShip.y);
+        
+        // ВЫЧИСЛЯЕМ УГОЛ НАКЛОНА
+        let angle = 0;
+        if (isPvPRaid) {
+            // В PvP наклон зависит от вертикальной скорости (vy)
+            angle = runnerShip.vy * 0.05; 
+        } else {
+            // В обычном режиме наклон зависит от горизонтального рывка (dx)
+            let dx = (runnerShip.targetX - runnerShip.x);
+            angle = dx * 0.02;
+        }
+        
+        runnerCtx.rotate(angle);
+
+        // Рисуем само изображение корабля (центрируем по -w/2, -h/2)
+        runnerCtx.drawImage(
+            shipImg, 
+            -runnerShip.w / 2, 
+            -runnerShip.h / 2, 
+            runnerShip.w, 
+            runnerShip.h
+        );
+
+        // --- ПОЛОСКА HP НАД КОРАБЛЕМ (Опционально) ---
+        const barW = 60;
+        const hpRate = Math.max(0, runnerShip.hp / 100);
+        
+        // Фон полоски (красный полупрозрачный)
+        runnerCtx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+        runnerCtx.fillRect(-barW / 2, -runnerShip.h / 2 - 15, barW, 6);
+        
+        // Текущее здоровье (зеленое/красное)
+        runnerCtx.fillStyle = hpRate > 0.3 ? '#00ff00' : '#ff4444'; 
+        runnerCtx.fillRect(-barW / 2, -runnerShip.h / 2 - 15, barW * hpRate, 6);
+
+        runnerCtx.restore();
+    }
+
         // --- ЛОГИКА СТОЛКНОВЕНИЙ ---
         if (q.type === 'lightning') {
             if (q.active && Math.abs(q.x - runnerShip.x) < (runnerShip.w / 2.5 + q.width / 2)) {
@@ -818,13 +865,16 @@ function runnerLoop() {
             continue;
         }
 
+       // 1. Закрываем проверку выхода за экран (твой if)
         if (q.type !== 'lightning' && q.y > window.innerHeight + q.size) {
             quants.splice(i, 1);
         }
-    }
-    
+    } // 2. Закрываем цикл for (который перебирает quants)
+
+    // 3. Запускаем следующий кадр анимации
     requestAnimationFrame(runnerLoop);
-}
+
+} // 4. ЗАКРЫВАЕМ САМУ ФУНКЦИЮ runnerLoop (этой скобки у тебя не хватало)
 
 function spawnLightning() {
     quants.push({
