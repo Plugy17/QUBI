@@ -1972,11 +1972,22 @@ async function openPvPSearch() {
             const SIX_HOURS = 6 * 60 * 60 * 1000; // Кулдаун в миллисекундах
             const now = Date.now();
 
+            // --- БАЛАНС ВЕСОВЫХ КАТЕГОРИЙ ---
+            const myQuant = playerData.quant || 0;
+            const minQuantLimit = myQuant * 0.5; // Минимальный порог баланса жертвы
+            const maxQuantLimit = myQuant * 2.0; // Максимальный порог баланса жертвы
+
             Object.keys(usersData).forEach(userId => {
                 if (userId !== myId) {
                     const user = usersData[userId];
+                    const targetQuant = user.quant || 0;
+
+                    // ПРОВЕРКА 1: Фильтр по силе (количеству QUANT)
+                    if (targetQuant < minQuantLimit || targetQuant > maxQuantLimit) {
+                        return; // Пропускаем: игрок слишком беден или слишком богат для нас
+                    }
                     
-                    // ПРОВЕРКА НА КУЛДАУН (ЩИТ ПОСЛЕ ОГРАБЛЕНИЯ)
+                    // ПРОВЕРКА 2: КУЛДАУН (ЩИТ ПОСЛЕ ОГРАБЛЕНИЯ)
                     const lastRobbed = user.lastRobbed || 0;
                     if (now - lastRobbed < SIX_HOURS) {
                         return; // Пропускаем игрока, система его не выдаст для атаки
@@ -1993,7 +2004,7 @@ async function openPvPSearch() {
 
                     allPlayers.push({
                         name: user.colonyName || user.name || user.first_name || "Unknown Colony",
-                        resources: user.quant || 0,
+                        resources: targetQuant,
                         id: userId,
                         defensePercent: defenseBonus
                     });
@@ -2021,11 +2032,12 @@ async function openPvPSearch() {
             radar.style.display = 'none';
             targetCard.style.display = 'block';
         } else {
-            status.innerText = "NO TARGETS IN SECTOR";
+            // Если в секторе нет равных игроков или все под щитами
+            status.innerText = "NO TARGETS IN SECTOR RANGE";
             setTimeout(() => { 
                 pvpWin.style.display = 'none'; 
                 if (pvpHeader) pvpHeader.style.visibility = 'visible';
-            }, 2000);
+            }, 2500);
         }
     } catch (error) {
         console.error("Search error:", error);
