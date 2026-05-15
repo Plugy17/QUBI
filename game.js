@@ -1945,38 +1945,31 @@ function closeCollectModal() {
 
 // 1. Открытие поиска
 // 1. Открытие поиска (Версия для Realtime Database)
+// Поиск игрока
 async function openPvPSearch() {
-   // Сначала показываем само родительское окно, если оно скрыто
     const pvpWin = document.getElementById('pvp-window');
     pvpWin.style.display = 'block'; 
 
     const radar = document.getElementById('pvp-radar-overlay');
+    const targetCard = document.getElementById('pvp-target-card');
     const status = document.getElementById('radar-status');
 
-    if (radar) {
-        radar.style.display = 'flex';
-        // Принудительно выводим на передний план
-        radar.style.zIndex = "9999"; 
-    }
-    
+    targetCard.style.display = 'none'; // Скрываем карточку, если была
+    radar.style.display = 'flex';
     status.innerText = "SCANNING FOR TARGETS...";
 
     try {
-        // 1. Запрос к Realtime Database: берем всех игроков из узла 'users'
-        // В RTDB мы используем .once('value')
         const snapshot = await db.ref('users').once('value');
         const usersData = snapshot.val();
-        
         const allPlayers = [];
-        const myId = String(tgUser.id); // Твой ID для исключения из поиска
+        const myId = String(tgUser.id);
 
         if (usersData) {
-            // Превращаем объект пользователей в массив
             Object.keys(usersData).forEach(userId => {
                 if (userId !== myId) {
                     const user = usersData[userId];
                     allPlayers.push({
-                        name: user.name || "Unknown Pilot",
+                        name: user.name || user.first_name || "Unknown Pilot", // Берем любое доступное имя
                         resources: user.quant || 0,
                         id: userId
                     });
@@ -1984,41 +1977,50 @@ async function openPvPSearch() {
             });
         }
 
-        // Имитируем время на сканирование (для красоты)
-        await new Promise(resolve => setTimeout(resolve, 2500));
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Эффект поиска
 
         if (allPlayers.length > 0) {
-            // Выбираем случайного игрока
-            const randomPlayer = allPlayers[Math.floor(Math.random() * allPlayers.length)];
-            pvpOpponent = randomPlayer;
-
-            status.innerText = "TARGET ACQUIRED!";
+            pvpOpponent = allPlayers[Math.floor(Math.random() * allPlayers.length)];
             
-            setTimeout(() => {
-                radar.style.display = 'none';
-                if(confirm(`Target found: ${pvpOpponent.name}\nQuant: ${Math.floor(pvpOpponent.resources)}\nStart raid? (40 Energy)`)) {
-                    if (playerData.energy >= 40) {
-                        playerData.energy -= 40;
-                        // Не забудь обновить энергию в базе здесь, если нужно
-                        startPvPMode();
-                    } else {
-                        alert("Not enough energy!");
-                    }
-                }
-            }, 1000);
+            // Заполняем красивую карточку данными
+            document.getElementById('target-name-display').innerText = pvpOpponent.name;
+            document.getElementById('target-loot-display').innerText = Math.floor(pvpOpponent.resources) + " QUANT";
+            
+            // Скрываем радар и показываем карточку
+            radar.style.display = 'none';
+            targetCard.style.display = 'block';
         } else {
             status.innerText = "NO TARGETS IN SECTOR";
-            setTimeout(() => radar.style.display = 'none', 2000);
+            setTimeout(() => { pvpWin.style.display = 'none'; }, 2000);
         }
-
     } catch (error) {
-        console.error("Search failed:", error);
-        status.innerText = "SENSOR FAILURE";
-        setTimeout(() => radar.style.display = 'none', 2000);
+        status.innerText = "SENSORS OFFLINE";
+        console.error(error);
     }
 }
 
-// 2. Инициализация самого режима
+// Функции кнопок в новой карточке
+function closeTargetCard() {
+    document.getElementById('pvp-target-card').style.display = 'none';
+    document.getElementById('pvp-window').style.display = 'none';
+    pvpOpponent = null;
+}
+
+function confirmRaid() {
+    if (playerData.energy >= 40) {
+        playerData.energy -= 40;
+        userRef.update({ energy: playerData.energy }); // Сохраняем трату энергии
+        document.getElementById('pvp-target-card').style.display = 'none';
+        
+        // Обновляем имя цели в верхнем интерфейсе перед началом
+        document.getElementById('pvp-target-name').innerText = pvpOpponent.name;
+        
+        startPvPMode(); // Запуск отсчета и игры
+    } else {
+        alert("NEED MORE ENERGY!");
+    }
+}
+
 function startPvPMode() {
     isPvPActive = true;
     pvpDistance = 0;
