@@ -12,7 +12,18 @@
 </head>
 <body>
 
-    <div id="pvp-window" class="runner-overlay" style="display: none; background: radial-gradient(circle, #1a0505 0%, #000 100%);">
+   <div id="pvp-window" class="runner-overlay" style="display: none; background: radial-gradient(circle, #1a0505 0%, #000 100%); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;">
+    
+    <div id="pvp-radar-overlay" style="display: none;">
+        <div class="radar">
+            <div class="sweep"></div>
+            <div class="dots">
+                <div style="position: absolute; top: 30%; left: 70%; width: 4px; height: 4px; background: #ff4b2b; border-radius: 50%;"></div>
+            </div>
+        </div>
+        <p id="radar-status">SCANNING FREQUENCIES...</p>
+    </div>
+
     <div class="pvp-ui-header" style="position: absolute; top: 20px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10;">
         <div class="opponent-info" style="color: #ff4b2b; font-weight: bold; text-shadow: 0 0 10px rgba(255,75,43,0.5);">
             ЦЕЛЬ: <span id="pvp-target-name">ПОИСК...</span>
@@ -27,6 +38,10 @@
 
         <button onclick="endPvP(false)" style="margin-top: 15px; background: rgba(255,255,255,0.1); border: 1px solid #ff4b2b; color: #fff; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 10px;">ОТСТУПИТЬ</button>
     </div>
+
+    <canvas id="pvpCanvas" style="display: block; width: 100%; height: 100%;"></canvas>
+    <div id="pvp-countdown" style="display: none;"></div>
+</div>
     
     <canvas id="pvpCanvas"></canvas>
 </div>
