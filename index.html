@@ -14,6 +14,24 @@
 
     <canvas id="gameCanvas"></canvas>
 
+    <div id="pvp-window" class="runner-overlay" style="display: none;">
+    <div class="pvp-ui-header">
+        <div class="opponent-info">
+            <span class="label">ЦЕЛЬ:</span>
+            <span id="pvp-target-name">БАЗА ВРАГА</span>
+        </div>
+        
+        <div class="pvp-progress-container">
+            <div id="pvp-progress-fill"></div>
+            <div class="pvp-distance-text"><span id="pvp-current-dist">0</span> / <span id="pvp-max-dist">2000</span>m</div>
+        </div>
+
+        <button class="exit-btn" onclick="closePvPRaid()">ОТСТУПИТЬ</button>
+    </div>
+    
+    <canvas id="pvpCanvas"></canvas>
+</div>
+
     <div id="ui-layer">
         
         <header class="game-header">
