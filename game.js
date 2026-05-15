@@ -2018,90 +2018,73 @@ function startPvPMode() {
     pvpMainLoop();
 }
 
+// --- ИСПРАВЛЕННЫЙ ЦИКЛ ПВП ( game.js ) ---
 function pvpMainLoop() {
     if (!isPvPActive) return;
 
-    // Используем существующие ссылки на канвас и контекст, если они объявлены глобально
-    // (если нет, раскомментируйте следующие две строки)
-    // const pvpCanvas = document.getElementById('pvpCanvas');
-    // const pvpCtx = pvpCanvas.getContext('2d');
+    const canvas = document.getElementById('pvpCanvas');
+    const ctx = canvas.getContext('2d');
 
-    // 1. Отрисовка фона
+    // 1. РИСУЕМ ТВОЙ ГОТОВЫЙ ФОН
     if (pvpBgImg.complete) {
-        // Отрисовываем изображение на весь канвас (растягиваем/сжимаем)
-        pvpCtx.drawImage(pvpBgImg, 0, 0, pvpCanvas.width, pvpCanvas.height);
-        
-        // Опционально: Добавить полупрозрачное наложение, чтобы стены и корабль были видны лучше
-        // pvpCtx.fillStyle = "rgba(0, 0, 0, 0.4)"; // Полупрозрачный черный
-        // pvpCtx.fillRect(0, 0, pvpCanvas.width, pvpCanvas.height);
+        // Рисуем фон на весь экран
+        ctx.drawImage(pvpBgImg, 0, 0, canvas.width, canvas.height);
     } else {
-        // Если фон еще не загружен, используем обычную заливку (чтобы не было шлейфов)
-        pvpCtx.fillStyle = "#0a0a1a"; 
-        pvpCtx.fillRect(0, 0, pvpCanvas.width, pvpCanvas.height);
+        // Если вдруг картинка еще грузится, закрасим темным, чтобы не было глюков
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // 2. Физика корабля
+    // 2. ФИЗИКА КОРАБЛЯ
     runnerShip.vy += 0.25; 
     runnerShip.y += runnerShip.vy;
     
-    // Фиксируем shipRenderX относительно ТЕКУЩЕЙ ширины канваса (надежнее, чем window.innerWidth)
-    const shipRenderX = pvpCanvas.width * 0.2;
+    // Позиция корабля (20% от левого края)
+    const shipRenderX = canvas.width * 0.2;
 
-    // 3. Стены и коллизии
-    for (let i = pvpWalls.length - 1; i >= 0; i--) {
-        let wall = pvpWalls[i];
-        wall.x -= 5; // Скорость ПВП режима
+    // 3. ОТРИСОВКА СТЕН
+    // Создаем градиент для эффекта лазерного барьера
+    let gradient = pvpCtx.createLinearGradient(wall.x, wall.y, wall.x + wall.w, wall.y);
+    gradient.addColorStop(0, "rgba(255, 0, 51, 0.2)"); // Полупрозрачный красный слева
+    gradient.addColorStop(0.5, "#ff0033");             // Яркий центр барьера
+    gradient.addColorStop(1, "rgba(255, 0, 51, 0.2)"); // Полупрозрачный красный справа
 
-        // Отрисовка стен (Кроваво-красный неон)
-        pvpCtx.fillStyle = "#ff0033";
-        pvpCtx.shadowBlur = 15;
-        pvpCtx.shadowColor = "#ff0033";
-        pvpCtx.fillRect(wall.x, wall.y, wall.w, wall.h);
-        pvpCtx.shadowBlur = 0;
+    pvpCtx.fillStyle = gradient;
+    pvpCtx.shadowBlur = 20;            // Свечение стен
+    pvpCtx.shadowColor = "#ff0033";
 
-        // Проверка столкновения (используем shipRenderX)
-        if (shipRenderX + 20 > wall.x && shipRenderX - 20 < wall.x + wall.w &&
-            runnerShip.y + 20 > wall.y && runnerShip.y - 20 < wall.y + wall.h) {
-            endPvP(false); // Проигрыш
-            return;
-        }
-        if (wall.x < -100) pvpWalls.splice(i, 1); // Удаление стен за экраном
-    }
+    // Рисуем тело стены
+    pvpCtx.fillRect(wall.x, wall.y, wall.w, wall.h);
 
-    // 4. Отрисовка корабля
-    pvpCtx.save();
-    // ВАЖНО: используем shipRenderX
-    pvpCtx.translate(shipRenderX, runnerShip.y);
-    pvpCtx.rotate(runnerShip.vy * 0.05); // Наклон при движении
+    // Добавляем тонкую яркую линию посередине для эффекта "лезвия"
+    pvpCtx.fillStyle = "#fff"; 
+    pvpCtx.fillRect(wall.x + (wall.w / 2) - 1, wall.y, 2, wall.h);
     
-    // Если картинка корабля загружена, рисуем её
+    // ВАЖНО: Сбрасываем тень сразу после отрисовки, иначе игра начнет тормозить
+    pvpCtx.shadowBlur
+    
+    // 4. ОТРИСОВКА КОРАБЛЯ
+    ctx.save();
+    ctx.translate(shipRenderX, runnerShip.y);
+    ctx.rotate(runnerShip.vy * 0.05); // Наклон носа корабля
+    
     if (shipImg.complete) {
-        pvpCtx.drawImage(shipImg, -25, -25, 50, 50);
+        // Рисуем сам корабль
+        ctx.drawImage(shipImg, -25, -25, 50, 50);
     } else {
-        // Заглушка, если картинка не прогрузилась (белый квадрат)
-        pvpCtx.fillStyle = "#fff";
-        pvpCtx.fillRect(-20, -20, 40, 40);
+        // Если корабль не виден — рисуем яркий квадрат для теста
+        ctx.fillStyle = "#00f0ff";
+        ctx.fillRect(-20, -20, 40, 40);
     }
-    
-    // Индикатор HP (компактный)
-    const hpW = 60;
-    const ratio = Math.max(0, runnerShip.hp / runnerShip.maxHp);
-    pvpCtx.fillStyle = "rgba(0,0,0,0.8)";
-    pvpCtx.fillRect(-30, -40, hpW, 6);
-    pvpCtx.fillStyle = ratio > 0.3 ? "#00ff00" : "#ff0000"; // Зеленый -> Красный
-    pvpCtx.fillRect(-30, -40, hpW * ratio, 6);
-    
-    pvpCtx.restore();
+    ctx.restore();
 
-    // 5. Прогресс и условия победы
+    // 5. ОБНОВЛЕНИЕ UI И УСЛОВИЯ
     pvpDistance += 2;
-    updatePvPUI(); // Обновление HTML шкалы прогресса (которая не на канвасе)
+    updatePvPUI();
 
-    // Условия завершения (смерть об границы или финиш)
-    if (runnerShip.y > pvpCanvas.height || runnerShip.y < 0) { endPvP(false); return; }
+    if (runnerShip.y > canvas.height || runnerShip.y < 0) { endPvP(false); return; }
     if (pvpDistance >= pvpTargetDistance) { endPvP(true); return; }
 
-    // Запрос следующего кадра
     requestAnimationFrame(pvpMainLoop);
 }
 
