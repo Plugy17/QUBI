@@ -1998,39 +1998,33 @@ function closeCollectModal() {
 
 function openPvPMenu() {
     console.log("Поиск противника...");
-    // Здесь будет вызов Firebase для поиска игрока, а пока тест:
-    let mockOpponent = { id: "enemy123", buildings: [1, 1, 0] }; 
+    let mockOpponent = { id: "enemy123", buildings: [1, 1, 0], name: "ПИРАТСКАЯ БАЗА" }; 
     startPvPRaid(mockOpponent);
 }
 
 function startPvPRaid(opponent) {
-    // 1. Настройка данных
     isPvPRaid = true;
     currentOpponent = opponent;
     pvpDistance = 0;
     targetDistance = 1000 + ((opponent.buildings ? opponent.buildings.filter(b => b).length : 0) * 500);
 
-    // 2. Настройка UI
     document.getElementById('pvp-max-dist').innerText = targetDistance;
     document.getElementById('pvp-target-name').innerText = opponent.name || "ВРАЖЕСКАЯ БАЗА";
     
-    // 3. Открываем новое окно
     document.getElementById('pvp-window').style.display = 'block';
     
-    // 4. Подгоняем размер канваса
     pvpCanvas.width = window.innerWidth;
     pvpCanvas.height = window.innerHeight;
 
-    // 5. Сброс корабля для ПВП
     runnerShip.y = pvpCanvas.height / 2;
     runnerShip.vy = 0;
     runnerShip.hp = runnerShip.maxHp;
 
-    quants = []; // Очищаем список стен
+    quants = []; 
     isRunnerActive = true;
     
-    spawnPvPWalls(); // Запускаем спавн стен
-    pvpRaidLoop();   // Запускаем цикл (важно: используй pvpCtx внутри!)
+    spawnPvPWalls(); 
+    pvpRaidLoop();   
 }
 
 function closePvPRaid() {
@@ -2040,9 +2034,7 @@ function closePvPRaid() {
 }
     
 function calculateTargetDistance(opponentData) {
-    let base = 1500; // Базовые 1500 метров
-    
-    // Если у врага есть здания, каждое увеличивает путь на 500м
+    let base = 1500; 
     if (opponentData.buildings) {
         opponentData.buildings.forEach(b => {
             if (b) base += 500; 
@@ -2051,37 +2043,28 @@ function calculateTargetDistance(opponentData) {
     return base;
 }
 
-    function updatePvPUI() {
+function updatePvPUI() {
     const progress = Math.min(100, (pvpDistance / targetDistance) * 100);
-    
-    // Обновляем ширину полоски в HTML
     const fill = document.getElementById('pvp-progress-fill');
     if (fill) fill.style.width = progress + "%";
     
-    // Обновляем текст с метрами
     const distText = document.getElementById('pvp-current-dist');
     if (distText) distText.innerText = Math.floor(pvpDistance);
 }
 
-// 1. ГЛАВНЫЙ ЦИКЛ PVP (Вместо runnerLoop)
 function pvpRaidLoop() {
-    // Если вышли из режима — стопаем цикл
     if (!isRunnerActive || !isPvPRaid) return;
 
-    // 1. Очищаем НОВЫЙ канвас
     pvpCtx.clearRect(0, 0, pvpCanvas.width, pvpCanvas.height);
     
-    // 2. Рисуем фон (на pvpCtx)
     if (runnerBg.complete) {
         pvpCtx.drawImage(runnerBg, 0, 0, pvpCanvas.width, pvpCanvas.height);
     }
 
-    // 3. ФИЗИКА
     runnerShip.vy += 0.25; 
     runnerShip.y += runnerShip.vy;
-    runnerShip.x = pvpCanvas.width * 0.2; // Позиция слева
+    runnerShip.x = pvpCanvas.width * 0.2;
 
-    // 4. СТЕНЫ
     for (let i = quants.length - 1; i >= 0; i--) {
         let wall = quants[i];
         wall.x -= 4; 
@@ -2092,7 +2075,6 @@ function pvpRaidLoop() {
         pvpCtx.fillRect(wall.x, wall.y, wall.w, wall.h);
         pvpCtx.shadowBlur = 0;
 
-        // Коллизия
         if (runnerShip.x + 20 > wall.x && runnerShip.x - 20 < wall.x + wall.w &&
             runnerShip.y + 20 > wall.y && runnerShip.y - 20 < wall.y + wall.h) {
             gameOver(); 
@@ -2102,7 +2084,6 @@ function pvpRaidLoop() {
         if (wall.x < -100) quants.splice(i, 1);
     }
 
-    // 5. КОРАБЛЬ (на pvpCtx)
     pvpCtx.save();
     pvpCtx.translate(runnerShip.x, runnerShip.y);
     pvpCtx.rotate(runnerShip.vy * 0.05);
@@ -2110,7 +2091,6 @@ function pvpRaidLoop() {
         pvpCtx.drawImage(shipImg, -25, -25, 50, 50);
     }
     
-    // Рисуем полоску HP над кораблем (нормального размера!)
     const hpRate = Math.max(0, runnerShip.hp / runnerShip.maxHp);
     pvpCtx.fillStyle = 'rgba(0,0,0,0.5)';
     pvpCtx.fillRect(-30, -40, 60, 6);
@@ -2119,45 +2099,37 @@ function pvpRaidLoop() {
     
     pvpCtx.restore();
 
-    // 6. ОБНОВЛЕНИЕ UI (Метры и шкала в HTML)
     pvpDistance += 1.5;
-    updatePvPUI(); // Твоя новая функция для HTML-элементов
+    updatePvPUI(); 
 
-    // ПРОВЕРКА ФИНИША
     if (runnerShip.y > pvpCanvas.height || runnerShip.y < 0) { gameOver(); return; }
     if (pvpDistance >= targetDistance) { winPvPRaid(); return; }
 
     requestAnimationFrame(pvpRaidLoop);
 }
     
-// 2. ОТДЕЛЬНЫЙ СПАВНЕР СТЕН
 function spawnPvPWalls() {
     if (!isRunnerActive || !isPvPRaid) return;
 
-    const gap = 180; // Проход
+    const gap = 180; 
     const wallW = 60;
     const minH = 50;
     const topH = Math.random() * (pvpCanvas.height - gap - (minH * 2)) + minH;
 
     quants.push(
-        { x: runnerCanvas.width, y: 0, w: wallW, h: topH, type: 'wall' },
-        { x: runnerCanvas.width, y: topH + gap, w: wallW, h: runnerCanvas.height - topH - gap, type: 'wall' }
+        { x: pvpCanvas.width, y: 0, w: wallW, h: topH, type: 'wall' },
+        { x: pvpCanvas.width, y: topH + gap, w: wallW, h: pvpCanvas.height - topH - gap, type: 'wall' }
     );
 
     setTimeout(spawnPvPWalls, 1500);
 }
 
-// 1. Создаем четкую функцию запуска
 function startEverything() {
     console.log("Запуск всех систем...");
-    initGame(); 
-    // Мы НЕ вызываем здесь draw(), потому что в твоем файле 
-    // regenerateEnergy уже вызывается внутри initGame (строка 206).
-    // Но если ты хочешь, чтобы планеты крутились сразу, оставь:
+    if (typeof initGame === "function") initGame(); 
     draw(); 
 }
 
-// 2. Проверяем загрузку фона и стартуем
 if (bg.complete) {
     startEverything();
 } else {
