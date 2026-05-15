@@ -36,6 +36,9 @@ let pvpDistance = 0;         // Текущий пройденный путь
 let targetDistance = 0;      // Дистанция до финиша (зависит от врага)
 let currentOpponent = null;  // Данные жертвы
 
+let pvpCanvas = document.getElementById('pvpCanvas');
+let pvpCtx = pvpCanvas.getContext('2d');
+
 // --- ЕДИНАЯ ФУНКЦИЯ РАСЧЕТА ХАРАКТЕРИСТИК ---
 function calculateCurrentStats() {
     let stats = {
