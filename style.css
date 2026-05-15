@@ -1155,3 +1155,47 @@ canvas {
     50% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8)); }
     100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.5)); }
 }
+
+#pvp-window {
+    background: radial-gradient(circle, #1a0505 0%, #000 100%); /* Темно-красный фон */
+}
+
+.pvp-ui-header {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+}
+
+.pvp-progress-container {
+    width: 80%;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #ff4b2b;
+    border-radius: 7px;
+    margin-top: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+#pvp-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff4b2b, #ff8100);
+    box-shadow: 0 0 15px #ff4b2b;
+    transition: width 0.2s;
+}
+
+.pvp-distance-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    color: #fff;
+    line-height: 14px;
+    font-weight: bold;
+}
