@@ -2663,6 +2663,7 @@ function renderLeaderRequests(requestsData, totalQuant) {
 }
 
 // 10. ОБРАБОТКА РЕШЕНИЯ ЛИДЕРА (ОДОБРИТЬ / ОТКАЗАТЬ)
+// 10. ОБРАБОТКА РЕШЕНИЯ ЛИДЕРА (С ОТПРАВКОЙ УВЕДОМЛЕНИЯ)
 async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQuant) {
     const clanId = playerData.clanId;
 
@@ -2672,28 +2673,36 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
 
     try {
         if (isApproved) {
-            // ИСПОЛНЕНИЕ ЗАПРОСА:
             // 1. Снимаем кванты со счета клана
             await db.ref(`clans/${clanId}/totalQuant`).transaction(current => Math.max(0, (current || 0) - amount));
-            // 2. Начисляем кванты в профиль одобренного игрока прямо в Firebase
+            // 2. Начисляем кванты в профиль одобренного игрока
             await db.ref(`users/${targetUserId}/quant`).transaction(current => (current || 0) + amount);
             
-            // Если лидер одобряет запрос самому себе (на всякий случай проверка локального баланса)
+            // 3. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ ИГРОКУ В БАЗУ ДАННЫХ
+            await db.ref(`users/${targetUserId}/clanNotification`).set({
+                text: `Лидер одобрил ваш запрос! Получено +${Math.floor(amount)} QUANT.`,
+                timestamp: Date.now()
+            });
+
+            // Если лидер одобрил запрос самому себе
             if (targetUserId === String(tgUser.id)) {
                 playerData.quant += amount;
             }
-            alert("Запрос успешно одобрен, ресурсы переведены игроку.");
+            alert("Запрос успешно одобрен, ресурсы переведены.");
         } else {
+            // При отказе можно тоже отправить уведомление, чтобы игрок знал
+            await db.ref(`users/${targetUserId}/clanNotification`).set({
+                text: `Ваш запрос на получение ${Math.floor(amount)} QUANT был отклонен Лидером.`,
+                timestamp: Date.now()
+            });
             alert("Запрос отклонен.");
         }
 
-        // Удаляем обработанную заявку из списка запросов клана
+        // Удаляем обработанную заявку
         await db.ref(`clans/${clanId}/requests/${reqId}`).remove();
-        
-        // Обновляем экран
         loadMyClanData();
     } catch (e) {
-        console.error("Ошибка обработки решения по запросу:", e);
+        console.error("Ошибка обработки запроса:", e);
         alert("Произошла ошибка при обработке запроса.");
     }
 }
@@ -2771,6 +2780,67 @@ async function leaveClanAction() {
     }
 }
 
+// 11. СЛУШАТЕЛЬ УВЕДОМЛЕНИЙ ОТ ГИЛЬДИИ
+function listenForClanNotifications() {
+    if (typeof tgUser === 'undefined' || !tgUser || !tgUser.id) return;
+
+    const notifRef = db.ref(`users/${tgUser.id}/clanNotification`);
+    
+    // Слушаем изменения в реальном времени
+    notifRef.on('value', (snapshot) => {
+        const notif = snapshot.val();
+        if (notif && notif.text) {
+            // Показываем красивое системное уведомление
+            showInGameAlert(notif.text);
+            
+            // Сразу удаляем его из базы, чтобы оно не показалось повторно
+            notifRef.remove();
+        }
+    });
+}
+
+// Вспомогательная функция для красивого вывода уведомления прямо на игровой экран
+function showInGameAlert(message) {
+    // Создаем элемент уведомления динамически
+    const alertDiv = document.createElement('div');
+    alertDiv.style = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-100px);
+        background: linear-gradient(135deg, rgba(10, 15, 30, 0.95) 0%, rgba(0, 0, 0, 0.95) 100%);
+        border: 2px solid #00e5ff;
+        box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+        color: #fff;
+        padding: 15px 25px;
+        border-radius: 8px;
+        font-family: sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        z-index: 10000;
+        transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+        opacity: 0;
+        pointer-events: none;
+        letter-spacing: 0.5px;
+    `;
+    alertDiv.innerText = message.toUpperCase();
+    document.body.appendChild(alertDiv);
+
+    // Анимация появления (выезжает сверху вниз за кнопки ТГ)
+    setTimeout(() => {
+        alertDiv.style.transform = 'translateX(-50%) translateY(100px)';
+        alertDiv.style.opacity = '1';
+    }, 100);
+
+    // Анимация исчезновения через 4 секунды
+    setTimeout(() => {
+        alertDiv.style.transform = 'translateX(-50%) translateY(-100px)';
+        alertDiv.style.opacity = '0';
+        setTimeout(() => alertDiv.remove(), 500);
+    }, 4500);
+}
+
 // 1. Создаем четкую функцию запуска
 function startEverything() {
     console.log("Запуск всех систем...");
@@ -2779,6 +2849,9 @@ function startEverything() {
     // regenerateEnergy уже вызывается внутри initGame (строка 206).
     // Но если ты хочешь, чтобы планеты крутились сразу, оставь:
     draw(); 
+    
+    // ВКЛЮЧАЕМ СЛУШАТЕЛЬ УВЕДОМЛЕНИЙ ОТ ЛИДЕРА ГИЛЬДИИ
+    listenForClanNotifications();
 }
 
 // 2. Проверяем загрузку фона и стартуем
