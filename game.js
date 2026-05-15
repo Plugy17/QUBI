@@ -2004,27 +2004,41 @@ function openPvPMenu() {
 }
 
 function startPvPRaid(opponent) {
-    if (playerData.energy < 40) return; // Проверка энергии
-    
-    currentOpponent = opponent;
+    // 1. Настройка данных
     isPvPRaid = true;
-    quants = []; // Очищаем всё старое!
+    currentOpponent = opponent;
     pvpDistance = 0;
+    targetDistance = 1000 + ((opponent.buildings ? opponent.buildings.filter(b => b).length : 0) * 500);
+
+    // 2. Настройка UI
+    document.getElementById('pvp-max-dist').innerText = targetDistance;
+    document.getElementById('pvp-target-name').innerText = opponent.name || "ВРАЖЕСКАЯ БАЗА";
     
-    // Твоя логика расчета дистанции
-    targetDistance = 1000 + ( (opponent.buildings ? opponent.buildings.filter(b=>b).length : 0) * 500 );
+    // 3. Открываем новое окно
+    document.getElementById('pvp-window').style.display = 'block';
+    
+    // 4. Подгоняем размер канваса
+    pvpCanvas.width = window.innerWidth;
+    pvpCanvas.height = window.innerHeight;
 
-    runnerShip.y = runnerCanvas.height / 2;
+    // 5. Сброс корабля для ПВП
+    runnerShip.y = pvpCanvas.height / 2;
     runnerShip.vy = 0;
+    runnerShip.hp = runnerShip.maxHp;
 
-    // ВАЖНО: Запускаем PvP окно и новый цикл
-    document.getElementById('runner-ui').style.display = 'block'; 
+    quants = []; // Очищаем список стен
     isRunnerActive = true;
     
-    spawnPvPWalls();    // Запуск спавна стен
-    pvpRaidLoop();      // ЗАПУСК НОВОГО ЦИКЛА
+    spawnPvPWalls(); // Запускаем спавн стен
+    pvpRaidLoop();   // Запускаем цикл (важно: используй pvpCtx внутри!)
 }
 
+function closePvPRaid() {
+    isPvPRaid = false;
+    isRunnerActive = false;
+    document.getElementById('pvp-window').style.display = 'none';
+}
+    
 function calculateTargetDistance(opponentData) {
     let base = 1500; // Базовые 1500 метров
     
