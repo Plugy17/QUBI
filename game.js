@@ -226,13 +226,14 @@ const planets = [
     { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() },
     { 
     id: 'pvp_planet', 
-    src: 'assets/star-pvp.png', // Убедись, что файл есть в папке
+    src: 'assets/star-pvp.png', 
     x: window.innerWidth * 0.18, 
     y: window.innerHeight * 0.82, 
-    size: 85, 
+    size: 140, // Увеличили размер (был 85)
     rotation: 0, 
-    speed: 0.005,
+    speed: 0, // Скорость вращения теперь 0
     img: new Image(),
+    isStationary: true, // Флаг, чтобы функция отрисовки знала, что делать
     action: () => openPvPSearch() 
 }
 ];
@@ -487,7 +488,6 @@ function hideLoading() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // ПРОВЕРКА: Теперь регенерация будет вызываться 60 раз в секунду
     regenerateEnergy();
 
     if (bg.complete) {
@@ -498,19 +498,24 @@ function draw() {
         if (p.img && p.img.complete) {
             ctx.save();
             ctx.translate(p.x, p.y); 
-            if (p.id === 'station') {
-                const floatY = Math.sin(Date.now() * 0.002) * 5; 
+
+            // ПРАВКА ТУТ: Добавляем проверку на pvp_planet
+            if (p.id === 'station' || p.id === 'pvp_planet') {
+                // Эффект парения для станции и ПВП планеты
+                const floatY = Math.sin(Date.now() * 0.002) * 8; // Сделал 8 для заметности
                 ctx.translate(0, floatY);
+                // Вращение (rotate) НЕ вызываем, значит планета не крутится
             } else {
+                // Обычные планеты крутятся
                 p.rotation += p.speed;
                 ctx.rotate(p.rotation);
             }
+
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
     });
     
-    // ЭТА СТРОКА ЗАПУСКАЕТ БЕСКОНЕЧНЫЙ ЦИКЛ
     requestAnimationFrame(draw);
 }
 
