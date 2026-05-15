@@ -215,6 +215,7 @@ const meteorImg = new Image(); meteorImg.src = 'assets/meteor.png';
 const alienImg = new Image(); alienImg.src = 'assets/alien.png';
 const lightningImg = new Image(); lightningImg.src = 'assets/molniya.png';
 const artifactImg = new Image(); artifactImg.src = 'assets/artifact.png';
+const pvpBgImg = new Image(); pvpBgImg.src = 'assets/pvp-bg.png';
 
 // --- ОБЪЕКТЫ ПЛАНЕТ ---
 const planets = [
@@ -1967,15 +1968,28 @@ function startPvPMode() {
     pvpDistance = 0;
     pvpWalls = [];
     
-    // Сброс позиции корабля для ПВП
-    runnerShip.y = window.innerHeight / 2;
-    runnerShip.vy = 0;
-    runnerShip.hp = runnerShip.maxHp;
+    const container = document.getElementById('pvp-window');
+    container.style.display = 'block';
 
-    // Показываем окно (используем твой новый блок из HTML)
-    document.getElementById('pvp-window').style.display = 'block';
-    
-    // Запускаем независимые циклы
+    // НАСТРОЙКА КАНВАСА ПОД ЭКРАН ТЕЛЕФОНА
+    pvpCanvas.width = window.innerWidth;
+    pvpCanvas.height = window.innerHeight;
+
+    // СБРОС КОРАБЛЯ
+    runnerShip.x = pvpCanvas.width * 0.2; // Слева
+    runnerShip.y = pvpCanvas.height / 2; // В центре по вертикали
+    runnerShip.vy = 0;
+
+    // СЛУШАТЕЛЬ ТАПА (Взлет)
+    const handleJump = (e) => {
+        if (!isPvPActive) return;
+        e.preventDefault();
+        runnerShip.vy = -5; // Сила прыжка вверх
+    };
+
+    container.removeEventListener('touchstart', handleJump); // Убираем старые, если были
+    container.addEventListener('touchstart', handleJump);
+
     spawnPvPWallsLoop();
     pvpMainLoop();
 }
@@ -1983,62 +1997,87 @@ function startPvPMode() {
 function pvpMainLoop() {
     if (!isPvPActive) return;
 
-    // Используем pvpCtx и pvpCanvas
-    const canvas = document.getElementById('pvpCanvas');
-    const ctx = canvas.getContext('2d');
+    // Используем существующие ссылки на канвас и контекст, если они объявлены глобально
+    // (если нет, раскомментируйте следующие две строки)
+    // const pvpCanvas = document.getElementById('pvpCanvas');
+    // const pvpCtx = pvpCanvas.getContext('2d');
 
-    // 1. Очистка и фон
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#0a0a1a"; // Свой темный фон для ПВП
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // 1. Отрисовка фона
+    if (pvpBgImg.complete) {
+        // Отрисовываем изображение на весь канвас (растягиваем/сжимаем)
+        pvpCtx.drawImage(pvpBgImg, 0, 0, pvpCanvas.width, pvpCanvas.height);
+        
+        // Опционально: Добавить полупрозрачное наложение, чтобы стены и корабль были видны лучше
+        // pvpCtx.fillStyle = "rgba(0, 0, 0, 0.4)"; // Полупрозрачный черный
+        // pvpCtx.fillRect(0, 0, pvpCanvas.width, pvpCanvas.height);
+    } else {
+        // Если фон еще не загружен, используем обычную заливку (чтобы не было шлейфов)
+        pvpCtx.fillStyle = "#0a0a1a"; 
+        pvpCtx.fillRect(0, 0, pvpCanvas.width, pvpCanvas.height);
+    }
 
     // 2. Физика корабля
     runnerShip.vy += 0.25; 
     runnerShip.y += runnerShip.vy;
     
+    // Фиксируем shipRenderX относительно ТЕКУЩЕЙ ширины канваса (надежнее, чем window.innerWidth)
+    const shipRenderX = pvpCanvas.width * 0.2;
+
     // 3. Стены и коллизии
     for (let i = pvpWalls.length - 1; i >= 0; i--) {
         let wall = pvpWalls[i];
         wall.x -= 5; // Скорость ПВП режима
 
         // Отрисовка стен (Кроваво-красный неон)
-        ctx.fillStyle = "#ff0033";
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = "#ff0033";
-        ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
-        ctx.shadowBlur = 0;
+        pvpCtx.fillStyle = "#ff0033";
+        pvpCtx.shadowBlur = 15;
+        pvpCtx.shadowColor = "#ff0033";
+        pvpCtx.fillRect(wall.x, wall.y, wall.w, wall.h);
+        pvpCtx.shadowBlur = 0;
 
-        // Проверка столкновения
-        if (runnerShip.x + 20 > wall.x && runnerShip.x - 20 < wall.x + wall.w &&
+        // Проверка столкновения (используем shipRenderX)
+        if (shipRenderX + 20 > wall.x && shipRenderX - 20 < wall.x + wall.w &&
             runnerShip.y + 20 > wall.y && runnerShip.y - 20 < wall.y + wall.h) {
-            endPvP(false);
+            endPvP(false); // Проигрыш
             return;
         }
-        if (wall.x < -100) pvpWalls.splice(i, 1);
+        if (wall.x < -100) pvpWalls.splice(i, 1); // Удаление стен за экраном
     }
 
     // 4. Отрисовка корабля
-    ctx.save();
-    ctx.translate(window.innerWidth * 0.2, runnerShip.y);
-    ctx.rotate(runnerShip.vy * 0.05);
-    ctx.drawImage(shipImg, -25, -25, 50, 50);
+    pvpCtx.save();
+    // ВАЖНО: используем shipRenderX
+    pvpCtx.translate(shipRenderX, runnerShip.y);
+    pvpCtx.rotate(runnerShip.vy * 0.05); // Наклон при движении
+    
+    // Если картинка корабля загружена, рисуем её
+    if (shipImg.complete) {
+        pvpCtx.drawImage(shipImg, -25, -25, 50, 50);
+    } else {
+        // Заглушка, если картинка не прогрузилась (белый квадрат)
+        pvpCtx.fillStyle = "#fff";
+        pvpCtx.fillRect(-20, -20, 40, 40);
+    }
     
     // Индикатор HP (компактный)
     const hpW = 60;
-    const ratio = runnerShip.hp / runnerShip.maxHp;
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(-30, -35, hpW, 5);
-    ctx.fillStyle = "#00ff00";
-    ctx.fillRect(-30, -35, hpW * ratio, 5);
-    ctx.restore();
+    const ratio = Math.max(0, runnerShip.hp / runnerShip.maxHp);
+    pvpCtx.fillStyle = "rgba(0,0,0,0.8)";
+    pvpCtx.fillRect(-30, -40, hpW, 6);
+    pvpCtx.fillStyle = ratio > 0.3 ? "#00ff00" : "#ff0000"; // Зеленый -> Красный
+    pvpCtx.fillRect(-30, -40, hpW * ratio, 6);
+    
+    pvpCtx.restore();
 
     // 5. Прогресс и условия победы
     pvpDistance += 2;
-    updatePvPUI(); // Обновление HTML шкалы
+    updatePvPUI(); // Обновление HTML шкалы прогресса (которая не на канвасе)
 
-    if (runnerShip.y > canvas.height || runnerShip.y < 0) { endPvP(false); return; }
+    // Условия завершения (смерть об границы или финиш)
+    if (runnerShip.y > pvpCanvas.height || runnerShip.y < 0) { endPvP(false); return; }
     if (pvpDistance >= pvpTargetDistance) { endPvP(true); return; }
 
+    // Запрос следующего кадра
     requestAnimationFrame(pvpMainLoop);
 }
 
