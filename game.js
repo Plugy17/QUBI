@@ -1969,9 +1969,18 @@ async function openPvPSearch() {
         const myId = String(tgUser.id);
 
         if (usersData) {
+            const SIX_HOURS = 6 * 60 * 60 * 1000; // Кулдаун в миллисекундах
+            const now = Date.now();
+
             Object.keys(usersData).forEach(userId => {
                 if (userId !== myId) {
                     const user = usersData[userId];
+                    
+                    // ПРОВЕРКА НА КУЛДАУН (ЩИТ ПОСЛЕ ОГРАБЛЕНИЯ)
+                    const lastRobbed = user.lastRobbed || 0;
+                    if (now - lastRobbed < SIX_HOURS) {
+                        return; // Пропускаем игрока, система его не выдаст для атаки
+                    }
                     
                     // Расчет защиты врага (ищем здание типа shield)
                     let defenseBonus = 0;
@@ -2253,16 +2262,24 @@ function endPvP(isWin) {
             playerData.quant += loot;
             userRef.update({ quant: playerData.quant });
 
-            // 3. СПИСЫВАЕМ У ПРОТИВНИКА (Самый важный блок)
             // Создаем ссылку на папку врага в базе
             const opponentRef = firebase.database().ref('users/' + pvpOpponent.id);
             
-            // Используем транзакцию, чтобы точно списать (безопасный метод)
+            // 3. СПИСЫВАЕМ У ПРОТИВНИКА
             opponentRef.child('quant').transaction((currentQuant) => {
                 if (currentQuant) {
                     return currentQuant - loot; // Вычитаем награбленное
                 }
                 return currentQuant;
+            });
+
+            // 4. НОВЫЙ БЛОК: ВЕШАЕМ ЩИТ ЖЕРТВЕ НА 6 ЧАСОВ
+            opponentRef.update({
+                lastRobbed: Date.now()
+            }).then(() => {
+                console.log(`Игрок ${pvpOpponent.name} получил защитный щит на 6 часов.`);
+            }).catch((err) => {
+                console.error("Ошибка установки щита жертве:", err);
             });
 
             alert(`Рейд успешен! Вы украли ${loot} QUANT у ${pvpOpponent.name}`);
