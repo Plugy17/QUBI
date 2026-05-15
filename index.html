@@ -45,20 +45,21 @@
     </div>
 </div>
 
-    <div class="pvp-ui-header" style="position: absolute; top: 20px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10;">
-        <div class="opponent-info" style="color: #ff4b2b; font-weight: bold; text-shadow: 0 0 10px rgba(255,75,43,0.5);">
-            ЦЕЛЬ: <span id="pvp-target-name">ПОИСК...</span>
-        </div>
-        
-        <div class="pvp-progress-container" style="width: 80%; height: 12px; background: rgba(255,255,255,0.1); border: 1px solid #ff4b2b; border-radius: 6px; margin-top: 10px; overflow: hidden; position: relative;">
-            <div id="pvp-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff4b2b, #ff8100); box-shadow: 0 0 15px #ff4b2b; transition: width 0.2s;"></div>
-            <div style="position: absolute; width: 100%; text-align: center; font-size: 9px; color: #fff; line-height: 12px; font-weight: bold;">
-                <span id="pvp-current-dist">0</span> / <span id="pvp-max-dist">2000</span>m
-            </div>
-        </div>
-
-        <button onclick="endPvP(false)" style="margin-top: 15px; background: rgba(255,255,255,0.1); border: 1px solid #ff4b2b; color: #fff; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 10px;">ОТСТУПИТЬ</button>
+    <div class="pvp-ui-header" style="position: absolute; top: 80px; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 1000; pointer-events: none;">
+    
+    <div class="opponent-info" style="color: #ff4b2b; font-weight: bold; text-shadow: 0 0 10px rgba(255,75,43,0.5); pointer-events: auto;">
+        ЦЕЛЬ: <span id="pvp-target-name">ПОИСК...</span>
     </div>
+    
+    <div class="pvp-progress-container" style="width: 80%; height: 12px; background: rgba(255,255,255,0.1); border: 1px solid #ff4b2b; border-radius: 6px; margin-top: 10px; overflow: hidden; position: relative; pointer-events: auto;">
+        <div id="pvp-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff4b2b, #ff8100); box-shadow: 0 0 15px #ff4b2b; transition: width 0.2s;"></div>
+        <div style="position: absolute; width: 100%; text-align: center; font-size: 9px; color: #fff; line-height: 12px; font-weight: bold;">
+            <span id="pvp-current-dist">0</span> / <span id="pvp-max-dist">2000</span>m
+        </div>
+    </div>
+
+    <button onclick="endPvP(false)" style="margin-top: 15px; background: rgba(255,255,255,0.1); border: 1px solid #ff4b2b; color: #fff; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 10px; pointer-events: auto;">ОТСТУПИТЬ</button>
+</div>
 
     <canvas id="pvpCanvas" style="display: block; width: 100%; height: 100%;"></canvas>
     <div id="pvp-countdown" style="display: none;"></div>
