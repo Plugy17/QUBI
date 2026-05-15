@@ -222,8 +222,8 @@ const planets = [
     { 
         id: 'pvp_planet', 
         src: 'assets/star-pvp.png', 
-        x: window.innerWidth * 0.5, // Центр экрана по X
-        y: window.innerHeight * 0.5, // Центр экрана по Y
+        x: window.innerWidth * 0.35, // Центр экрана по X
+        y: window.innerHeight * 0.65, // Центр экрана по Y
         size: 100, // Сделал чуть больше, так как это центр
         rotation: 0, 
         speed: 0, 
@@ -235,8 +235,8 @@ const planets = [
     { 
         id: 'runner', 
         src: 'assets/quant.png', 
-        x: window.innerWidth * 0.35, // Позиция между Землей (0.22) и Центром
-        y: window.innerHeight * 0.65, // Позиция между Центром и Луной (0.72)
+        x: window.innerWidth * 0.5, // Позиция между Землей (0.22) и Центром
+        y: window.innerHeight * 0.5, // Позиция между Центром и Луной (0.72)
         size: 110, 
         rotation: 0, 
         speed: 0.002, 
