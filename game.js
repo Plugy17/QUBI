@@ -2037,11 +2037,14 @@ function startPvPMode() {
 function pvpMainLoop() {
     if (!isPvPActive) return;
 
-    // Используем один и тот же контекст
     const canvas = document.getElementById('pvpCanvas');
     const ctx = canvas.getContext('2d');
 
-    // 1. РИСУЕМ ФОН (Всегда первым)
+    // ПРОВЕРКА: Идет ли сейчас отсчет?
+    const countdownElem = document.getElementById('pvp-countdown');
+    const isCounting = countdownElem && countdownElem.style.display !== 'none';
+
+    // 1. РИСУЕМ ФОН
     if (pvpBgImg.complete) {
         ctx.drawImage(pvpBgImg, 0, 0, canvas.width, canvas.height);
     } else {
@@ -2049,89 +2052,75 @@ function pvpMainLoop() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // 2. ФИЗИКА КОРАБЛЯ
-    runnerShip.vy += 0.40; 
+    // 2. ФИЗИКА КОРАБЛЯ (Летать можно всегда, даже во время отсчета)
+    runnerShip.vy += 0.35; 
     runnerShip.y += runnerShip.vy;
     if (runnerShip.vy > 8) runnerShip.vy = 8;
     const shipRenderX = canvas.width * 0.2;
 
-    // 3. ОТРИСОВКА СТЕН И КОЛЛИЗИИ
-    for (let i = pvpWalls.length - 1; i >= 0; i--) {
-        let wall = pvpWalls[i];
-        wall.x -= 5; 
+    // 3. ОТРИСОВКА СТЕН (Только если отсчет ЗАКОНЧЕН)
+    if (!isCounting) {
+        for (let i = pvpWalls.length - 1; i >= 0; i--) {
+            let wall = pvpWalls[i];
+            wall.x -= 5; 
 
-        // --- УЛУЧШЕННАЯ ОТРИСОВКА СТЕНЫ ---
-        // А. Рисуем аккуратную металлическую раму
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "rgba(255, 75, 43, 0.6)"; 
-        ctx.strokeRect(wall.x, wall.y, wall.w, wall.h);
+            // Твоя красивая отрисовка стен
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(255, 75, 43, 0.6)"; 
+            ctx.strokeRect(wall.x, wall.y, wall.w, wall.h);
 
-        // Б. Создаем слоистый градиент для энергетического ядра
-        let gradient = ctx.createLinearGradient(wall.x, wall.y, wall.x + wall.w, wall.y);
-        gradient.addColorStop(0, "rgba(255, 0, 51, 0.1)");
-        gradient.addColorStop(0.5, "#ff0033"); // Яркий центр
-        gradient.addColorStop(1, "rgba(255, 0, 51, 0.1)");
+            let gradient = ctx.createLinearGradient(wall.x, wall.y, wall.x + wall.w, wall.y);
+            gradient.addColorStop(0, "rgba(255, 0, 51, 0.1)");
+            gradient.addColorStop(0.5, "#ff0033");
+            gradient.addColorStop(1, "rgba(255, 0, 51, 0.1)");
 
-        ctx.fillStyle = gradient;
-        ctx.shadowBlur = 20; // Неоновое свечение
-        ctx.shadowColor = "#ff0033";
-        ctx.fillRect(wall.x + 2, wall.y + 2, wall.w - 4, wall.h - 4);
-        
-        // В. Добавляем аккуратную сегментацию (эффект панелей)
-        ctx.shadowBlur = 0; // Сбрасываем тень для мелких деталей
-        ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-        const segmentH = 25; // Высота каждого сегмента
-        for (let sY = wall.y + segmentH; sY < wall.y + wall.h; sY += segmentH) {
-            ctx.fillRect(wall.x + 2, sY, wall.w - 4, 1);
+            ctx.fillStyle = gradient;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = "#ff0033";
+            ctx.fillRect(wall.x + 2, wall.y + 2, wall.w - 4, wall.h - 4);
+            ctx.shadowBlur = 0;
+
+            // Проверка столкновения
+            if (shipRenderX + 25 > wall.x && shipRenderX - 25 < wall.x + wall.w &&
+                runnerShip.y + 25 > wall.y && runnerShip.y - 25 < wall.y + wall.h) {
+                endPvP(false);
+                return;
+            }
+
+            if (wall.x < -100) pvpWalls.splice(i, 1);
         }
 
-        // Г. Белая линия в центре (основной луч)
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(wall.x + (wall.w / 2) - 1, wall.y + 2, 2, wall.h - 4);
-        // --- КОНЕЦ ОТРИСОВКИ СТЕНЫ ---
+        // 5. ПРОГРЕСС (Начисляем только когда летим со стенами)
+        pvpDistance += 2;
+        updatePvPUI();
 
-        // Проверка столкновения
-        if (shipRenderX + 15 > wall.x && shipRenderX - 15 < wall.x + wall.w &&
-            runnerShip.y + 15 > wall.y && runnerShip.y - 15 < wall.y + wall.h) {
+        // Смерть об верх/низ экрана (Только во время активной игры)
+        if (runnerShip.y > canvas.height || runnerShip.y < 0) {
             endPvP(false);
             return;
         }
 
-        // Удаление старых стен
-        if (wall.x < -100) pvpWalls.splice(i, 1);
+        // Победа
+        if (pvpDistance >= pvpTargetDistance) {
+            endPvP(true);
+            return;
+        }
     }
 
-   // 4. ОТРИСОВКА САМОЛЕТА (Увеличенный размер, без HP)
+    // 4. ОТРИСОВКА САМОЛЕТА (Всегда виден)
     ctx.save();
     ctx.translate(shipRenderX, runnerShip.y);
     ctx.rotate(runnerShip.vy * 0.05);
     
-    // shipSize = 70 (был 50). Это сделает его заметнее.
     const shipSize = 70; 
     const halfSize = shipSize / 2;
-
     if (shipImg.complete) {
-        // Рисуем картинку из твоего массива
         ctx.drawImage(shipImg, -halfSize, -halfSize, shipSize, shipSize);
     } else {
-        // Запасной вариант, если картинка не прогрузилась
         ctx.fillStyle = "#00e5ff";
-        ctx.fillRect(-halfSize + 5, -halfSize + 5, shipSize - 10, shipSize - 10);
+        ctx.fillRect(-halfSize, -halfSize, shipSize, shipSize);
     }
-    
-    // 5. ОБНОВЛЕНИЕ ПРОГРЕССА И УСЛОВИЯ ПОБЕДЫ/СМЕРТИ
-    pvpDistance += 2;
-    updatePvPUI();
-
-    if (runnerShip.y > canvas.height || runnerShip.y < 0) {
-        endPvP(false);
-        return;
-    }
-
-    if (pvpDistance >= pvpTargetDistance) {
-        endPvP(true);
-        return;
-    }
+    ctx.restore();
 
     requestAnimationFrame(pvpMainLoop);
 }
