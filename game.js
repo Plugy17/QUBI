@@ -224,7 +224,7 @@ const planets = [
         id: 'pvp_planet', 
         src: 'assets/star-pvp.png', 
         x: window.innerWidth * 0.35, // Центр экрана по X
-        y: window.innerHeight * 0.55, // Центр экрана по Y
+        y: window.innerHeight * 0.60, // Центр экрана по Y
         size: 100, // Сделал чуть больше, так как это центр
         rotation: 0, 
         speed: 0, 
@@ -2001,7 +2001,7 @@ function startPvPMode() {
     
     // БЫЛО: -5.5
     // СТАЛО: -7.0 (чем меньше число, тем выше прыжок)
-    runnerShip.vy = -3.0; 
+    runnerShip.vy = -9.0; 
     
     if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
@@ -2035,7 +2035,7 @@ function pvpMainLoop() {
     }
 
     // 2. ФИЗИКА КОРАБЛЯ
-    runnerShip.vy += 0.35; 
+    runnerShip.vy += 0.40; 
     runnerShip.y += runnerShip.vy;
     if (runnerShip.vy > 8) runnerShip.vy = 8;
     const shipRenderX = canvas.width * 0.2;
