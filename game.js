@@ -2001,7 +2001,7 @@ function startPvPMode() {
     
     // БЫЛО: -5.5
     // СТАЛО: -7.0 (чем меньше число, тем выше прыжок)
-    runnerShip.vy = -7.0; 
+    runnerShip.vy = -3.0; 
     
     if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
