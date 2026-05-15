@@ -1973,23 +1973,41 @@ async function openPvPSearch() {
                 if (userId !== myId) {
                     const user = usersData[userId];
                     
-                    // 2. ИМЯ КОЛОНИИ: Ставим colonyName на первое место в проверке
+                    // Расчет защиты врага (ищем здание типа shield)
+                    let defenseBonus = 0;
+                    if (user.buildings && Array.isArray(user.buildings)) {
+                        const shieldBuilding = user.buildings.find(b => b && b.type === 'shield');
+                        if (shieldBuilding) {
+                            defenseBonus = (shieldBuilding.level || 1) * 5; 
+                        }
+                    }
+
                     allPlayers.push({
                         name: user.colonyName || user.name || user.first_name || "Unknown Colony",
                         resources: user.quant || 0,
-                        id: userId
+                        id: userId,
+                        defensePercent: defenseBonus
                     });
                 }
             });
         }
 
+        // Имитируем работу радара
         await new Promise(resolve => setTimeout(resolve, 3000)); 
 
         if (allPlayers.length > 0) {
             pvpOpponent = allPlayers[Math.floor(Math.random() * allPlayers.length)];
             
+            // Заполняем карточку данными
             document.getElementById('target-name-display').innerText = pvpOpponent.name;
             document.getElementById('target-loot-display').innerText = Math.floor(pvpOpponent.resources) + " QUANT";
+            
+            // Выводим уровень защиты в поле под именем
+            const rankLabel = document.getElementById('target-rank');
+            if (rankLabel) {
+                rankLabel.innerText = `SHIELD PROTECTION: ${pvpOpponent.defensePercent}%`;
+                rankLabel.style.color = pvpOpponent.defensePercent > 0 ? "#00e5ff" : "#888";
+            }
             
             radar.style.display = 'none';
             targetCard.style.display = 'block';
@@ -1997,13 +2015,16 @@ async function openPvPSearch() {
             status.innerText = "NO TARGETS IN SECTOR";
             setTimeout(() => { 
                 pvpWin.style.display = 'none'; 
-                if (pvpHeader) pvpHeader.style.visibility = 'visible'; // Возвращаем, если цель не найдена
+                if (pvpHeader) pvpHeader.style.visibility = 'visible';
             }, 2000);
         }
     } catch (error) {
+        console.error("Search error:", error);
         status.innerText = "SENSORS OFFLINE";
-        if (pvpHeader) pvpHeader.style.visibility = 'visible';
-        console.error(error);
+        setTimeout(() => {
+            pvpWin.style.display = 'none';
+            if (pvpHeader) pvpHeader.style.visibility = 'visible';
+        }, 2000);
     }
 }
 
@@ -2019,6 +2040,19 @@ function confirmRaid() {
         playerData.energy -= 40;
         userRef.update({ energy: playerData.energy }); // Сохраняем трату энергии
         
+        // --- НОВАЯ ЛОГИКА ДИСТАНЦИИ ---
+        const baseDistance = 2000; // Базовая сложность
+        // Рассчитываем итоговую дистанцию: база + % защиты цели
+        // pvpOpponent.defensePercent мы получили в функции openPvPSearch
+        pvpTargetDistance = Math.floor(baseDistance * (1 + (pvpOpponent.defensePercent / 100)));
+
+        // Обновляем визуальные счетчики дистанции в интерфейсе
+        const maxDistEl = document.getElementById('pvp-max-dist');
+        const currDistEl = document.getElementById('pvp-current-dist');
+        if (maxDistEl) maxDistEl.innerText = pvpTargetDistance;
+        if (currDistEl) currDistEl.innerText = "0";
+        // ------------------------------
+
         // 1. Скрываем карточку цели
         document.getElementById('pvp-target-card').style.display = 'none';
         
@@ -2026,14 +2060,19 @@ function confirmRaid() {
         const pvpHeader = document.querySelector('.pvp-ui-header');
         if (pvpHeader) {
             pvpHeader.style.visibility = 'visible'; 
-            pvpHeader.style.opacity = '1'; // На всякий случай, если использовал opacity
+            pvpHeader.style.opacity = '1'; 
         }
         
         // 3. Обновляем имя цели в верхнем интерфейсе перед началом
-        document.getElementById('pvp-target-name').innerText = pvpOpponent.name;
+        const targetNameEl = document.getElementById('pvp-target-name');
+        if (targetNameEl) targetNameEl.innerText = pvpOpponent.name;
         
-        // 4. Запуск игры
+        // 4. Запуск игры (полет, препятствия, отсчет)
         startPvPMode(); 
+        
+        if (window.tg && tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('medium'); // Вибрация при подтверждении атаки
+        }
     } else {
         alert("NEED MORE ENERGY!");
     }
