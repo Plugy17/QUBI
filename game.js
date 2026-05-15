@@ -1243,8 +1243,16 @@ function isUiHit(target) {
 }
 
 function isAnyModalOpen() {
-    // Список всех ID модальных окон
-    const modals = ['moon-modal', 'leaderboard-modal', 'station-modal', 'shop-modal', 'runner-window'];
+    // Список всех ID модальных окон (добавили 'clan-window')
+    const modals = [
+        'moon-modal', 
+        'leaderboard-modal', 
+        'station-modal', 
+        'shop-modal', 
+        'runner-window',
+        'clan-window' // Защита для планеты Гильдия
+    ];
+    
     return modals.some(id => {
         const el = document.getElementById(id);
         if (!el) return false;
