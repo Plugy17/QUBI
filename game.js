@@ -31,6 +31,12 @@ let sessionQubi = 0;
 let isRunnerActive = false;
 let sessionArtifacts = 0;
 
+let isPvPActive = false;
+let pvpDistance = 0;
+let pvpTargetDistance = 2000;
+let pvpWalls = [];
+let pvpOpponent = null;
+
 // --- ЕДИНАЯ ФУНКЦИЯ РАСЧЕТА ХАРАКТЕРИСТИК ---
 function calculateCurrentStats() {
     let stats = {
@@ -214,7 +220,18 @@ const planets = [
     { id: 'shop', src: 'assets/mars.png', x: window.innerWidth * 0.78, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: -0.001, img: new Image() },
     { id: 'moon', src: 'assets/moon.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.72, size: 60, rotation: 0, speed: 0.003, img: new Image() },
     { id: 'leaderboard', src: 'assets/neptun.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.32, size: 70, rotation: 0, speed: -0.0015, img: new Image() },
-    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() }
+    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() },
+    { 
+    id: 'pvp_planet', 
+    src: 'assets/star-pvp.png', // Убедись, что файл есть в папке
+    x: window.innerWidth * 0.18, 
+    y: window.innerHeight * 0.82, 
+    size: 85, 
+    rotation: 0, 
+    speed: 0.005,
+    img: new Image(),
+    action: () => openPvPSearch() 
+}
 ];
 
 // Инициализация картинок планет
@@ -1903,6 +1920,136 @@ function showCollectModal(qnt, qubi) {
 
 function closeCollectModal() {
     document.getElementById('collect-modal').style.display = 'none';
+}
+
+// 1. Открытие поиска
+function openPvPSearch() {
+    console.log("Поиск цели...");
+    // Имитация поиска противника
+    pvpOpponent = {
+        name: "RAIDER_" + Math.floor(Math.random() * 999),
+        resources: playerData.quant * 0.5 // Видим часть его ресурсов
+    };
+    
+    if(confirm(`Цель найдена: ${pvpOpponent.name}. Начать захват? (Нужно 40 энергии)`)) {
+        if (playerData.energy >= 40) {
+            playerData.energy -= 40;
+            startPvPMode();
+        } else {
+            alert("Недостаточно энергии!");
+        }
+    }
+}
+
+// 2. Инициализация самого режима
+function startPvPMode() {
+    isPvPActive = true;
+    pvpDistance = 0;
+    pvpWalls = [];
+    
+    // Сброс позиции корабля для ПВП
+    runnerShip.y = window.innerHeight / 2;
+    runnerShip.vy = 0;
+    runnerShip.hp = runnerShip.maxHp;
+
+    // Показываем окно (используем твой новый блок из HTML)
+    document.getElementById('pvp-window').style.display = 'block';
+    
+    // Запускаем независимые циклы
+    spawnPvPWallsLoop();
+    pvpMainLoop();
+}
+
+function pvpMainLoop() {
+    if (!isPvPActive) return;
+
+    // Используем pvpCtx и pvpCanvas
+    const canvas = document.getElementById('pvpCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 1. Очистка и фон
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#0a0a1a"; // Свой темный фон для ПВП
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Физика корабля
+    runnerShip.vy += 0.25; 
+    runnerShip.y += runnerShip.vy;
+    
+    // 3. Стены и коллизии
+    for (let i = pvpWalls.length - 1; i >= 0; i--) {
+        let wall = pvpWalls[i];
+        wall.x -= 5; // Скорость ПВП режима
+
+        // Отрисовка стен (Кроваво-красный неон)
+        ctx.fillStyle = "#ff0033";
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#ff0033";
+        ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+        ctx.shadowBlur = 0;
+
+        // Проверка столкновения
+        if (runnerShip.x + 20 > wall.x && runnerShip.x - 20 < wall.x + wall.w &&
+            runnerShip.y + 20 > wall.y && runnerShip.y - 20 < wall.y + wall.h) {
+            endPvP(false);
+            return;
+        }
+        if (wall.x < -100) pvpWalls.splice(i, 1);
+    }
+
+    // 4. Отрисовка корабля
+    ctx.save();
+    ctx.translate(window.innerWidth * 0.2, runnerShip.y);
+    ctx.rotate(runnerShip.vy * 0.05);
+    ctx.drawImage(shipImg, -25, -25, 50, 50);
+    
+    // Индикатор HP (компактный)
+    const hpW = 60;
+    const ratio = runnerShip.hp / runnerShip.maxHp;
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(-30, -35, hpW, 5);
+    ctx.fillStyle = "#00ff00";
+    ctx.fillRect(-30, -35, hpW * ratio, 5);
+    ctx.restore();
+
+    // 5. Прогресс и условия победы
+    pvpDistance += 2;
+    updatePvPUI(); // Обновление HTML шкалы
+
+    if (runnerShip.y > canvas.height || runnerShip.y < 0) { endPvP(false); return; }
+    if (pvpDistance >= pvpTargetDistance) { endPvP(true); return; }
+
+    requestAnimationFrame(pvpMainLoop);
+}
+
+function endPvP(isWin) {
+    isPvPActive = false;
+    document.getElementById('pvp-window').style.display = 'none';
+
+    if (isWin) {
+        // Рассчитываем награду (10% от запасов врага)
+        let loot = Math.floor(pvpOpponent.resources * 0.1);
+        playerData.quant += loot;
+        alert(`РЕЙД УСПЕШЕН! Вы захватили ${loot} QUANT`);
+        saveData(); // Сохраняем в Firebase
+    } else {
+        alert("КОРАБЛЬ УНИЧТОЖЕН. Рейд провален.");
+    }
+}
+
+function spawnPvPWallsLoop() {
+    if (!isPvPActive) return;
+    
+    const gap = 170;
+    const wallW = 50;
+    const h = Math.random() * (window.innerHeight - 300) + 50;
+
+    pvpWalls.push(
+        { x: window.innerWidth, y: 0, w: wallW, h: h },
+        { x: window.innerWidth, y: h + gap, w: wallW, h: window.innerHeight }
+    );
+
+    setTimeout(spawnPvPWallsLoop, 1400);
 }
 
 // 1. Создаем четкую функцию запуска
