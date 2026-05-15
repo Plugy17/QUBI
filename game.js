@@ -180,7 +180,7 @@ const runnerWin = document.getElementById('runner-window');
 
 const buildingTypes = {
     mine: {
-        name: "Шахта",
+        name: "Шахта QUANT",
         icon: "assets/buildings/mine.png", // Путь к твоей PNG
         baseCost: 1500,
         baseYield: 15, // Квантов в час
@@ -188,7 +188,7 @@ const buildingTypes = {
         artifactUpgradeBase: 20 // Сколько артефактов нужно для 1-го апгрейда
     },
     lab: {
-        name: "Лаборатория",
+        name: "Лаборатория QUBI",
         icon: "assets/buildings/lab.png",
         baseCost: 2500,
         baseYield: 5, // QUBI в час
@@ -196,7 +196,7 @@ const buildingTypes = {
         artifactUpgradeBase: 30
     },
     shield: {
-        name: "Щит",
+        name: "Защитная установка",
         icon: "assets/buildings/shield.png",
         baseCost: 5000,
         baseYield: 5, // % защиты
@@ -224,8 +224,8 @@ const planets = [
         id: 'pvp_planet', 
         src: 'assets/star-pvp.png', 
         x: window.innerWidth * 0.35, // Центр экрана по X
-        y: window.innerHeight * 0.60, // Центр экрана по Y
-        size: 100, // Сделал чуть больше, так как это центр
+        y: window.innerHeight * 0.62, // Центр экрана по Y
+        size: 85, // Сделал чуть больше, так как это центр
         rotation: 0, 
         speed: 0, 
         img: new Image(),
