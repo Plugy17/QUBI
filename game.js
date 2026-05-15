@@ -2036,8 +2036,8 @@ function closeTargetCard() {
 }
 
 function confirmRaid() {
-    if (playerData.energy >= 40) {
-        playerData.energy -= 40;
+    if (playerData.energy >= 60) {
+        playerData.energy -= 60;
         userRef.update({ energy: playerData.energy }); // Сохраняем трату энергии
         
         // --- НОВАЯ ЛОГИКА ДИСТАНЦИИ ---
