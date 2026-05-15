@@ -1944,6 +1944,7 @@ function closeCollectModal() {
 }
 
 // 1. Открытие поиска
+// 1. Открытие поиска (Версия для Realtime Database)
 async function openPvPSearch() {
     const radar = document.getElementById('pvp-radar-overlay');
     const status = document.getElementById('radar-status');
@@ -1951,24 +1952,29 @@ async function openPvPSearch() {
     status.innerText = "SCANNING FOR TARGETS...";
 
     try {
-        // 1. Запрос к Firebase: берем всех игроков
-        // Если у тебя много игроков, лучше фильтровать по активности или уровню
-        const usersSnapshot = await getDocs(collection(db, "users"));
-        const allPlayers = [];
+        // 1. Запрос к Realtime Database: берем всех игроков из узла 'users'
+        // В RTDB мы используем .once('value')
+        const snapshot = await db.ref('users').once('value');
+        const usersData = snapshot.val();
         
-        usersSnapshot.forEach(doc => {
-            const data = doc.data();
-            // Не добавляем в список себя (сравниваем по Telegram ID или name)
-            if (data.name !== playerData.name) {
-                allPlayers.push({
-                    name: data.name,
-                    resources: data.quant || 0,
-                    id: doc.id
-                });
-            }
-        });
+        const allPlayers = [];
+        const myId = String(tgUser.id); // Твой ID для исключения из поиска
 
-        // Имитируем время на сканирование (2-3 секунды для красоты)
+        if (usersData) {
+            // Превращаем объект пользователей в массив
+            Object.keys(usersData).forEach(userId => {
+                if (userId !== myId) {
+                    const user = usersData[userId];
+                    allPlayers.push({
+                        name: user.name || "Unknown Pilot",
+                        resources: user.quant || 0,
+                        id: userId
+                    });
+                }
+            });
+        }
+
+        // Имитируем время на сканирование (для красоты)
         await new Promise(resolve => setTimeout(resolve, 2500));
 
         if (allPlayers.length > 0) {
@@ -1978,12 +1984,12 @@ async function openPvPSearch() {
 
             status.innerText = "TARGET ACQUIRED!";
             
-            // Ждем секунду и показываем подтверждение
             setTimeout(() => {
                 radar.style.display = 'none';
                 if(confirm(`Target found: ${pvpOpponent.name}\nQuant: ${Math.floor(pvpOpponent.resources)}\nStart raid? (40 Energy)`)) {
                     if (playerData.energy >= 40) {
                         playerData.energy -= 40;
+                        // Не забудь обновить энергию в базе здесь, если нужно
                         startPvPMode();
                     } else {
                         alert("Not enough energy!");
@@ -1991,7 +1997,7 @@ async function openPvPSearch() {
                 }
             }, 1000);
         } else {
-            status.innerText = "NO TARGETS FOUND IN SECTOR";
+            status.innerText = "NO TARGETS IN SECTOR";
             setTimeout(() => radar.style.display = 'none', 2000);
         }
 
