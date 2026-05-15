@@ -2167,17 +2167,30 @@ function spawnPvPWallsLoop() {
     if (!isPvPActive) return;
     
     const canvas = document.getElementById('pvpCanvas');
-    const gap = 180; // Проход стал чуть шире для честности
+    
+    // 1. УВЕЛИЧИВАЕМ ПРОХОД
+    // 260 — оптимально для самолета размером 70px. Будет место для маневра.
+    const gap = 260; 
     const wallW = 50;
-    // Высота верхней стены
-    const h = Math.random() * (canvas.height - 300) + 100;
 
+    // 2. УМНОЕ РАСПРЕДЕЛЕНИЕ ВЫСОТЫ
+    // Минимальная высота стены — 50px, чтобы она всегда была видна
+    const minWall = 50; 
+    // Максимальная высота, чтобы оставалось место для gap и нижней стены
+    const maxWall = canvas.height - gap - minWall;
+    
+    // Генерируем случайную высоту верхней стены в безопасных пределах
+    const h = Math.random() * (maxWall - minWall) + minWall;
+
+    // 3. ДОБАВЛЯЕМ СТЕНЫ В МАССИВ
     pvpWalls.push(
-        { x: canvas.width, y: 0, w: wallW, h: h },
-        { x: canvas.width, y: h + gap, w: wallW, h: canvas.height - (h + gap) }
+        { x: canvas.width, y: 0, w: wallW, h: h }, // Верхняя стена
+        { x: canvas.width, y: h + gap, w: wallW, h: canvas.height - (h + gap) } // Нижняя стена
     );
 
-    setTimeout(spawnPvPWallsLoop, 1500); // Чуть реже спавн для баланса
+    // 4. ТАЙМЕР СЛЕДУЮЩЕЙ ВОЛНЫ
+    // Оставил 1500 (1.5 сек), этого достаточно при широком проходе.
+    setTimeout(spawnPvPWallsLoop, 1500); 
 }
 
 // 1. Создаем четкую функцию запуска
