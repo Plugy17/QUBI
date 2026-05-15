@@ -12,9 +12,7 @@
 </head>
 <body>
 
-   <div id="pvp-window" class="runner-overlay" style="display: none; background: radial-gradient(circle, #1a0505 0%, #000 100%); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;">
-
-       <div id="clan-window" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 15, 30, 0.95); z-index: 100; color: #fff; font-family: sans-serif; overflow-y: auto;">
+    <div id="clan-window" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 15, 30, 0.95); z-index: 9999; color: #fff; font-family: sans-serif; overflow-y: auto;">
     
     <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #00e5ff;">
         <h2 style="margin: 0; color: #00e5ff; text-shadow: 0 0 10px rgba(0,229,255,0.5);">ГИЛЬДИЯ ПЛАНЕТ</h2>
@@ -52,6 +50,8 @@
         <button onclick="leaveClanAction()" style="margin-top: 30px; background: none; border: 1px solid #ff4b2b; color: #ff4b2b; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">ПОКИНУТЬ ГИЛЬДИЮ</button>
     </div>
 </div>
+
+   <div id="pvp-window" class="runner-overlay" style="display: none; background: radial-gradient(circle, #1a0505 0%, #000 100%); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;">
     
     <div id="pvp-radar-overlay" style="display: none;">
         <div class="radar">
