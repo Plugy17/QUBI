@@ -3097,22 +3097,39 @@ function initClanChat() {
         }, 50);
     });
 
-    // ⚡ НАВЕШИВАЕМ СЛУШАТЕЛИ НА ОТПРАВКУ ТЕКСТА (То, что случайно удалили)
+    // ⚡ ОБНОВЛЕННЫЕ СЛУШАТЕЛИ: ОДИНАКОВО СТАБИЛЬНО ДЛЯ ПК И ТЕЛЕФОНОВ
     const chatInput = document.getElementById('clan-chat-input');
-    const sendBtn = document.getElementById('clan-chat-send-btn'); // Кнопка отправки текста (самолетик)
+    const sendBtn = document.getElementById('clan-chat-send-btn'); 
 
-    if (chatInput) {
-        // Отправка по кнопке Enter
+    // Ищем HTML-форму, если она есть в разметке
+    const chatForm = document.getElementById('clan-chat-form') || (chatInput ? chatInput.closest('form') : null);
+
+    if (chatForm) {
+        // Перехват кнопки отправки на мобильной клавиатуре через форму
+        chatForm.onsubmit = function(e) {
+            if (e) e.preventDefault();
+            sendClanTextMessage();
+        };
+    } else if (chatInput) {
+        // Если формы в HTML нет — ловим мобильный Enter по коду клавиши (13)
         chatInput.onkeydown = function(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault(); // Блокируем перенос строки на смартфонах
                 sendClanTextMessage();
             }
         };
     }
 
     if (sendBtn) {
-        // Отправка по клику на самолётик
-        sendBtn.onclick = function() {
+        // Для ПК: обычный клик мышкой
+        sendBtn.onclick = function(e) {
+            if (e) e.preventDefault();
+            sendClanTextMessage();
+        };
+
+        // Для телефонов: мгновенный тач пальцем без задержек мобильного браузера
+        sendBtn.ontouchstart = function(e) {
+            if (e) e.preventDefault();
             sendClanTextMessage();
         };
     }
