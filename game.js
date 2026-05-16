@@ -3021,28 +3021,47 @@ function switchMarketTab(tab) {
 }
 
 // Перезаполнение селектора СТРОИТЕЛЬНЫМИ артефактами из инвентаря
+// Перезаполнение селектора СТРОИТЕЛЬНЫМИ артефактами из инвентаря
 function updateMarketInventorySelect() {
     const select = document.getElementById('market-item-select');
     if (!select) return;
     select.innerHTML = "";
 
-    // ВНИМАНИЕ: Проверь, как у тебя называется массив строительных артефактов! 
-    // Если это playerData.artifacts или playerData.materials — замени имя ниже:
-    const myArtifacts = playerData.buildingArtifacts || playerData.artifacts;
+    // Проверяем абсолютно ВСЕ возможные названия массивов ресурсов в твоей игре:
+    const myArtifacts = playerData.buildingArtifacts || 
+                        playerData.artifacts || 
+                        playerData.materials || 
+                        playerData.resources;
+
+    // ВЫВОД В КОНСОЛЬ ДЛЯ ДИАГНОСТИКИ (Нажми F12 в браузере, чтобы увидеть, что там)
+    console.log("Попытка загрузить артефакты для рынка. Найдено:", myArtifacts);
+    console.log("Весь playerData игрока:", playerData);
 
     if (!myArtifacts || myArtifacts.length === 0) {
         const opt = document.createElement('option');
-        opt.text = "Нет артефактов для строительства";
+        // Сделали красивый футуристичный текст-заглушку
+        opt.text = "◤ СКЛАД ПУСТ: НЕТ ДОСТУПНЫХ РЕСУРСОВ ◢";
         opt.value = "";
         select.appendChild(opt);
         return;
     }
 
     myArtifacts.forEach((item, index) => {
+        // Защита: если элемент массива это просто строка или число, а не объект
+        let itemName = "";
+        let itemType = "РЕСУРС";
+
+        if (typeof item === 'object' && item !== null) {
+            itemName = item.name || "Неизвестный артефакт";
+            itemType = item.type || "МАТЕРИАЛ";
+        } else {
+            // Если у тебя массив простых строк, например ["Железо", "Уран"]
+            itemName = String(item);
+        }
+
         const opt = document.createElement('option');
         opt.value = index;
-        // Выводим название строительного ресурса и его тип/редкость, если есть
-        opt.text = `${item.name.toUpperCase()} (${item.type || 'Материал'})`;
+        opt.text = `${itemName.toUpperCase()} (${itemType})`;
         select.appendChild(opt);
     });
 }
