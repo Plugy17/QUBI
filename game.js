@@ -2456,6 +2456,10 @@ function spawnPvPWallsLoop() {
 
 // --- ЛОГИКА ГИЛЬДИЙ И КЛАНОВ ---
 
+// ==========================================
+//        СИСТЕМА КОСМИЧЕСКИХ ГИЛЬДИЙ
+// ==========================================
+
 // 1. ОТКРЫТИЕ ОКНА И ПРОВЕРКА СТАТУСА
 async function openGuildWindow() {
     console.log("Открытие окна гильдии...");
@@ -2538,7 +2542,7 @@ async function createClan(clanName) {
     }
 }
 
-// 3. ЗАГРУЗКА ТОП-ЛИСТА КЛАНОВ ДЛЯ ОБОИХ ЭКРАНОВ (С УМНОЙ ПОДСВЕТКОЙ И ФИЛЬТРОМ КНОПОК)
+// 3. ЗАГРУЗКА ТОП-ЛИСТА КЛАНОВ (С КИБЕРПАНК ДИЗАЙНОМ И ФИЛЬТРОМ КНОПОК)
 function loadClansList() {
     const containerScreen1 = document.getElementById('clans-list-container');
     const containerScreen2 = document.getElementById('clan-main-clans-list-container');
@@ -2549,12 +2553,11 @@ function loadClansList() {
         try {
             const clansData = snapshot.val();
             
-            // Сбрасываем контейнеры перед заполнением
             if (containerScreen1) containerScreen1.innerHTML = "";
             if (containerScreen2) containerScreen2.innerHTML = "";
 
             if (!clansData) {
-                const noClansHtml = "<p style='color: #666; font-size: 13px;'>Пока нет созданных гильдий. Будьте первыми!</p>";
+                const noClansHtml = "<p style='color: #4b5e80; text-align: center; font-size: 11px; font-family: monospace; padding: 20px;'>[СИСТЕМА]: Активные гильдии в данном секторе отсутствуют.</p>";
                 if (containerScreen1) containerScreen1.innerHTML = noClansHtml;
                 if (containerScreen2) containerScreen2.innerHTML = noClansHtml;
                 return;
@@ -2564,48 +2567,54 @@ function loadClansList() {
             const sortedClans = Object.keys(clansData).map(id => ({ id, ...clansData[id] }))
                 .sort((a, b) => b.totalQuant - a.totalQuant);
 
-            // Рендерим топ-список
             sortedClans.forEach((clan, index) => {
                 const membersCount = clan.members ? Object.keys(clan.members).length : 0;
                 const isMyClan = (typeof playerData !== 'undefined' && playerData.clanId === clan.id);
                 
-                // 1. ГЕНЕРИРУЕМ СТРОКУ ДЛЯ ЭКРАНА 1 (Где кнопки "Вступить" нужны)
+                // Цветовая разметка мест в топе
+                const rankColor = index === 0 ? '#ff8100' : index === 1 ? '#e2e8f0' : index === 2 ? '#cd7f32' : '#3b4b69';
+                const glowColor = index === 0 ? '#ff8100' : index === 1 ? '#ffffff' : index === 2 ? '#cd7f32' : '#00e5ff';
+
+                // --- ЭКРАН 1: С КНОПКАМИ "ВСТУПИТЬ" ---
                 if (containerScreen1) {
                     const row1 = document.createElement('div');
-                    row1.style = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 6px; border: 1px solid #222;";
+                    row1.style = "position: relative; background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); padding: 12px 16px; margin-bottom: 8px; border-radius: 10px; border: 1px solid rgba(0, 229, 255, 0.15); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); backdrop-filter: blur(3px); gap: 10px;";
                     row1.innerHTML = `
-                        <div>
-                            <span style="color: ${index === 0 ? '#ff8100' : index === 1 ? '#aaa' : index === 2 ? '#cd7f32' : '#56617a'}; font-weight: bold; margin-right: 10px; font-family: monospace;">#${index + 1}</span>
-                            <span style="font-weight: bold; color: #fff;">${clan.name.toUpperCase()}</span>
+                        <div style="position: absolute; left: 0; top: 15%; width: 3px; height: 70%; background: ${rankColor}; box-shadow: 0 0 8px ${rankColor}; border-radius: 0 4px 4px 0;"></div>
+                        <div style="padding-left: 6px; display: flex; align-items: center; gap: 10px;">
+                            <span style="color: ${rankColor}; font-weight: bold; font-family: monospace; font-size: 14px; text-shadow: 0 0 6px ${index < 3 ? glowColor : 'transparent'};">#${index + 1}</span>
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="font-weight: bold; color: #fff; font-size: 13px; letter-spacing: 0.5px;">${clan.name.toUpperCase()}</span>
+                                <span style="color: #4b5e80; font-size: 10px; font-family: monospace;">ЭКИПАЖ: ${membersCount}</span>
+                            </div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 15px;">
-                            <span style="color: #00e5ff; font-size: 14px; font-family: monospace;">${Math.floor(clan.totalQuant).toLocaleString()} Q</span>
-                            <button onclick="joinClan('${clan.id}')" style="background: #00e5ff; border: none; color: #000; padding: 4px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">ВСТУПИТЬ</button>
+                        <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+                            <span style="color: #00e5ff; font-weight: bold; font-family: monospace; font-size: 13px;">${Math.floor(clan.totalQuant).toLocaleString()} Q</span>
+                            <button onclick="joinClan('${clan.id}')" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 5px 12px; border-radius: 6px; font-weight: 900; cursor: pointer; font-size: 10px; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,229,255,0.2);">ВСТУПИТЬ</button>
                         </div>
                     `;
                     containerScreen1.appendChild(row1);
                 }
 
-                // 2. ГЕНЕРИРУЕМ СТРОКУ ДЛЯ ЭКРАНА 2 (Где кнопок нет, но есть подсветка своего клана)
+                // --- ЭКРАН 2: БЕЗ КНОПОК С ВЫДЕЛЕНИЕМ СВОЕГО КЛАНА ---
                 if (containerScreen2) {
                     const row2 = document.createElement('div');
-                    
-                    // Если это клан игрока — выделяем его футуристичной оранжевой рамкой
                     const borderStyle = isMyClan 
-                        ? "border: 1px solid #ff8100; background: rgba(255,129,0,0.05); box-shadow: 0 0 10px rgba(255,129,0,0.1);" 
-                        : "border: 1px solid #222; background: rgba(255,255,255,0.02);";
+                        ? "border: 1px solid rgba(255, 129, 0, 0.45); background: linear-gradient(135deg, rgba(35, 25, 15, 0.7) 0%, rgba(15, 10, 5, 0.9) 100%); box-shadow: 0 4px 20px rgba(255,129,0,0.15), inset 0 0 10px rgba(255,129,0,0.05);" 
+                        : "border: 1px solid rgba(0, 229, 255, 0.12); background: linear-gradient(135deg, rgba(20, 30, 55, 0.5) 0%, rgba(10, 15, 30, 0.7) 100%);";
 
-                    row2.style = `display: flex; justify-content: space-between; align-items: center; padding: 10px; border-radius: 6px; ${borderStyle}`;
+                    row2.style = `position: relative; padding: 12px 16px; margin-bottom: 8px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(3px); gap: 10px; ${borderStyle}`;
                     row2.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="color: ${index === 0 ? '#ff8100' : index === 1 ? '#aaa' : index === 2 ? '#cd7f32' : '#56617a'}; font-weight: bold; font-family: monospace;">#${index + 1}</span>
+                        <div style="position: absolute; left: 0; top: 15%; width: 3px; height: 70%; background: ${isMyClan ? '#ff8100' : rankColor}; box-shadow: 0 0 8px ${isMyClan ? '#ff8100' : rankColor}; border-radius: 0 4px 4px 0;"></div>
+                        <div style="padding-left: 6px; display: flex; align-items: center; gap: 10px;">
+                            <span style="color: ${isMyClan ? '#ff8100' : rankColor}; font-weight: bold; font-family: monospace; font-size: 14px;">#${index + 1}</span>
                             <div style="display: flex; flex-direction: column;">
-                                <span style="font-weight: bold; color: ${isMyClan ? '#ff8100' : '#fff'};">${clan.name.toUpperCase()}</span>
-                                <span style="color: #666; font-size: 10px;">Пиратов: ${membersCount}</span>
+                                <span style="font-weight: bold; color: ${isMyClan ? '#ff8100' : '#fff'}; font-size: 13px; letter-spacing: 0.5px;">${clan.name.toUpperCase()} ${isMyClan ? '<span style="font-size:10px; font-weight:900;">[ВЫ]</span>' : ''}</span>
+                                <span style="color: #4b5e80; font-size: 10px; font-family: monospace;">ПИРАТОВ: ${membersCount}</span>
                             </div>
                         </div>
-                        <div style="text-align: right;">
-                            <span style="color: #00e5ff; font-weight: bold; font-family: monospace; font-size: 14px;">${Math.floor(clan.totalQuant).toLocaleString()} Q</span>
+                        <div style="text-align: right; flex-shrink: 0;">
+                            <span style="color: ${isMyClan ? '#ff8100' : '#00e5ff'}; font-weight: bold; font-family: monospace; font-size: 13px; text-shadow: 0 0 8px ${isMyClan ? 'rgba(255,129,0,0.2)' : 'rgba(0,229,255,0.2)'};">${Math.floor(clan.totalQuant).toLocaleString()} Q</span>
                         </div>
                     `;
                     containerScreen2.appendChild(row2);
@@ -2640,11 +2649,7 @@ async function joinClan(clanId) {
     }
 }
 
-// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2)
-// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2) - С ПРОВЕРКОЙ НА ПРАВА ЛИДЕРА
-// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С ОБРАБОТКОЙ ЗАПРОСОВ РЕСУРСОВ
-// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С АВТОМАТИЧЕСКИМ ПЕРЕРАСЧЕТОМ КАЗНЫ НА ЛЕТУ
-// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С ВЫВОДОМ ТЕКУЩЕГО СЧЕТА УЧАСТНИКОВ
+// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С НЕОНОВЫМ ДИЗАЙНОМ УЧАСТНИКОВ
 function loadMyClanData() {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
 
@@ -2660,7 +2665,7 @@ function loadMyClanData() {
 
             // Перерасчет казны по актуальным кошелькам
             let freshTotalQuant = 0;
-            const memberBalances = {}; // Временный объект для хранения балансов на этот сеанс отрисовки
+            const memberBalances = {}; 
 
             if (clan.members) {
                 const memberIds = Object.keys(clan.members);
@@ -2668,7 +2673,7 @@ function loadMyClanData() {
                     const userSnap = await db.ref(`users/${mId}/quant`).once('value');
                     const userActualQuant = userSnap.val() || 0;
                     freshTotalQuant += userActualQuant;
-                    memberBalances[mId] = userActualQuant; // Запоминаем баланс для UI
+                    memberBalances[mId] = userActualQuant; 
                 }
                 
                 if (Math.floor(clan.totalQuant) !== Math.floor(freshTotalQuant)) {
@@ -2687,7 +2692,7 @@ function loadMyClanData() {
             const leaderBlock = document.getElementById('clan-leader-requests-block');
 
             if (nameEl) nameEl.innerText = clan.name.toUpperCase();
-            if (scoreEl) scoreEl.innerText = Math.floor(clan.totalQuant);
+            if (scoreEl) scoreEl.innerText = Math.floor(clan.totalQuant).toLocaleString();
             if (!membersContainer) return;
 
             membersContainer.innerHTML = "";
@@ -2710,29 +2715,32 @@ function loadMyClanData() {
                 if (leaderBlock) leaderBlock.style.display = 'none';
             }
 
-            // ОТРИСОВКА УЧАСТНИКОВ С НАГЛЯДНЫМ ОТОБРАЖЕНИЕМ ИХ БАЛАНСА
+            // ОТРИСОВКА УЧАСТНИКОВ (СТИЛЬ МАРКЕТА)
             if (clan.members) {
                 Object.keys(clan.members).forEach(mId => {
                     const member = clan.members[mId];
-                    const item = document.createElement('div');
-                    item.style = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 4px; font-size: 14px; border: 1px solid rgba(255,255,255,0.05);";
-                    
-                    const isLeader = member.role === 'leader';
+                    const isLeader = member.role === 'leader' || clan.leaderId === mId;
                     const actualQuant = memberBalances[mId] !== undefined ? Math.floor(memberBalances[mId]) : 0;
                     
-                    // Формируем красивую строчку: Имя пирата -> его баланс в Q -> его роль
+                    const item = document.createElement('div');
+                    item.style = `position: relative; background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); padding: 14px 16px; margin-bottom: 8px; border-radius: 10px; border: 1px solid ${isLeader ? 'rgba(255, 170, 0, 0.3)' : 'rgba(0, 229, 255, 0.15)'}; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); backdrop-filter: blur(3px); gap: 15px;`;
+                    
                     item.innerHTML = `
-                        <div style="display: flex; flex-direction: column; gap: 2px;">
-                            <span style="${isLeader ? 'color: #ff8100; font-weight: bold;' : 'color: #fff;'}">${member.name}</span>
-                            <span style="color: #00e5ff; font-size: 11px; font-family: monospace;">БАЛАНС: ${actualQuant.toLocaleString()} Q</span>
+                        <div style="position: absolute; left: 0; top: 15%; width: 3px; height: 70%; background: ${isLeader ? '#ffaa00' : '#00e5ff'}; box-shadow: 0 0 8px ${isLeader ? '#ffaa00' : '#00e5ff'}; border-radius: 0 4px 4px 0;"></div>
+                        <div style="padding-left: 6px; display: flex; flex-direction: column; gap: 4px;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="color: #fff; font-weight: bold; font-size: 13px; letter-spacing: 0.5px;">${member.name.toUpperCase()} ${mId === myId ? '<span style="color:#00e5ff; font-weight:normal; font-size:11px;">(ВЫ)</span>' : ''}</span>
+                            </div>
+                            <span style="color: #00e5ff; font-size: 11px; font-family: monospace;">ДОЛЯ КАЗНЫ: ${actualQuant.toLocaleString()} Q</span>
                         </div>
-                        <span style="color: #666; font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">${isLeader ? 'ЛИДЕР' : 'ПИРАТ'}</span>
+                        <span style="background: ${isLeader ? 'rgba(255,170,0,0.1)' : 'rgba(0,229,255,0.05)'}; border: 1px solid ${isLeader ? 'rgba(255,170,0,0.2)' : 'rgba(0,229,255,0.1)'}; color: ${isLeader ? '#ffaa00' : '#8fa0c2'}; font-size: 8px; padding: 1px 5px; border-radius: 4px; font-family: sans-serif; font-weight: bold; letter-spacing: 0.5px; flex-shrink: 0;">
+                            ${isLeader ? 'ГЛАВА СИНДИКАТА' : 'ПИРАТ'}
+                        </span>
                     `;
                     membersContainer.appendChild(item);
                 });
             }
 
-            // ВЫЗЫВАЕМ ОБНОВЛЕННЫЙ ТОР-ЛИСТ ГИЛЬДИЙ
             loadClansList();
             
         } catch (err) {
@@ -2770,7 +2778,7 @@ async function sendClanRequestAction() {
     }
 }
 
-// 9. ОТРЕСОВКА СПИСКА ЗАПРОСОВ ДЛЯ ЛИДЕРА
+// 9. ОТРЕСОВКА СПИСКА ЗАПРОСОВ ДЛЯ ЛИДЕРА (СТИЛЬ СДЕЛОК НА МАРКЕТЕ)
 function renderLeaderRequests(requestsData, totalQuant) {
     const container = document.getElementById('clan-requests-list');
     if (!container) return;
@@ -2778,22 +2786,24 @@ function renderLeaderRequests(requestsData, totalQuant) {
     container.innerHTML = "";
 
     if (!requestsData) {
-        container.innerHTML = "<p style='color: #666; font-size: 12px; margin: 0;'>Активных запросов нет</p>";
+        container.innerHTML = "<p style='color: #4b5e80; text-align: center; font-size: 11px; font-family: monospace; padding: 10px;'>[РЕКРУТИНГ]: Активные запросы на ресурсы отсутствуют.</p>";
         return;
     }
 
     Object.keys(requestsData).forEach(reqId => {
         const req = requestsData[reqId];
         const row = document.createElement('div');
-        row.style = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 4px; border: 1px solid #444; font-size: 13px;";
+        
+        row.style = "position: relative; background: linear-gradient(135deg, rgba(20, 30, 55, 0.5) 0%, rgba(10, 15, 30, 0.7) 100%); padding: 12px 14px; margin-bottom: 8px; border-radius: 10px; border: 1px solid rgba(0, 229, 255, 0.15); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); backdrop-filter: blur(3px); gap: 10px;";
         row.innerHTML = `
-            <div>
-                <span style="color: #00e5ff; font-weight: bold;">${req.userName}</span> просит 
-                <span style="color: #ff8100; font-weight: bold;">${req.amount} Q</span>
+            <div style="position: absolute; left: 0; top: 15%; width: 3px; height: 70%; background: #00e5ff; box-shadow: 0 0 8px #00e5ff; border-radius: 0 4px 4px 0;"></div>
+            <div style="padding-left: 6px; display: flex; flex-direction: column; gap: 2px;">
+                <span style="color: #fff; font-weight: bold; font-size: 13px; font-family: sans-serif;">${req.userName.toUpperCase()}</span>
+                <span style="font-size: 10px; color: #4b5e80; font-family: monospace;">ЗАПРОС: <span style="color:#ff8100; font-weight:bold;">${req.amount.toLocaleString()} Q</span></span>
             </div>
-            <div style="display: flex; gap: 8px;">
-                <button onclick="answerClanRequest('${reqId}', true, ${req.amount}, '${req.userId}', ${totalQuant})" style="background: #00e5ff; border: none; color: #000; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 11px; cursor: pointer;">ОДОБРИТЬ</button>
-                <button onclick="answerClanRequest('${reqId}', false, ${req.amount}, '${req.userId}', ${totalQuant})" style="background: #ff4b2b; border: none; color: #fff; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 11px; cursor: pointer;">ОТКАЗАТЬ</button>
+            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                <button onclick="answerClanRequest('${reqId}', true, ${req.amount}, '${req.userId}', ${totalQuant})" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 5px 10px; border-radius: 6px; font-weight: 900; font-size: 10px; cursor: pointer; font-family: sans-serif; letter-spacing: 0.5px; box-shadow: 0 2px 6px rgba(0,229,255,0.2);">ОДОБРИТЬ</button>
+                <button onclick="answerClanRequest('${reqId}', false, ${req.amount}, '${req.userId}', ${totalQuant})" style="background: rgba(255,75,43,0.05); border: 1px solid rgba(255,75,43,0.4); color: #ff4b2b; padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 10px; cursor: pointer; font-family: sans-serif;">ОТКАЗАТЬ</button>
             </div>
         `;
         container.appendChild(row);
@@ -2801,8 +2811,6 @@ function renderLeaderRequests(requestsData, totalQuant) {
 }
 
 // 10. ОБРАБОТКА РЕШЕНИЯ ЛИДЕРА (ОДОБРИТЬ / ОТКАЗАТЬ)
-// 10. ОБРАБОТКА РЕШЕНИЯ ЛИДЕРА (С ОТПРАВКОЙ УВЕДОМЛЕНИЯ)
-// 10. ОБРАБОТКА РЕШЕНИЯ ЛИДЕРА (РАСПРЕДЕЛЕННЫЙ НАЛОГ МЕЖДУ ВСЕМИ УЧАСТНИКАМИ)
 async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQuant) {
     const clanId = playerData.clanId;
 
@@ -2812,7 +2820,6 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
 
     try {
         if (isApproved) {
-            // 1. Получаем свежие данные о членах клана и их балансах
             const clanSnapshot = await db.ref(`clans/${clanId}`).once('value');
             const clanData = clanSnapshot.val();
             
@@ -2822,8 +2829,6 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
             }
 
             const membersIds = Object.keys(clanData.members);
-            
-            // 2. Собираем текущие балансы ВСЕХ игроков из ветки users
             const balances = {};
             let currentTotalPool = 0;
 
@@ -2831,51 +2836,39 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
                 const userSnap = await db.ref(`users/${mId}/quant`).once('value');
                 const userQuant = userSnap.val() || 0;
                 balances[mId] = userQuant;
-                currentTotalPool += userQuant; // Реальный пул золота на этот миг
+                currentTotalPool += userQuant; 
             }
 
-            // Дополнительная проверка на случай непредвиденных изменений
             if (currentTotalPool < amount) {
                 return alert("Кризис казны! Пока вы одобряли, участники уже потратили кванты.");
             }
 
-            // 3. Списываем налог со всех пропорционально их балансу и зачисляем получателю
             const updates = {};
-            let totalDeducted = 0;
 
             membersIds.forEach(mId => {
                 let currentBalance = balances[mId];
-                
-                // Вычисляем долю игрока в общем пуле ресурсов клана
                 let share = currentTotalPool > 0 ? (currentBalance / currentTotalPool) : 0;
-                // Сколько конкретно этот игрок должен отдать в кассу ради выплаты
                 let tax = amount * share;
 
                 let newBalance = Math.max(0, currentBalance - tax);
                 
-                // Если этот участник и есть тот, кому ОДОБРИЛИ запрос, ему ПЛЮСУЕТСЯ вся сумма
                 if (mId === targetUserId) {
                     newBalance += amount;
                 }
 
-                // Округляем до целых для базы данных
                 newBalance = Math.floor(newBalance);
                 updates[`users/${mId}/quant`] = newBalance;
 
-                // Обновляем локальный баланс лидера в игре прямо сейчас, если это его аккаунт
                 if (mId === String(tgUser.id)) {
                     playerData.quant = newBalance;
                 }
             });
 
-            // Корректируем общую казну клана (минус то, что ушло в оборот получателю из долей остальных)
             const newTotalQuant = Math.max(0, clanData.totalQuant - amount);
             updates[`clans/${clanId}/totalQuant`] = Math.floor(newTotalQuant);
 
-            // Применяем массовое обновление в Firebase за один шаг
             await db.ref().update(updates);
 
-            // 4. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ ИГРОКУ О ПОЛУЧЕНИИ
             await db.ref(`users/${targetUserId}/clanNotification`).set({
                 text: `Лидер одобрил ваш запрос! Получено +${Math.floor(amount)} QUANT за счет взносов гильдии.`,
                 timestamp: Date.now()
@@ -2883,7 +2876,6 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
 
             alert("Запрос одобрен! Сумма списана со всех участников пропорционально их кошелькам и выдана игроку.");
         } else {
-            // Если отказ — уведомляем пирата об отказе
             await db.ref(`users/${targetUserId}/clanNotification`).set({
                 text: `Ваш запрос на получение ${Math.floor(amount)} QUANT был отклонен Лидером.`,
                 timestamp: Date.now()
@@ -2891,7 +2883,6 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
             alert("Запрос отклонен.");
         }
 
-        // Удаляем обработанную заявку из списка
         await db.ref(`clans/${clanId}/requests/${reqId}`).remove();
         loadMyClanData();
     } catch (e) {
@@ -2914,37 +2905,30 @@ async function deleteClanAction() {
     const myId = String(tgUser.id);
 
     try {
-        // 1. Получаем список всех участников, чтобы очистить им поле clanId в базе
         const snapshot = await db.ref(`clans/${clanId}`).once('value');
         const clanData = snapshot.val();
 
         if (!clanData) return;
 
-        // Защитная проверка: если вызвать функцию пытается не лидер
         if (clanData.leaderId !== myId) {
             alert("Ошибка безопасности: Вы не являетесь создателем этой гильдии!");
             return;
         }
 
-        // 2. Проходимся по всем участникам клана и стираем clanId из их профилей пользователей
         if (clanData.members) {
             const memberIds = Object.keys(clanData.members);
             const updates = {};
             memberIds.forEach(id => {
                 updates[`users/${id}/clanId`] = "";
             });
-            // Выполняем массовое обновление пользователей
             await db.ref().update(updates);
         }
 
-        // 3. Полностью удаляем саму ветку клана из Firebase
         await db.ref(`clans/${clanId}`).remove();
-
-        // 4. Обнуляем данные у себя локально
         playerData.clanId = "";
         
         alert("Гильдия была официально ликвидирована.");
-        openGuildWindow(); // Перезапускаем окно, вернет на Экран 1
+        openGuildWindow(); 
     } catch (e) {
         console.error("Критическая ошибка при удалении гильдии:", e);
         alert("Не удалось распустить гильдию. Попробуйте позже.");
