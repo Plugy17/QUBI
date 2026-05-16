@@ -6,6 +6,7 @@ let playerData = {
     energy: 100, 
     level: 1,
     inventory: [], 
+    missions: {},
     equipped: [],  
     lastEnergyUpdate: 0, // Инициализируем нулем, значение придет из Firebase
     factoryLimit: {
@@ -4146,10 +4147,33 @@ function initGamePreloader() {
         // 1. Проверяем загрузку шрифтов
         document.fonts ? document.fonts.ready : Promise.resolve(),
         
-        // 2. Ждем данные игрока от Firebase (Проверяем раз в 150мс, пока playerData не загрузится)
+        // 2. Ждем данные игрока от Firebase (УБРАНО ЗАВИСАНИЕ)
         new Promise((resolve) => {
+            let attempts = 0;
             let checkFirebase = setInterval(() => {
-                if (typeof playerData !== 'undefined' && playerData && playerData.missions) {
+                attempts++;
+
+                // Так как playerData теперь объявлен в начале скрипта, мы проверяем его готовность
+                if (typeof playerData !== 'undefined' && playerData) {
+                    // Если объект есть, но Firebase еще не добавил туда missions — создаем пустой объект, чтобы не было ошибки
+                    if (!playerData.missions) {
+                        playerData.missions = {};
+                    }
+                    
+                    clearInterval(checkFirebase);
+                    resolve();
+                    return;
+                }
+                
+                // Анти-зависание: если за ~5 секунд (35 попыток) Firebase не вернул ответ, 
+                // принудительно создаем структуру и пропускаем, чтобы игра не висела вечно
+                if (attempts > 35) {
+                    console.log("📡 [Qubi Core]: Быстрый старт по таймауту безопасности.");
+                    if (typeof playerData === 'undefined' || !playerData) {
+                        playerData = { missions: {} };
+                    } else if (!playerData.missions) {
+                        playerData.missions = {};
+                    }
                     clearInterval(checkFirebase);
                     resolve();
                 }
