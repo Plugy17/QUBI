@@ -269,7 +269,7 @@ const planets = [
         id: 'market', 
         src: 'assets/market.png', 
         x: window.innerWidth * 0.25, 
-        y: window.innerHeight * 0.24, 
+        y: window.innerHeight * 0.25, 
         size: 130, // УВЕЛИЧИЛИ МАСШТАБ (было 70)
         rotation: 0, 
         speed: 0,  // ОСТАНОВИЛИ КРУЧЕНИЕ (скорость 0)
@@ -3016,40 +3016,41 @@ function switchMarketTab(tab) {
     }
 }
 
-// Заполнение селектора вещами из инвентаря игрока
+// Перезаполнение селектора СТРОИТЕЛЬНЫМИ артефактами из инвентаря
 function updateMarketInventorySelect() {
     const select = document.getElementById('market-item-select');
     if (!select) return;
     select.innerHTML = "";
 
-    if (!playerData.inventory || playerData.inventory.length === 0) {
+    // ВНИМАНИЕ: Проверь, как у тебя называется массив строительных артефактов! 
+    // Если это playerData.artifacts или playerData.materials — замени имя ниже:
+    const myArtifacts = playerData.buildingArtifacts || playerData.artifacts;
+
+    if (!myArtifacts || myArtifacts.length === 0) {
         const opt = document.createElement('option');
-        opt.text = "Инвентарь пуст";
+        opt.text = "Нет артефактов для строительства";
         opt.value = "";
         select.appendChild(opt);
         return;
     }
 
-    playerData.inventory.forEach((item, index) => {
-        // Проверяем, не экипирован ли предмет прямо сейчас
-        const isEquipped = playerData.equipped && playerData.equipped.includes(item.id);
-        if (!isEquipped) {
-            const opt = document.createElement('option');
-            opt.value = index; // Сохраняем индекс в массиве
-            opt.text = `${item.name.toUpperCase()} (Ур. ${item.level || 1})`;
-            select.appendChild(opt);
-        }
+    myArtifacts.forEach((item, index) => {
+        const opt = document.createElement('option');
+        opt.value = index;
+        // Выводим название строительного ресурса и его тип/редкость, если есть
+        opt.text = `${item.name.toUpperCase()} (${item.type || 'Материал'})`;
+        select.appendChild(opt);
     });
 }
 
-// СОЗДАНИЕ ЛОТА (ВЫСТАВЛЕНИЕ НА ПРОДАЖУ)
+// СОЗДАНИЕ ЛОТА (ПРОДАЖА СТРОИТЕЛЬНОГО АРТЕФАКТА)
 async function createMarketLotAction() {
     const select = document.getElementById('market-item-select');
     const priceInput = document.getElementById('market-price-input');
     const currencySelect = document.getElementById('market-currency-select');
 
     if (!select || !priceInput || !currencySelect || select.value === "") {
-        return alert("Нечего продавать или инвентарь пуст!");
+        return alert("У вас нет строительных артефактов для продажи!");
     }
 
     const itemIndex = parseInt(select.value);
@@ -3057,37 +3058,42 @@ async function createMarketLotAction() {
     const currency = currencySelect.value;
 
     if (isNaN(price) || price <= 0) {
-        return alert("Укажите корректную цену выше нуля!");
+        return alert("Укажите корректную цену!");
     }
 
-    const artifact = playerData.inventory[itemIndex];
+    // Ссылка на правильный массив ресурсов
+    const myArtifacts = playerData.buildingArtifacts || playerData.artifacts || [];
+    const artifact = myArtifacts[itemIndex];
+    
     const myId = String(tgUser.id);
     const myName = playerData.colonyName || tgUser.first_name || "Торговец";
 
     try {
-        // 1. Создаем ордер на рынке в Firebase
+        // 1. Публикуем строительный лот на рынке
         const lotRef = db.ref('marketplace').push();
         await lotRef.set({
             sellerId: myId,
             sellerName: myName,
-            item: artifact,
+            item: artifact, // Передаем сам строительный ресурс
             price: price,
             currency: currency,
+            isBuildingAsset: true, // Пометка для логики, что это ресурс для зданий
             timestamp: Date.now()
         });
 
-        // 2. Удаляем предмет из локального инвентаря игрока
-        playerData.inventory.splice(itemIndex, 1);
+        // 2. Удаляем его из строительного инвентаря игрока
+        myArtifacts.splice(itemIndex, 1);
         
-        // 3. Синхронизируем инвентарь игрока с Firebase
-        await db.ref(`users/${myId}/inventory`).set(playerData.inventory);
+        // 3. Сохраняем обновленный массив в Firebase (поменяй путь на свой, если он другой)
+        const dbPath = playerData.buildingArtifacts ? 'buildingArtifacts' : 'artifacts';
+        await db.ref(`users/${myId}/${dbPath}`).set(myArtifacts);
 
-        alert("Лот успешно выведен на орбиту рынка!");
+        alert("Строительный артефакт выставлен на биржу!");
         priceInput.value = "";
-        switchMarketTab('sell'); // Обновляем экран
+        switchMarketTab('sell');
     } catch(e) {
         console.error("Ошибка при создании лота:", e);
-        alert("Не удалось запустить торговый ордер.");
+        alert("Не удалось запустить ордер.");
     }
 }
 
@@ -3157,7 +3163,7 @@ function loadMarketLots() {
     });
 }
 
-// ОТЗЫВ СВОЕГО ЛОТА С РЫНКА (ВОЗВРАТ В ИНВЕНТАРЬ)
+// ОТЗЫВ ОРДЕРА (ВОЗВРАТ В СТРОИТЕЛЬНЫЙ ИНВЕНТАРЬ)
 async function cancelMarketLotAction(lotId) {
     try {
         const lotSnap = await db.ref(`marketplace/${lotId}`).once('value');
@@ -3165,71 +3171,75 @@ async function cancelMarketLotAction(lotId) {
         if (!lot) return;
 
         const myId = String(tgUser.id);
-
-        // Возвращаем вещь в инвентарь игрока
-        if (!playerData.inventory) playerData.inventory = [];
-        playerData.inventory.push(lot.item);
+        const dbPath = playerData.buildingArtifacts ? 'buildingArtifacts' : 'artifacts';
+        
+        // Инициализируем массив, если вдруг пуст
+        if (!playerData[dbPath]) playerData[dbPath] = [];
+        
+        // Возвращаем строительный артефакт на склад
+        playerData[dbPath].push(lot.item);
 
         const updates = {};
-        updates[`users/${myId}/inventory`] = playerData.inventory;
-        updates[`marketplace/${lotId}`] = null; // Стираем лот
+        updates[`users/${myId}/${dbPath}`] = playerData[dbPath];
+        updates[`marketplace/${lotId}`] = null;
 
         await db.ref().update(updates);
-        alert("Ордер отменен. Артефакт возвращен в твой трюм.");
+        alert("Ордер отменен. Ресурс вернулся на склад строительства.");
         loadMarketLots();
     } catch(e) {
         console.error("Ошибка отмены ордера:", e);
     }
 }
 
-// ПОКУПКА ЧУЖОГО ЛОТА (МЕХАНИКА СДЕЛКИ ПЕРЕВОДА РЕСУРСОВ)
+// ПОКУПКА СТРОИТЕЛЬНОГО АРТЕФАКТА
 async function buyMarketLotAction(lotId, price, currency, sellerId) {
     const myId = String(tgUser.id);
     
-    // Проверка личного баланса в зависимости от запрашиваемой валюты лота
     const currentBalance = playerData[currency]; 
     if (currentBalance < price) {
-        return alert(`Недостаточно средств! Для покупки нужно ${Math.floor(price).toLocaleString()} ${currency.toUpperCase()}`);
+        return alert(`Недостаточно средств! Нужно ${Math.floor(price).toLocaleString()} ${currency.toUpperCase()}`);
     }
 
-    if (!confirm(`Подтвердить покупку артефакта за ${Math.floor(price).toLocaleString()} ${currency.toUpperCase()}?`)) return;
+    if (!confirm(`Купить этот строительный артефакт за ${Math.floor(price).toLocaleString()} ${currency.toUpperCase()}?`)) return;
 
     try {
-        // Проверяем, существует ли еще лот (вдруг его уже купили)
         const lotSnap = await db.ref(`marketplace/${lotId}`).once('value');
         const lot = lotSnap.val();
         if (!lot) {
-            alert("Этот лот уже был продан или отозван другим пиратом!");
+            alert("Лот уже выкуплен другим колонистом!");
             loadMarketLots();
             return;
         }
 
-        // 1. Списываем валюту у Покупателя (у нас)
+        // 1. Списываем валюту (QUANT или QUBI) у покупателя
         playerData[currency] -= price;
         await db.ref(`users/${myId}/${currency}`).set(playerData[currency]);
 
-        // 2. Начисляем валюту Продавцу в Firebase
+        // 2. Начисляем её продавцу
         await db.ref(`users/${sellerId}/${currency}`).transaction(current => (current || 0) + price);
 
-        // 3. Добавляем купленный артефакт в инвентарь Покупателя
-        if (!playerData.inventory) playerData.inventory = [];
-        playerData.inventory.push(lot.item);
-        await db.ref(`users/${myId}/inventory`).set(playerData.inventory);
+        // 3. Кладим купленный артефакт в строительный инвентарь покупателя
+        const dbPath = playerData.buildingArtifacts ? 'buildingArtifacts' : 'artifacts';
+        if (!playerData[dbPath]) playerData[dbPath] = [];
+        playerData[dbPath].push(lot.item);
+        
+        await db.ref(`users/${myId}/${dbPath}`).set(playerData[dbPath]);
 
-        // 4. Отправляем продавцу уведомление на экран
+        // 4. Оповещаем продавца
         await db.ref(`users/${sellerId}/clanNotification`).set({
-            text: `Ваш лот ${lot.item.name.toUpperCase()} успешно продан! Получено +${Math.floor(price)} ${currency.toUpperCase()}.`,
+            text: `Ваш строительный артефакт ${lot.item.name.toUpperCase()} продан! Получено +${Math.floor(price)} ${currency.toUpperCase()}.`,
             timestamp: Date.now()
         });
 
-        // 5. Удаляем лот из глобального рынка
+        // 5. Удаляем ордер с рынка
         await db.ref(`marketplace/${lotId}`).remove();
 
-        alert(`Сделка века закрыта! Артефакт ${lot.item.name.toUpperCase()} доставлен в инвентарь.`);
+        alert(`Ресурс ${lot.item.name.toUpperCase()} успешно доставлен на ваш склад для апгрейда зданий!`);
+        if (typeof updateUI === "function") updateUI(); // Обновляем балансы на экране
         loadMarketLots();
     } catch(e) {
-        console.error("Ошибка проведения торговой сделки:", e);
-        alert("Сбой торговой сети. Ресурсы сохранены.");
+        console.error("Ошибка торговой сделки:", e);
+        alert("Сбой операции. Попробуйте позже.");
     }
 }
 
