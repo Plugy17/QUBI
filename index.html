@@ -12,6 +12,32 @@
 </head>
 <body>
 
+    <div id="cyber-loader">
+    <div class="loader-container">
+        <div class="cube-wrapper">
+            <div class="cube">
+                <div class="cube-face face-front"></div>
+                <div class="cube-face face-back"></div>
+                <div class="cube-face face-left"></div>
+                <div class="cube-face face-right"></div>
+                <div class="cube-face face-top"></div>
+                <div class="cube-face face-bottom"></div>
+            </div>
+            <div class="scan-line"></div>
+        </div>
+        
+        <div class="loader-text-status">
+            <span class="glitch-loader" data-text="ИНИЦИАЛИЗАЦИЯ СИСТЕМ QUBI">ИНИЦИАЛИЗАЦИЯ СИСТЕМ QUBI</span>
+            <div class="loader-sub-text">[ЗАГРУЗКА ЯДРА И СИНХРОНИЗАЦИЯ ПОТОКОВ...]</div>
+        </div>
+
+        <div class="progress-bar-wrapper">
+            <div id="loader-progress-fill"></div>
+        </div>
+        <div id="loader-percentage">0%</div>
+    </div>
+</div>
+
    <div id="missions-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.95); backdrop-filter: blur(10px); z-index: 100; flex-direction: column; font-family: 'Orbitron', sans-serif; color: #fff;">
     
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 100px 20px 20px 20px; border-bottom: 1px solid rgba(0, 229, 255, 0.2); background: linear-gradient(180deg, rgba(0,229,255,0.05) 0%, rgba(0,0,0,0) 100%);">
@@ -581,11 +607,6 @@
                 <div id="energy-fill"></div>
             </div>
             <div class="energy-label">ENERGY</div>
-        </div>
-
-        <div id="loading-screen">
-            <div class="loader"></div>
-            <p>Инициализация систем QUBI...</p>
         </div>
 
         <div id="collect-modal" class="build-modal" style="display: none;">
