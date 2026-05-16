@@ -554,9 +554,15 @@ function draw() {
             ctx.translate(p.x, p.y); 
 
             if (p.isStationary) {
+                // 🛸 ЭФФЕКТ СТАЦИОНАРНОГО ПОКАЧИВАНИЯ (ДРЕЙФ НА ОРБИТЕ)
                 if (p.id === 'station' || p.id === 'pvp_planet') {
-                    const floatY = Math.sin(Date.now() * 0.002) * 8;
+                    const floatY = Math.sin(Date.now() * 0.002) * 8; // Базовое покачивание
                     ctx.translate(0, floatY);
+                }
+                // Навешиваем ОЧЕНЬ легкое и медленное покачивание на Маркет и Казино
+                else if (p.id === 'market' || p.id === 'casino_station') {
+                    const slowFloatY = Math.sin(Date.now() * 0.001) * 3; // В 2 раза медленнее и всего на 3 пикселя
+                    ctx.translate(0, slowFloatY);
                 }
                 
                 // --- УНИКАЛЬНЫЙ ЭФФЕКТ ДЛЯ РЫНКА: МИГАЮЩИЕ ОГНИ ---
@@ -564,31 +570,25 @@ function draw() {
                     // Рисуем саму планету рынка (сначала подложку)
                     ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
 
-                    // Вычисляем фазы мигания на основе времени
-                    // Огни будут загораться по очереди каждые несколько миллисекунд
                     const time = Date.now();
-                    const light1 = Math.sin(time * 0.005) > 0;  // Частота первого типа огней
-                    const light2 = Math.sin(time * 0.003 + 2) > 0; // Вторая фаза (со смещением)
+                    const light1 = Math.sin(time * 0.005) > 0;
+                    const light2 = Math.sin(time * 0.003 + 2) > 0;
 
-                    // Массив координат огней относительно ЦЕНТРА рынка (в зависимости от размера)
-                    // Размещаем их по краям "планеты", имитируя посадочные доки
-                    const radius = p.size * 0.45; // Чуть ближе к краю планеты
+                    const radius = p.size * 0.45;
 
                     const lightPositions = [
-                        { x: -radius, y: 0, status: light1, color: '#00ffcc' }, // Левый док (бирюзовый)
-                        { x: radius, y: 0, status: light1, color: '#00ffcc' },  // Правый док
-                        { x: 0, y: -radius, status: light2, color: '#ffea00' }, // Верхний маяк (желтый)
-                        { x: -radius * 0.7, y: -radius * 0.7, status: !light1, color: '#ff3300' }, // Северо-запад (предупреждающий красный)
-                        { x: radius * 0.7, y: radius * 0.7, status: !light1, color: '#ff3300' }   // Юго-восток
+                        { x: -radius, y: 0, status: light1, color: '#00ffcc' },
+                        { x: radius, y: 0, status: light1, color: '#00ffcc' },
+                        { x: 0, y: -radius, status: light2, color: '#ffea00' },
+                        { x: -radius * 0.7, y: -radius * 0.7, status: !light1, color: '#ff3300' },
+                        { x: radius * 0.7, y: radius * 0.7, status: !light1, color: '#ff3300' }
                     ];
 
                     lightPositions.forEach(dot => {
-                        if (dot.status) { // Если в этой фазе огонь должен гореть
+                        if (dot.status) {
                             ctx.save();
                             ctx.beginPath();
-                            ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2); // Размер огонька — 3 пикселя
-                            
-                            // Добавляем эффект неонового свечения для самой точки
+                            ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2);
                             ctx.shadowBlur = 10;
                             ctx.shadowColor = dot.color;
                             ctx.fillStyle = dot.color;
@@ -597,12 +597,34 @@ function draw() {
                         }
                     });
 
-                    // Так как мы уже отрисовали картинку рынка внутри этого if, 
-                    // предотвращаем повторную отрисовку ниже, временно уменьшая размер до 0
                     ctx.restore();
                     return;
                 }
-                // --------------------------------------------------
+
+                // --- 🎰 УНИКАЛЬНЫЙ ЭФФЕКТ ДЛЯ КАЗИНО: НЕОНОВОЕ СВЕЧЕНИЕ АУРЫ ---
+                if (p.id === 'casino_station') {
+                    ctx.save();
+                    
+                    // Вычисляем пульсацию свечения на основе времени (плавно меняем размер от 15 до 30px)
+                    const glowPulse = 20 + Math.sin(Date.now() * 0.003) * 8;
+                    
+                    // Настраиваем неоновое размытие Canvas под казино (бирюзово-киберпанковый цвет)
+                    ctx.shadowBlur = glowPulse;
+                    ctx.shadowColor = '#00e5ff';
+                    
+                    // Рисуем невидимый круг-подложку, чтобы создать глубокую ауру за текстурой
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size * 0.4, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 229, 255, 0.15)'; // Мягкое внутреннее заполнение
+                    ctx.fill();
+                    
+                    ctx.restore();
+
+                    // Отрисовываем поверх ауры саму картинку казино
+                    ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                    return;
+                }
 
             } else {
                 p.rotation += p.speed;
