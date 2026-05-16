@@ -1303,12 +1303,15 @@ canvas {
     border-radius: 3px;
 }
 
+/* ========================================================
+   ИМПОРТ ШРИФТА И СТИЛИ КНОПКИ «МИССИИ» (СОХРАНЯЕМ)
+   ======================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
 
 #missions-open-btn {
     position: fixed;
     top: 20px;
-    left: 20px; /* Расположи её, где тебе удобнее (например, под чатом или в углу) */
+    left: 20px; /* Настроить положение на экране (например: right: 20px или top: 80px) */
     z-index: 10;
     font-family: 'Orbitron', 'Courier New', monospace;
     font-size: 14px;
@@ -1324,6 +1327,7 @@ canvas {
     box-shadow: 0 0 15px rgba(0, 255, 204, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.5);
     overflow: hidden;
     transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent; /* Убирает синюю рамку при тапе на смартфонах */
 }
 
 #missions-open-btn:active {
@@ -1345,6 +1349,40 @@ canvas {
     transform: scale(0);
     transition: transform 0.5s ease;
 }
+
 #missions-open-btn:hover .btn-glow {
     transform: scale(1);
+}
+
+/* ========================================================
+   ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ОКНА МИССИЙ (ДОБАВЛЯЕМ СЮДА ЖЕ)
+   ======================================================== */
+
+/* Делаем скролл на телефонах очень мягким (инерционный скролл iOS) */
+#missions-list-container {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Кастомизируем полосу прокрутки в стиле киберпанк, чтобы дефолтный серый скроллбар не портил дизайн */
+#missions-list-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+#missions-list-container::-webkit-scrollbar-track {
+    background: rgba(3, 7, 18, 0.5);
+}
+
+#missions-list-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 255, 0.3);
+    border-radius: 3px;
+}
+
+#missions-list-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 229, 255, 0.6);
+}
+
+/* Плавное появление кнопок «ГОТОВО» */
+#missions-list-container button {
+    transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
 }
