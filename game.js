@@ -2537,10 +2537,10 @@ async function joinClan(clanId) {
 // 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2) - С ПРОВЕРКОЙ НА ПРАВА ЛИДЕРА
 // 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С ОБРАБОТКОЙ ЗАПРОСОВ РЕСУРСОВ
 // 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С АВТОМАТИЧЕСКИМ ПЕРЕРАСЧЕТОМ КАЗНЫ НА ЛЕТУ
+// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С ВЫВОДОМ ТЕКУЩЕГО СЧЕТА УЧАСТНИКОВ
 function loadMyClanData() {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
 
-    // Слушаем данные о клане
     db.ref('clans/' + playerData.clanId).once('value', async (snapshot) => {
         try {
             const clan = snapshot.val();
@@ -2551,24 +2551,24 @@ function loadMyClanData() {
                 return;
             }
 
-            // --- КРИТИЧЕСКОЕ ОБНОВЛЕНИЕ: Перерасчет казны по актуальным кошелькам ---
+            // Перерасчет казны по актуальным кошелькам
             let freshTotalQuant = 0;
+            const memberBalances = {}; // Временный объект для хранения балансов на этот сеанс отрисовки
+
             if (clan.members) {
                 const memberIds = Object.keys(clan.members);
-                // Проходим по каждому участнику и берем его НАСТОЯЩИЙ баланс из ветки users
                 for (const mId of memberIds) {
                     const userSnap = await db.ref(`users/${mId}/quant`).once('value');
                     const userActualQuant = userSnap.val() || 0;
                     freshTotalQuant += userActualQuant;
+                    memberBalances[mId] = userActualQuant; // Запоминаем баланс для UI
                 }
                 
-                // Если сумма изменилась, обновляем её в базе клана прямо сейчас
                 if (Math.floor(clan.totalQuant) !== Math.floor(freshTotalQuant)) {
                     await db.ref(`clans/${playerData.clanId}/totalQuant`).set(Math.floor(freshTotalQuant));
-                    clan.totalQuant = freshTotalQuant; // Корректируем локально для интерфейса
+                    clan.totalQuant = freshTotalQuant;
                 }
             }
-            // -----------------------------------------------------------------------
 
             const nameEl = document.getElementById('clan-my-name');
             const scoreEl = document.getElementById('clan-my-total-score');
@@ -2580,7 +2580,7 @@ function loadMyClanData() {
             const leaderBlock = document.getElementById('clan-leader-requests-block');
 
             if (nameEl) nameEl.innerText = clan.name.toUpperCase();
-            if (scoreEl) scoreEl.innerText = Math.floor(clan.totalQuant); // Тут будет всегда свежая сумма!
+            if (scoreEl) scoreEl.innerText = Math.floor(clan.totalQuant);
             if (!membersContainer) return;
 
             membersContainer.innerHTML = "";
@@ -2588,7 +2588,6 @@ function loadMyClanData() {
             const myId = String(tgUser.id);
             const isAmILeader = (clan.leaderId === myId);
 
-            // РАЗГРАНИЧЕНИЕ ИНТЕРФЕЙСА ЛИДЕРА И ПИРАТА
             if (isAmILeader) {
                 if (leaveBtn) leaveBtn.style.display = 'none';
                 if (deleteBtn) deleteBtn.style.display = 'block';
@@ -2604,16 +2603,23 @@ function loadMyClanData() {
                 if (leaderBlock) leaderBlock.style.display = 'none';
             }
 
+            // ОТРИСОВКА УЧАСТНИКОВ С НАГЛЯДНЫМ ОТОБРАЖЕНИЕМ ИХ БАЛАНСА
             if (clan.members) {
                 Object.keys(clan.members).forEach(mId => {
                     const member = clan.members[mId];
                     const item = document.createElement('div');
-                    item.style = "display: flex; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 4px; font-size: 14px;";
+                    item.style = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 4px; font-size: 14px; border: 1px solid rgba(255,255,255,0.05);";
                     
                     const isLeader = member.role === 'leader';
+                    const actualQuant = memberBalances[mId] !== undefined ? Math.floor(memberBalances[mId]) : 0;
+                    
+                    // Формируем красивую строчку: Имя пирата -> его баланс в Q -> его роль
                     item.innerHTML = `
-                        <span style="${isLeader ? 'color: #ff8100; font-weight: bold;' : ''}">${member.name}</span>
-                        <span style="color: #666; font-size: 12px;">${isLeader ? 'ЛИДЕР' : 'ПИРАТ'}</span>
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="${isLeader ? 'color: #ff8100; font-weight: bold;' : 'color: #fff;'}">${member.name}</span>
+                            <span style="color: #00e5ff; font-size: 11px; font-family: monospace;">БАЛАНС: ${actualQuant.toLocaleString()} Q</span>
+                        </div>
+                        <span style="color: #666; font-size: 11px; font-weight: bold; letter-spacing: 0.5px;">${isLeader ? 'ЛИДЕР' : 'ПИРАТ'}</span>
                     `;
                     membersContainer.appendChild(item);
                 });
