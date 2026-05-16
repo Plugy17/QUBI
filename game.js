@@ -224,8 +224,8 @@ const planets = [
         id: 'pvp_planet', 
         src: 'assets/star-pvp.png', 
         x: window.innerWidth * 0.35, 
-        y: window.innerHeight * 0.62, 
-        size: 85, 
+        y: window.innerHeight * 0.60, 
+        size: 100, 
         rotation: 0, 
         speed: 0, 
         img: new Image(),
@@ -262,7 +262,7 @@ const planets = [
     { id: 'leaderboard', src: 'assets/neptun.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.32, size: 70, rotation: 0, speed: -0.0015, img: new Image() },
     
     // СТАНЦИЯ (ОСТАЛАСЬ НА СВОЕМ МЕСТЕ)
-    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() },
+    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), isStationary: true, action: () => openStation() },
     
     // ГАЛАКТИЧЕСКИЙ РЫНОК (СТАТИЧНЫЙ И КРУПНЫЙ)
     { 
@@ -288,6 +288,7 @@ const planets = [
         rotation: 0,
         speed: 0, // Слегка крутится
         img: new Image(),
+        isStationary: true, 
         action: () => openCosmoCasino() // Вешаем триггер на будущую функцию
     }
 ];
