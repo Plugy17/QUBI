@@ -3049,33 +3049,42 @@ function updateMarketInventorySelect() {
 
 // СОЗДАНИЕ ЛОТА (ПРОДАЖА СТРОИТЕЛЬНОГО АРТЕФАКТА)
 // ВЫСТАВЛЕНИЕ АРТЕФАКТА НА БИРЖУ
+// ВЫСТАВЛЕНИЕ АРТЕФАКТОВ НА БИРЖУ С УКАЗАНИЕМ КОЛИЧЕСТВА
 async function createMarketLotAction() {
     const select = document.getElementById('market-item-select');
+    const amountInput = document.getElementById('market-amount-input');
     const priceInput = document.getElementById('market-price-input');
     const currencySelect = document.getElementById('market-currency-select');
 
-    if (!select || !priceInput || !currencySelect || select.value !== "building_artifact") {
+    if (!select || !amountInput || !priceInput || !currencySelect || select.value !== "building_artifact") {
         return alert("Выберите артефакт для продажи!");
     }
 
-    const price = parseInt(priceInput.value);
+    const amount = parseInt(amountInput.value);
+    const pricePerOne = parseInt(priceInput.value); // Это цена за 1 шт.
     const currency = currencySelect.value;
 
-    if (isNaN(price) || price <= 0) {
+    if (isNaN(amount) || amount <= 0) {
+        return alert("Укажите корректное количество!");
+    }
+    if (isNaN(pricePerOne) || pricePerOne <= 0) {
         return alert("Укажите корректную цену!");
     }
 
-    // Проверяем текущее число артефактов перед отправкой
+    // Проверяем запас артефактов на складе
     let currentArtifacts = parseInt(playerData.artifacts) || 0;
-    if (currentArtifacts <= 0) {
-        return alert("У вас нет доступных артефактов!");
+    if (currentArtifacts < amount) {
+        return alert(`Недостаточно артефактов! У вас есть только ${currentArtifacts} шт.`);
     }
 
     const myId = String(tgUser.id);
     const myName = playerData.colonyName || tgUser.first_name || "Торговец";
 
     try {
-        // 1. Публикуем лот на рынке (сохраняем структуру, чтобы карточка красиво отрисовалась)
+        // Вычисляем суммарную стоимость ордера
+        const totalPrice = pricePerOne * amount;
+
+        // 1. Публикуем лот на рынке
         const lotRef = db.ref('marketplace').push();
         await lotRef.set({
             sellerId: myId,
@@ -3084,21 +3093,25 @@ async function createMarketLotAction() {
                 name: "Артефакт улучшения", 
                 type: "РЕСУРС АПГРЕЙДА" 
             },
-            price: price,
+            amount: amount,          // Записываем количество
+            price: totalPrice,       // Записываем ОБЩУЮ сумму ордера
+            pricePerOne: pricePerOne,// Сохраняем цену за штуку на всякий случай
             currency: currency,
             timestamp: Date.now()
         });
 
-        // 2. Списываем ровно 1 артефакт у игрока локально
-        playerData.artifacts = currentArtifacts - 1;
+        // 2. Списываем введенное количество артефактов у игрока
+        playerData.artifacts = currentArtifacts - amount;
         
-        // 3. Сохраняем измененное число в Firebase по твоему пути
+        // 3. Сохраняем новое число в Firebase
         await db.ref(`users/${myId}/artifacts`).set(playerData.artifacts);
 
-        alert("Артефакт улучшения выставлен на биржу!");
-        priceInput.value = "";
+        alert(`Ордер запущен! Выставили ${amount} шт. за общую сумму ${totalPrice.toLocaleString()} ${currency.toUpperCase()}`);
         
-        // Перерисовываем вкладку продажи
+        // Сбрасываем поля формы
+        priceInput.value = "";
+        amountInput.value = "1";
+        
         switchMarketTab('sell');
     } catch(e) {
         console.error("Ошибка выставления лота:", e);
@@ -3107,6 +3120,7 @@ async function createMarketLotAction() {
 }
 
 // ЗАГРУЗКА И ОТРИСОВКА ВСЕХ ЛОТОВ (НОВЫЙ КИБЕРПАНК ДИЗАЙН)
+// ЗАГРУЗКА И ОТРИСОВКА ОРДЕРОВ (С КОЛИЧЕСТВОМ И СУММОЙ)
 function loadMarketLots() {
     db.ref('marketplace').once('value', (snapshot) => {
         try {
@@ -3131,42 +3145,45 @@ function loadMarketLots() {
                 const lot = lots[lotId];
                 const isMyLot = (lot.sellerId === myId);
 
-                // Форматируем цену (добавляем разделители тысяч для дорогого вида)
+                // Лот может содержать несколько штук (поддержка старых лотов по умолчанию 1)
+                const amount = lot.amount || 1;
+                
+                // Отображаем ОБЩУЮ СУММУ ордера
                 const displayPrice = Math.floor(lot.price).toLocaleString();
                 const currencyName = lot.currency.toUpperCase();
 
-                // ТОПОВЫЙ НЕОНОВЫЙ ШАБЛОН КАРТОЧКИ ЛОТА
+                // ШАБЛОН КАРТОЧКИ
                 const lotHtml = `
-                    <div style="position: relative; background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); padding: 16px; border-radius: 10px; border: 1px solid ${isMyLot ? 'rgba(255, 129, 0, 0.4)' : 'rgba(0, 229, 255, 0.15)'}; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 0 15px rgba(255,255,255,0.02); backdrop-filter: blur(3px);">
+                    <div style="position: relative; background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); padding: 16px; border-radius: 10px; border: 1px solid ${isMyLot ? 'rgba(255, 129, 0, 0.4)' : 'rgba(0, 229, 255, 0.15)'}; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 0 15px rgba(255,255,255,0.02); backdrop-filter: blur(3px); gap: 15px;">
                         
                         <div style="position: absolute; left: 0; top: 15%; width: 3px; height: 70%; background: ${isMyLot ? '#ff8100' : '#00e5ff'}; box-shadow: 0 0 8px ${isMyLot ? '#ff8100' : '#00e5ff'}; border-radius: 0 4px 4px 0;"></div>
 
-                        <div style="padding-left: 8px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="color: #fff; font-weight: bold; font-size: 14px; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(255,255,255,0.1); font-family: sans-serif;">
-                                    ${lot.item.name.toUpperCase()}
+                        <div style="padding-left: 8px; flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                                <span style="color: #fff; font-weight: bold; font-size: 13px; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(255,255,255,0.1); font-family: sans-serif; white-space: nowrap;">
+                                    ${lot.item.name.toUpperCase()} <span style="color: #00e5ff; font-family: monospace; font-weight: 900;">x${amount}</span>
                                 </span>
-                                <span style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #8fa0c2; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-family: sans-serif;">
+                                <span style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #7a8ba8; font-size: 8px; padding: 1px 4px; border-radius: 3px; font-family: sans-serif; font-weight: bold; white-space: nowrap;">
                                     ${lot.item.type || 'РЕСУРС АПГРЕЙДА'}
                                 </span>
                             </div>
                             
-                            <div style="font-size: 11px; color: #4b5e80; margin-top: 6px; font-family: monospace;">
-                                ПОСТАВЩИК: <span style="color: #7d96c4;">${lot.sellerName}</span> ${isMyLot ? '<span style="color:#ff8100; font-weight:bold;">[ВЫ]</span>' : ''}
+                            <div style="font-size: 10px; color: #3b4b69; margin-top: 6px; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                ПОСТАВЩИК: <span style="color: #637aa3;">${lot.sellerName}</span> ${isMyLot ? '<span style="color:#ff8100; font-weight:bold;">[ВЫ]</span>' : ''}
                             </div>
                         </div>
 
-                        <div style="text-align: right; display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                        <div style="text-align: right; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; flex-shrink: 0;">
                             <div>
-                                <span style="color: ${currencyName === 'QUBI' ? '#ffaa00' : '#00e5ff'}; font-weight: bold; font-family: monospace; font-size: 15px; text-shadow: 0 0 10px ${currencyName === 'QUBI' ? 'rgba(255,170,0,0.3)' : 'rgba(0,229,255,0.3)'};">
-                                    ${displayPrice} <span style="font-size: 10px; background: ${currencyName === 'QUBI' ? '#ffaa00' : '#00e5ff'}; color: #000; padding: 1px 4px; border-radius: 3px; margin-left: 2px; font-weight: 900; vertical-align: middle;">${currencyName}</span>
+                                <span style="color: ${currencyName === 'QUBI' ? '#ffaa00' : '#00e5ff'}; font-weight: bold; font-family: monospace; font-size: 14px; text-shadow: 0 0 10px ${currencyName === 'QUBI' ? 'rgba(255,170,0,0.3)' : 'rgba(0,229,255,0.3)'};">
+                                    ${displayPrice} <span style="font-size: 9px; background: ${currencyName === 'QUBI' ? '#ffaa00' : '#00e5ff'}; color: #000; padding: 1px 3px; border-radius: 3px; margin-left: 2px; font-weight: 900; vertical-align: middle;">${currencyName}</span>
                                 </span>
                             </div>
 
                             ${
                                 isMyLot 
-                                ? `<button onclick="cancelMarketLotAction('${lotId}')" style="background: rgba(255,75,43,0.05); border: 1px solid rgba(255,75,43,0.5); color: #ff4b2b; padding: 5px 12px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; letter-spacing: 0.5px; transition: all 0.2s; font-family: sans-serif;" onmouseover="this.style.background='rgba(255,75,43,0.2)'" onmouseout="this.style.background='rgba(255,75,43,0.05)'">ОТЗЫВ ОРДЕРА</button>`
-                                : `<button onclick="buyMarketLotAction('${lotId}', ${lot.price}, '${lot.currency}', '${lot.sellerId}')" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 7px 16px; border-radius: 6px; font-size: 11px; font-weight: 900; cursor: pointer; letter-spacing: 0.5px; transition: all 0.2s; font-family: sans-serif; box-shadow: 0 3px 10px rgba(0,229,255,0.2);" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">ВЫКУПИТЬ ◢</button>`
+                                ? `<button onclick="cancelMarketLotAction('${lotId}')" style="background: rgba(255,75,43,0.05); border: 1px solid rgba(255,75,43,0.5); color: #ff4b2b; padding: 4px 8px; margin-top: 8px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; letter-spacing: 0.5px; transition: all 0.2s; font-family: sans-serif;">ОТЗЫВ</button>`
+                                : `<button onclick="buyMarketLotAction('${lotId}', ${lot.price}, '${lot.currency}', '${lot.sellerId}')" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 5px 10px; margin-top: 8px; border-radius: 6px; font-size: 10px; font-weight: 900; cursor: pointer; letter-spacing: 0.5px; transition: all 0.2s; font-family: sans-serif; box-shadow: 0 3px 10px rgba(0,229,255,0.2);" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">КУПИТЬ ◢</button>`
                             }
                         </div>
                     </div>
@@ -3204,9 +3221,11 @@ async function cancelMarketLotAction(lotId) {
         if (!playerData[dbPath]) playerData[dbPath] = [];
         
         // Код возврата при ОТМЕНЕ лота продавцом:
-playerData.artifacts = (parseInt(playerData.artifacts) || 0) + 1;
+// Находим строчку начисления артефактов и меняем +1 на +lot.amount
+const refundAmount = lot.amount || 1;
+playerData.artifacts = (parseInt(playerData.artifacts) || 0) + refundAmount;
 await db.ref(`users/${myId}/artifacts`).set(playerData.artifacts);
-
+        
         const updates = {};
         updates[`users/${myId}/${dbPath}`] = playerData[dbPath];
         updates[`marketplace/${lotId}`] = null;
@@ -3239,10 +3258,11 @@ async function buyMarketLotAction(lotId, price, currency, sellerId) {
             return;
         }
 
-       // Код начисления при ПОКУПКЕ лота покупателем:
-playerData.artifacts = (parseInt(playerData.artifacts) || 0) + 1;
+       // Находим строчку начисления покупателю и меняем +1 на +lot.amount
+const boughtAmount = lot.amount || 1;
+playerData.artifacts = (parseInt(playerData.artifacts) || 0) + boughtAmount;
 await db.ref(`users/${myId}/artifacts`).set(playerData.artifacts);
-
+        
         // 2. Начисляем её продавцу
         await db.ref(`users/${sellerId}/${currency}`).transaction(current => (current || 0) + price);
 
