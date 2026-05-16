@@ -3854,6 +3854,216 @@ function spinCasinoSlots() {
     }, 2000);
 }
 
+// Открытие модального окна миссий
+function openMissionsModal() {
+    const overlay = document.getElementById('missions-overlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+        checkMissionsStatus(); // Сканируем базу при открытии
+    }
+}
+
+function closeMissionsModal() {
+    const overlay = document.getElementById('missions-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Вспомогательная функция безопасного сохранения данных в Firebase
+function syncMissionsWithFirebase() {
+    if (typeof playerData !== 'undefined' && typeof tgUser !== 'undefined') {
+        db.ref(`users/${tgUser.id}`).update({ missions: playerData.missions })
+            .then(() => { if (typeof updateUI === 'function') updateUI(); })
+            .catch(e => console.error("Ошибка синхронизации миссий:", e));
+    }
+}
+
+// Визуальное отключение выполненной кнопки
+function setButtonCompleted(btnId) {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+        btn.innerHTML = "ГОТОВО";
+        btn.disabled = true;
+        btn.style.background = "rgba(75, 94, 128, 0.15)";
+        btn.style.color = "#4b5e80";
+        btn.style.border = "1px solid rgba(75, 94, 128, 0.2)";
+        btn.style.boxShadow = "none";
+        btn.style.cursor = "default";
+    }
+}
+
+// Главная функция проверки статусов всех миссий
+function checkMissionsStatus() {
+    if (typeof playerData === 'undefined') return;
+    
+    // Инициализируем ветку миссий, если её нет у игрока
+    if (!playerData.missions) playerData.missions = {};
+    
+    const todayStr = new Date().toISOString().split('T')[0]; // Формат "2026-05-16"
+
+    // 1. Проверяем разовые миссии (навсегда)
+    const permanentMissions = ['m_sub_qubi', 'm_sub_durov', 'm_guild', 'm_order'];
+    permanentMissions.forEach(mId => {
+        if (playerData.missions[mId] === true || playerData.missions[mId] === "completed") {
+            setButtonCompleted(mId);
+        }
+    });
+
+    // 2. Проверяем ежедневные миссии
+    const dailyMissions = ['m_daily', 'm_quant_500', 'm_quant_1000', 'm_qubi_100', 'm_qubi_500', 'm_raid'];
+    dailyMissions.forEach(mId => {
+        // Если дата выполнения совпадает с сегодняшней — квест сегодня уже сдан
+        if (playerData.missions[mId] === todayStr) {
+            setButtonCompleted(mId);
+        }
+    });
+}
+
+// Начисление награды
+function grantMissionReward(rewardAmount, rewardType) {
+    if (typeof playerData === 'undefined') return;
+    
+    if (rewardType === 'energy') {
+        playerData.energy = (playerData.energy || 0) + rewardAmount;
+    } else if (rewardType === 'credits') {
+        playerData.credits = (playerData.credits || 0) + rewardAmount;
+    } else if (rewardType === 'quanta') {
+        playerData.quanta = (playerData.quanta || 0) + rewardAmount;
+    } else if (rewardType === 'artifact') {
+        // Логика добавления артефактов (массив или объект инвентаря)
+        if (!playerData.inventory) playerData.inventory = [];
+        playerData.inventory.push(rewardAmount); // rewardAmount может быть ID артефакта, например "art_rare_01"
+    }
+    
+    // Вызываем твою общую функцию обновления интерфейса игры, если она есть
+    if (typeof updateGameUI === 'function') updateGameUI();
+}
+
+// ==========================================================
+// ЛОГИКА ОБРАБОТКИ КОНКРЕТНЫХ КВЕСТОВ
+// ==========================================================
+
+// 1. Ежедневный подарок
+function claimDailyReward() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (playerData.missions['m_daily'] === todayStr) return;
+
+    playerData.missions['m_daily'] = todayStr;
+    grantMissionReward(500, 'energy');
+    setButtonCompleted('m_daily');
+    syncMissionsWithFirebase();
+    alert("⚡ Энергопакет вскрыт! Получено: +500 энергии.");
+}
+
+// 2. Ежедневный сбор квантов (500 и 1000)
+function claimQuantMission(requiredQuanta, rewardAmount) {
+    const mId = `m_quant_${requiredQuanta}`;
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (playerData.missions[mId] === todayStr) return;
+
+    // Проверяем, сколько квантов игрок добыл ЗА СЕГОДНЯ
+    // У тебя должен быть счетчик playerData.dailyQuantaCollected, сбрасываемый раз в сутки
+    const currentCollected = playerData.dailyQuantaCollected || 0;
+
+    if (currentCollected >= requiredQuanta) {
+        playerData.missions[mId] = todayStr;
+        grantMissionReward(rewardAmount, 'quanta');
+        setButtonCompleted(mId);
+        syncMissionsWithFirebase();
+        alert(`🎯 Задача выполнена! Получено: +${rewardAmount} Квантов.`);
+    } else {
+        alert(`Недостаточно данных. Вы собрали ${currentCollected}/${requiredQuanta} квантов за сегодня.`);
+    }
+}
+
+// 3. Ежедневный сбор кьюби (100 и 500)
+function claimQubiMission(requiredQubi) {
+    const mId = `m_qubi_${requiredQubi}`;
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (playerData.missions[mId] === todayStr) return;
+
+    // Проверяем дневной счетчик пойманных кьюби
+    const currentQubi = playerData.dailyQubiCollected || 0;
+
+    if (currentQubi >= requiredQubi) {
+        playerData.missions[mId] = todayStr;
+        
+        let artName = requiredQubi === 500 ? "РЕДКИЙ КВАНТОВЫЙ КРИСТАЛЛ" : "БАЗОВЫЙ МОДУЛЬ СВЯЗИ";
+        grantMissionReward(requiredQubi === 500 ? "art_rare" : "art_common", 'artifact');
+        
+        setButtonCompleted(mId);
+        syncMissionsWithFirebase();
+        alert(`🎰 Артефакт синтезирован! В инвентарь добавлен: ${artName}.`);
+    } else {
+        alert(`Сканирование пустоты... Вы поймали только ${currentQubi}/${requiredQubi} Кьюби.`);
+    }
+}
+
+// 4. Ежедневный успешный рейд
+function claimRaidMission() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (playerData.missions['m_raid'] === todayStr) return;
+
+    // Проверяем флаг успешного рейда за сегодня
+    if (playerData.dailySuccessfulRaids > 0) {
+        playerData.missions['m_raid'] = todayStr;
+        grantMissionReward(1000, 'credits');
+        setButtonCompleted('m_raid');
+        syncMissionsWithFirebase();
+        alert("⚔️ Тактический триумф! Награда: +1,000 Кредитов.");
+    } else {
+        alert("Бортовой компьютер не зафиксировал успешных побед в рейдах за сегодня.");
+    }
+}
+
+// 5. Социальные подписки (Qubi и Дуров) — один раз навсегда
+function executeSocialMission(mId, url, rewardAmount, rewardType) {
+    if (playerData.missions[mId] === true) return;
+
+    // Открываем канал в новом окне
+    window.open(url, '_blank');
+
+    // Через небольшой таймаут активируем награду
+    setTimeout(() => {
+        playerData.missions[mId] = true;
+        grantMissionReward(rewardAmount, rewardType);
+        setButtonCompleted(mId);
+        syncMissionsWithFirebase();
+        alert(`📡 Канал успешно синхронизирован! Получено: +${rewardAmount} ресурсов.`);
+    }, 2000);
+}
+
+// 6. Вступить в гильдию — один раз навсегда
+function claimGuildMission() {
+    if (playerData.missions['m_guild'] === true) return;
+
+    // Проверяем, состоит ли игрок в клане (наличие clanId)
+    if (playerData.clanId && playerData.clanId !== "") {
+        playerData.missions['m_guild'] = true;
+        grantMissionReward(5000, 'credits');
+        setButtonCompleted('m_guild');
+        syncMissionsWithFirebase();
+        alert("🛡️ Клан-протокол подтвержден! Награда: +5,000 Кредитов.");
+    } else {
+        alert("Вы не состоите в клане. Сначала вступите в гильдию через терминал связи.");
+    }
+}
+
+// 7. Продать первый ордер — один раз навсегда
+function claimOrderMission() {
+    if (playerData.missions['m_order'] === true) return;
+
+    // Проверяем флаг успешной продажи на маркете
+    if (playerData.hasSoldFirstOrder === true) {
+        playerData.missions['m_order'] = true;
+        grantMissionReward(2000, 'credits');
+        setButtonCompleted('m_order');
+        syncMissionsWithFirebase();
+        alert("📈 Первая сделка подтверждена биржей! Награда: +2,000 Кредитов.");
+    } else {
+        alert("У вас пока нет закрытых и проданных ордеров на торговой площадке.");
+    }
+}
+
 // 1. Создаем четкую функцию запуска
 function startEverything() {
     console.log("Запуск всех систем...");
