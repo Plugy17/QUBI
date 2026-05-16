@@ -3050,58 +3050,93 @@ function initClanChat() {
 
 // --- ФУНКЦИИ ЗАПИСИ ГОЛОСА ---
 
+// --- ИСПРАВЛЕННЫЕ ФУНКЦИИ ЗАПИСИ ГОЛОСА ---
+
 async function toggleVoiceRecording() {
     const btn = document.getElementById('clan-chat-voice-btn');
     if (!btn) return;
 
     if (!isRecording) {
-        // Запуск записи
         try {
+            // Запрашиваем доступ строго к аудио-каналу
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioChunks = [];
-            mediaRecorder = new MediaRecorder(stream);
+            
+            // Определяем, какой аудио-формат поддерживается устройством (iOS / Android / PC)
+            let options = {};
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                options = { mimeType: 'audio/webm;codecs=opus' };
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                options = { mimeType: 'audio/mp4' }; // Для старых iOS устройств
+            } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+                options = { mimeType: 'audio/wav' };
+            }
+
+            mediaRecorder = new MediaRecorder(stream, options);
             
             mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) audioChunks.push(event.data);
+                if (event.data && event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
             };
 
             mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                
-                // Переводим аудио файл в строку Base64 для Firebase
-                const reader = new FileReader();
-                reader.readAsDataURL(audioBlob);
-                reader.onloadend = async () => {
-                    const base64Audio = reader.result;
-                    // Отправляем в базу, только если запись не была отменена и файл не пустой
-                    if (base64Audio && isRecording === false && audioChunks.length > 0) {
-                        await pushMessageToFirebase(base64Audio);
+                try {
+                    if (audioChunks.length === 0) {
+                        alert("Ошибка: Устройство не записало аудио-данные.");
+                        return;
                     }
-                };
 
-                // Отключаем микрофон
-                stream.getTracks().forEach(track => track.stop());
+                    // Сохраняем Blob с правильным типом миме-типа устройства
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    
+                    // Переводим аудио файл в строку Base64
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = async () => {
+                        try {
+                            const base64Audio = reader.result;
+                            
+                            // Важно: Проверяем, что строка Base64 успешно сформировалась
+                            if (!base64Audio || base64Audio === "data:") {
+                                alert("Ошибка: Не удалось перевести аудио в формат передачи.");
+                                return;
+                            }
+                            
+                            // Отправляем в базу
+                            await pushMessageToFirebase(base64Audio);
+                        } catch (firebaseErr) {
+                            alert("Ошибка отправки в Firebase: " + firebaseErr.message);
+                        }
+                    };
+                } catch (stopErr) {
+                    alert("Ошибка обработки аудио: " + stopErr.message);
+                } finally {
+                    // В любом случае освобождаем микрофон устройства
+                    stream.getTracks().forEach(track => track.stop());
+                }
             };
 
+            // Запускаем запись и настраиваем сбор данных каждые 500мс
             isRecording = true;
-            mediaRecorder.start();
+            mediaRecorder.start(500); 
             
             // Визуальный эффект записи
             btn.innerHTML = "🛑 10с";
             btn.style.background = "linear-gradient(90deg, #ff4b2b, #ff416c)";
             btn.style.boxShadow = "0 0 15px rgba(255,75,43,0.6)";
             
-            // Ограничение: Ровно через 10 секунд запись выключится сама
+            // Ограничение времени
             recordingTimeout = setTimeout(() => {
                 if (isRecording) stopAudioRecording(true);
             }, 10000);
 
         } catch (err) {
             console.error("Доступ к микрофону запрещен:", err);
-            alert("Не удалось получить доступ к микрофону. Разрешите его в настройках Telegram.");
+            alert("Микрофон заблокирован. Разрешите доступ к микрофону в настройках Telegram / браузера.");
         }
     } else {
-        // Остановка записи пользователем (сохраняем и отправляем)
+        // Остановка записи пользователем
         stopAudioRecording(true);
     }
 }
@@ -3117,24 +3152,13 @@ function stopAudioRecording(shouldSave) {
     }
 
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
-        if (!shouldSave) audioChunks = []; // Сбрасываем данные, если отмена
-        isRecording = false; // Ставим false ДО вызова stop, чтобы отработал триггер в onstop
+        if (!shouldSave) audioChunks = []; // Если отменили
+        // Переводим в false строго перед вызовом .stop(), чтобы триггер не игнорировал запись
+        isRecording = false;
         mediaRecorder.stop();
     } else {
         isRecording = false;
     }
-}
-
-// --- ОТПРАВКА СТАНДАРТНОГО ТЕКСТА ---
-async function sendClanMessage() {
-    const input = document.getElementById('clan-chat-input');
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text) return;
-    if (text.length > 150) return alert("Сообщение слишком длинное!");
-
-    await pushMessageToFirebase(text);
-    input.value = "";
 }
 
 async function sendClanSticker(emoji) {
