@@ -2664,33 +2664,88 @@ function renderLeaderRequests(requestsData, totalQuant) {
 
 // 10. ОБРАБОТКА РЕШЕНИЯ ЛИДЕРА (ОДОБРИТЬ / ОТКАЗАТЬ)
 // 10. ОБРАБОТКА РЕШЕНИЯ ЛИДЕРА (С ОТПРАВКОЙ УВЕДОМЛЕНИЯ)
+// 10. ОБРАБОТКА РЕШЕНИЯ ЛИДЕРА (РАСПРЕДЕЛЕННЫЙ НАЛОГ МЕЖДУ ВСЕМИ УЧАСТНИКАМИ)
 async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQuant) {
     const clanId = playerData.clanId;
 
     if (isApproved && totalQuant < amount) {
-        return alert("В казне гильдии недостаточно QUANT для одобрения этого запроса!");
+        return alert("В казне гильдии недостаточно QUANT для одобрения этого запроса (общая сумма кошельков меньше запроса)!");
     }
 
     try {
         if (isApproved) {
-            // 1. Снимаем кванты со счета клана
-            await db.ref(`clans/${clanId}/totalQuant`).transaction(current => Math.max(0, (current || 0) - amount));
-            // 2. Начисляем кванты в профиль одобренного игрока
-            await db.ref(`users/${targetUserId}/quant`).transaction(current => (current || 0) + amount);
+            // 1. Получаем свежие данные о членах клана и их балансах
+            const clanSnapshot = await db.ref(`clans/${clanId}`).once('value');
+            const clanData = clanSnapshot.val();
             
-            // 3. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ ИГРОКУ В БАЗУ ДАННЫХ
+            if (!clanData || !clanData.members) {
+                alert("Ошибка: структура клана нарушена.");
+                return;
+            }
+
+            const membersIds = Object.keys(clanData.members);
+            
+            // 2. Собираем текущие балансы ВСЕХ игроков из ветки users
+            const balances = {};
+            let currentTotalPool = 0;
+
+            for (const mId of membersIds) {
+                const userSnap = await db.ref(`users/${mId}/quant`).once('value');
+                const userQuant = userSnap.val() || 0;
+                balances[mId] = userQuant;
+                currentTotalPool += userQuant; // Реальный пул золота на этот миг
+            }
+
+            // Дополнительная проверка на случай непредвиденных изменений
+            if (currentTotalPool < amount) {
+                return alert("Кризис казны! Пока вы одобряли, участники уже потратили кванты.");
+            }
+
+            // 3. Списываем налог со всех пропорционально их балансу и зачисляем получателю
+            const updates = {};
+            let totalDeducted = 0;
+
+            membersIds.forEach(mId => {
+                let currentBalance = balances[mId];
+                
+                // Вычисляем долю игрока в общем пуле ресурсов клана
+                let share = currentTotalPool > 0 ? (currentBalance / currentTotalPool) : 0;
+                // Сколько конкретно этот игрок должен отдать в кассу ради выплаты
+                let tax = amount * share;
+
+                let newBalance = Math.max(0, currentBalance - tax);
+                
+                // Если этот участник и есть тот, кому ОДОБРИЛИ запрос, ему ПЛЮСУЕТСЯ вся сумма
+                if (mId === targetUserId) {
+                    newBalance += amount;
+                }
+
+                // Округляем до целых для базы данных
+                newBalance = Math.floor(newBalance);
+                updates[`users/${mId}/quant`] = newBalance;
+
+                // Обновляем локальный баланс лидера в игре прямо сейчас, если это его аккаунт
+                if (mId === String(tgUser.id)) {
+                    playerData.quant = newBalance;
+                }
+            });
+
+            // Корректируем общую казну клана (минус то, что ушло в оборот получателю из долей остальных)
+            const newTotalQuant = Math.max(0, clanData.totalQuant - amount);
+            updates[`clans/${clanId}/totalQuant`] = Math.floor(newTotalQuant);
+
+            // Применяем массовое обновление в Firebase за один шаг
+            await db.ref().update(updates);
+
+            // 4. ОТПРАВЛЯЕМ УВЕДОМЛЕНИЕ ИГРОКУ О ПОЛУЧЕНИИ
             await db.ref(`users/${targetUserId}/clanNotification`).set({
-                text: `Лидер одобрил ваш запрос! Получено +${Math.floor(amount)} QUANT.`,
+                text: `Лидер одобрил ваш запрос! Получено +${Math.floor(amount)} QUANT за счет взносов гильдии.`,
                 timestamp: Date.now()
             });
 
-            // Если лидер одобрил запрос самому себе
-            if (targetUserId === String(tgUser.id)) {
-                playerData.quant += amount;
-            }
-            alert("Запрос успешно одобрен, ресурсы переведены.");
+            alert("Запрос одобрен! Сумма списана со всех участников пропорционально их кошелькам и выдана игроку.");
         } else {
-            // При отказе можно тоже отправить уведомление, чтобы игрок знал
+            // Если отказ — уведомляем пирата об отказе
             await db.ref(`users/${targetUserId}/clanNotification`).set({
                 text: `Ваш запрос на получение ${Math.floor(amount)} QUANT был отклонен Лидером.`,
                 timestamp: Date.now()
@@ -2698,12 +2753,12 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
             alert("Запрос отклонен.");
         }
 
-        // Удаляем обработанную заявку
+        // Удаляем обработанную заявку из списка
         await db.ref(`clans/${clanId}/requests/${reqId}`).remove();
         loadMyClanData();
     } catch (e) {
-        console.error("Ошибка обработки запроса:", e);
-        alert("Произошла ошибка при обработке запроса.");
+        console.error("Критическая ошибка распределенной экономики клана:", e);
+        alert("Произошла ошибка при расчете долей и списании ресурсов.");
     }
 }
 
