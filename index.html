@@ -397,29 +397,34 @@
                 <div id="ton-connect-btn"></div>
             </div>
             
-            <div class="wallet">
-                <div class="currency quant">
-                    <div class="coin-tag">
-                        <img src="assets/quant-icon.png" alt="Q">
-                        <span>QUANT</span>
-                    </div>
-                    <span id="quant-val">0</span>
-                </div>
-                
-                <div class="currency qubi">
-                    <div class="coin-tag">
-                        <img src="assets/qubi-icon.png" alt="B">
-                        <span>QUBI</span>
-                    </div>
-                    <b id="qubi-val">0</b>
-                </div>
+            <div class="wallet" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+    
+    <div style="display: flex; gap: 15px;">
+        <div class="currency quant">
+            <div class="coin-tag">
+                <img src="assets/quant-icon.png" alt="Q">
+                <span>QUANT</span>
             </div>
-        </header>
+            <span id="quant-val">0</span>
+        </div>
+        
+        <div class="currency qubi">
+            <div class="coin-tag">
+                <img src="assets/qubi-icon.png" alt="B">
+                <span>QUBI</span>
+            </div>
+            <b id="qubi-val">0</b>
+        </div>
+    </div>
 
-        <button id="missions-open-btn" onclick="openMissionsModal()" style="margin-top: 8px;">
+    <button id="missions-open-btn" onclick="openMissionsModal()" style="margin-top: 4px; width: 140px;">
         <span class="glitch-text" data-text="МИССИИ">МИССИИ</span>
         <div class="btn-glow"></div>
     </button>
+
+</div>
+            </div>
+        </header>
 
 </div>
 
