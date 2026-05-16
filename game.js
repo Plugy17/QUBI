@@ -260,7 +260,22 @@ const planets = [
     { id: 'shop', src: 'assets/mars.png', x: window.innerWidth * 0.78, y: window.innerHeight * 0.5, size: 75, rotation: 0, speed: -0.001, img: new Image() },
     { id: 'moon', src: 'assets/moon.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.72, size: 60, rotation: 0, speed: 0.003, img: new Image() },
     { id: 'leaderboard', src: 'assets/neptun.png', x: window.innerWidth * 0.5, y: window.innerHeight * 0.32, size: 70, rotation: 0, speed: -0.0015, img: new Image() },
-    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() }
+    
+    // СТАНЦИЯ (ОСТАЛАСЬ НА СВОЕМ МЕСТЕ)
+    { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() },
+    
+    // ГАЛАКТИЧЕСКИЙ РЫНОК (СТАТУС: ВЫШЕ СТАНЦИИ)
+    { 
+        id: 'market', 
+        src: 'assets/market.png', // Положи картинку рынка в папку assets (или временно укажи другой ассет, например 'assets/mars.png')
+        x: window.innerWidth * 0.25, 
+        y: window.innerHeight * 0.24, // Y меньше чем у Станции (0.24 < 0.40), значит на экране он будет выше!
+        size: 70, 
+        rotation: 0, 
+        speed: 0.0015, // Мягкое вращение торговой станции рынка
+        img: new Image(), 
+        action: () => openMarketWindow() // Вызывает наше новое P2P окно!
+    }
 ];
 
 // Инициализация картинок планет
@@ -576,12 +591,19 @@ function activatePlanet(id) {
             console.error("Функция openEarth не найдена!");
         }
     }
-    // ДОБАВЛЯЕМ ПРОВЕРКУ ДЛЯ НАШЕЙ НОВОЙ ПЛАНЕТЫ
     else if (id === 'guild') {
         if (typeof openGuildWindow === 'function') {
             openGuildWindow();
         } else {
             console.error("Функция openGuildWindow не найдена!");
+        }
+    }
+    // ДОБАВЛЯЕМ ОБРАБОТКУ КЛИКА ПО КОСМИЧЕСКОМУ РЫНКУ
+    else if (id === 'market') {
+        if (typeof openMarketWindow === 'function') {
+            openMarketWindow();
+        } else {
+            console.error("Функция openMarketWindow не найдена!");
         }
     }
 }
@@ -2902,6 +2924,266 @@ async function leaveClanAction() {
         openGuildWindow();
     } catch (e) {
         console.error("Ошибка выхода из клана:", e);
+    }
+}
+
+// ==========================================
+//           ЛОГИКА КОСМИЧЕСКОГО РЫНКА
+// ==========================================
+
+// Открытие окна рынка
+function openMarketWindow() {
+    const win = document.getElementById('market-window');
+    if (!win) return;
+    win.style.display = 'block';
+    switchMarketTab('buy'); // По умолчанию открываем вкладку покупки
+}
+
+// Переключение вкладок рынка
+function switchMarketTab(tab) {
+    const buyPage = document.getElementById('market-page-buy');
+    const sellPage = document.getElementById('market-page-sell');
+    const buyTabBtn = document.getElementById('market-tab-buy');
+    const sellTabBtn = document.getElementById('market-tab-sell');
+
+    if (tab === 'buy') {
+        if (buyPage) buyPage.style.display = 'block';
+        if (sellPage) sellPage.style.display = 'none';
+        buyTabBtn.style.color = '#00e5ff';
+        buyTabBtn.style.background = 'rgba(0,229,255,0.1)';
+        buyTabBtn.style.borderBottom = '2px solid #00e5ff';
+        sellTabBtn.style.color = '#888';
+        sellTabBtn.style.background = 'none';
+        sellTabBtn.style.borderBottom = 'none';
+        loadMarketLots(); // Подгружаем все лоты
+    } else {
+        if (buyPage) buyPage.style.display = 'none';
+        if (sellPage) sellPage.style.display = 'block';
+        sellTabBtn.style.color = '#ff8100';
+        sellTabBtn.style.background = 'rgba(255,129,0,0.1)';
+        sellTabBtn.style.borderBottom = '2px solid #ff8100';
+        buyTabBtn.style.color = '#888';
+        buyTabBtn.style.background = 'none';
+        buyTabBtn.style.borderBottom = 'none';
+        updateMarketInventorySelect(); // Обновляем список вещей для продажи
+        loadMarketLots(); // Обновляем списки
+    }
+}
+
+// Заполнение селектора вещами из инвентаря игрока
+function updateMarketInventorySelect() {
+    const select = document.getElementById('market-item-select');
+    if (!select) return;
+    select.innerHTML = "";
+
+    if (!playerData.inventory || playerData.inventory.length === 0) {
+        const opt = document.createElement('option');
+        opt.text = "Инвентарь пуст";
+        opt.value = "";
+        select.appendChild(opt);
+        return;
+    }
+
+    playerData.inventory.forEach((item, index) => {
+        // Проверяем, не экипирован ли предмет прямо сейчас
+        const isEquipped = playerData.equipped && playerData.equipped.includes(item.id);
+        if (!isEquipped) {
+            const opt = document.createElement('option');
+            opt.value = index; // Сохраняем индекс в массиве
+            opt.text = `${item.name.toUpperCase()} (Ур. ${item.level || 1})`;
+            select.appendChild(opt);
+        }
+    });
+}
+
+// СОЗДАНИЕ ЛОТА (ВЫСТАВЛЕНИЕ НА ПРОДАЖУ)
+async function createMarketLotAction() {
+    const select = document.getElementById('market-item-select');
+    const priceInput = document.getElementById('market-price-input');
+    const currencySelect = document.getElementById('market-currency-select');
+
+    if (!select || !priceInput || !currencySelect || select.value === "") {
+        return alert("Нечего продавать или инвентарь пуст!");
+    }
+
+    const itemIndex = parseInt(select.value);
+    const price = parseInt(priceInput.value);
+    const currency = currencySelect.value;
+
+    if (isNaN(price) || price <= 0) {
+        return alert("Укажите корректную цену выше нуля!");
+    }
+
+    const artifact = playerData.inventory[itemIndex];
+    const myId = String(tgUser.id);
+    const myName = playerData.colonyName || tgUser.first_name || "Торговец";
+
+    try {
+        // 1. Создаем ордер на рынке в Firebase
+        const lotRef = db.ref('marketplace').push();
+        await lotRef.set({
+            sellerId: myId,
+            sellerName: myName,
+            item: artifact,
+            price: price,
+            currency: currency,
+            timestamp: Date.now()
+        });
+
+        // 2. Удаляем предмет из локального инвентаря игрока
+        playerData.inventory.splice(itemIndex, 1);
+        
+        // 3. Синхронизируем инвентарь игрока с Firebase
+        await db.ref(`users/${myId}/inventory`).set(playerData.inventory);
+
+        alert("Лот успешно выведен на орбиту рынка!");
+        priceInput.value = "";
+        switchMarketTab('sell'); // Обновляем экран
+    } catch(e) {
+        console.error("Ошибка при создании лота:", e);
+        alert("Не удалось запустить торговый ордер.");
+    }
+}
+
+// ЗАГРУЗКА И ОТРИСОВКА ВСЕХ ЛОТОВ (И ЧУЖИХ, И СВОИХ)
+function loadMarketLots() {
+    db.ref('marketplace').once('value', (snapshot) => {
+        try {
+            const lots = snapshot.val();
+            const buyContainer = document.getElementById('market-lots-container');
+            const myLotsContainer = document.getElementById('market-my-lots-container');
+            const myId = String(tgUser.id);
+
+            if (buyContainer) buyContainer.innerHTML = "";
+            if (myLotsContainer) myLotsContainer.innerHTML = "";
+
+            if (!lots) {
+                if (buyContainer) buyContainer.innerHTML = "<p style='color: #666; text-align: center; font-size: 12px;'>На рынке пока нет активных предложений.</p>";
+                if (myLotsContainer) myLotsContainer.innerHTML = "<p style='color: #666; font-size: 12px;'>У вас нет активных объявлений.</p>";
+                return;
+            }
+
+            let hasMyLots = false;
+            let hasOtherLots = false;
+
+            Object.keys(lots).forEach(lotId => {
+                const lot = lots[lotId];
+                const isMyLot = (lot.sellerId === myId);
+
+                // Округляем цену для красоты
+                const displayPrice = Math.floor(lot.price).toLocaleString();
+                const currencyName = lot.currency.toUpperCase();
+
+                // Шаблон карточки лота
+                const lotHtml = `
+                    <div style="border: 1px solid ${isMyLot ? '#ff8100' : '#333'}; background: rgba(255,255,255,0.01); padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                        <div>
+                            <span style="color: #00e5ff; font-weight: bold; font-size: 14px;">${lot.item.name.toUpperCase()}</span>
+                            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Характеристики: уровень ${lot.item.level || 1}</div>
+                            <div style="font-size: 10px; color: #555; margin-top: 4px;">Продавец: <span style="color: #888;">${lot.sellerName}</span>${isMyLot ? ' (Вы)' : ''}</div>
+                        </div>
+                        <div style="text-align: right; display: flex; flex-direction: column; gap: 6px; align-items: flex-end;">
+                            <span style="color: #ff8100; font-weight: bold; font-family: monospace; font-size: 14px;">${displayPrice} ${currencyName}</span>
+                            ${
+                                isMyLot 
+                                ? `<button onclick="cancelMarketLotAction('${lotId}')" style="background: none; border: 1px solid #ff4b2b; color: #ff4b2b; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">ОТЗВАТЬ</button>`
+                                : `<button onclick="buyMarketLotAction('${lotId}', ${lot.price}, '${lot.currency}', '${lot.sellerId}')" style="background: #00e5ff; border: none; color: #000; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 0 5px rgba(0,229,255,0.2);">КУПИТЬ</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+
+                if (isMyLot) {
+                    hasMyLots = true;
+                    if (myLotsContainer) myLotsContainer.innerHTML += lotHtml;
+                } else {
+                    hasOtherLots = true;
+                    if (buyContainer) buyContainer.innerHTML += lotHtml;
+                }
+            });
+
+            if (!hasOtherLots && buyContainer) buyContainer.innerHTML = "<p style='color: #666; text-align: center; font-size: 12px;'>Все товары на рынке принадлежат вам.</p>";
+            if (!hasMyLots && myLotsContainer) myLotsContainer.innerHTML = "<p style='color: #666; font-size: 12px;'>У вас нет активных объявлений.</p>";
+
+        } catch (e) {
+            console.error("Ошибка при чтении лотов рынка:", e);
+        }
+    });
+}
+
+// ОТЗЫВ СВОЕГО ЛОТА С РЫНКА (ВОЗВРАТ В ИНВЕНТАРЬ)
+async function cancelMarketLotAction(lotId) {
+    try {
+        const lotSnap = await db.ref(`marketplace/${lotId}`).once('value');
+        const lot = lotSnap.val();
+        if (!lot) return;
+
+        const myId = String(tgUser.id);
+
+        // Возвращаем вещь в инвентарь игрока
+        if (!playerData.inventory) playerData.inventory = [];
+        playerData.inventory.push(lot.item);
+
+        const updates = {};
+        updates[`users/${myId}/inventory`] = playerData.inventory;
+        updates[`marketplace/${lotId}`] = null; // Стираем лот
+
+        await db.ref().update(updates);
+        alert("Ордер отменен. Артефакт возвращен в твой трюм.");
+        loadMarketLots();
+    } catch(e) {
+        console.error("Ошибка отмены ордера:", e);
+    }
+}
+
+// ПОКУПКА ЧУЖОГО ЛОТА (МЕХАНИКА СДЕЛКИ ПЕРЕВОДА РЕСУРСОВ)
+async function buyMarketLotAction(lotId, price, currency, sellerId) {
+    const myId = String(tgUser.id);
+    
+    // Проверка личного баланса в зависимости от запрашиваемой валюты лота
+    const currentBalance = playerData[currency]; 
+    if (currentBalance < price) {
+        return alert(`Недостаточно средств! Для покупки нужно ${Math.floor(price).toLocaleString()} ${currency.toUpperCase()}`);
+    }
+
+    if (!confirm(`Подтвердить покупку артефакта за ${Math.floor(price).toLocaleString()} ${currency.toUpperCase()}?`)) return;
+
+    try {
+        // Проверяем, существует ли еще лот (вдруг его уже купили)
+        const lotSnap = await db.ref(`marketplace/${lotId}`).once('value');
+        const lot = lotSnap.val();
+        if (!lot) {
+            alert("Этот лот уже был продан или отозван другим пиратом!");
+            loadMarketLots();
+            return;
+        }
+
+        // 1. Списываем валюту у Покупателя (у нас)
+        playerData[currency] -= price;
+        await db.ref(`users/${myId}/${currency}`).set(playerData[currency]);
+
+        // 2. Начисляем валюту Продавцу в Firebase
+        await db.ref(`users/${sellerId}/${currency}`).transaction(current => (current || 0) + price);
+
+        // 3. Добавляем купленный артефакт в инвентарь Покупателя
+        if (!playerData.inventory) playerData.inventory = [];
+        playerData.inventory.push(lot.item);
+        await db.ref(`users/${myId}/inventory`).set(playerData.inventory);
+
+        // 4. Отправляем продавцу уведомление на экран
+        await db.ref(`users/${sellerId}/clanNotification`).set({
+            text: `Ваш лот ${lot.item.name.toUpperCase()} успешно продан! Получено +${Math.floor(price)} ${currency.toUpperCase()}.`,
+            timestamp: Date.now()
+        });
+
+        // 5. Удаляем лот из глобального рынка
+        await db.ref(`marketplace/${lotId}`).remove();
+
+        alert(`Сделка века закрыта! Артефакт ${lot.item.name.toUpperCase()} доставлен в инвентарь.`);
+        loadMarketLots();
+    } catch(e) {
+        console.error("Ошибка проведения торговой сделки:", e);
+        alert("Сбой торговой сети. Ресурсы сохранены.");
     }
 }
 
