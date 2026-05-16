@@ -2977,6 +2977,10 @@ async function leaveClanAction() {
 //           ЛОГИКА КОСМИЧЕСКОГО РЫНКА
 // ==========================================
 
+// ==========================================
+//          СИСТЕМА МЕЖПЛАНЕТНОГО РЫНКА       
+// ==========================================
+
 // Открытие окна рынка
 function openMarketWindow() {
     const win = document.getElementById('market-window');
@@ -3020,8 +3024,6 @@ function switchMarketTab(tab) {
     }
 }
 
-// Перезаполнение селектора СТРОИТЕЛЬНЫМИ артефактами из инвентаря
-// Перезаполнение селектора СТРОИТЕЛЬНЫМИ артефактами из инвентаря
 // Перезаполнение селектора числовыми артефактами для улучшения зданий
 function updateMarketInventorySelect() {
     const select = document.getElementById('market-item-select');
@@ -3047,8 +3049,6 @@ function updateMarketInventorySelect() {
     select.appendChild(opt);
 }
 
-// СОЗДАНИЕ ЛОТА (ПРОДАЖА СТРОИТЕЛЬНОГО АРТЕФАКТА)
-// ВЫСТАВЛЕНИЕ АРТЕФАКТА НА БИРЖУ
 // ВЫСТАВЛЕНИЕ АРТЕФАКТОВ НА БИРЖУ С УКАЗАНИЕМ КОЛИЧЕСТВА
 async function createMarketLotAction() {
     const select = document.getElementById('market-item-select');
@@ -3061,7 +3061,7 @@ async function createMarketLotAction() {
     }
 
     const amount = parseInt(amountInput.value);
-    const pricePerOne = parseInt(priceInput.value); // Это цена за 1 шт.
+    const pricePerOne = parseInt(priceInput.value); // Цена за 1 шт.
     const currency = currencySelect.value;
 
     if (isNaN(amount) || amount <= 0) {
@@ -3095,12 +3095,12 @@ async function createMarketLotAction() {
             },
             amount: amount,          // Записываем количество
             price: totalPrice,       // Записываем ОБЩУЮ сумму ордера
-            pricePerOne: pricePerOne,// Сохраняем цену за штуку на всякий случай
+            pricePerOne: pricePerOne,// Сохраняем цену за штуку
             currency: currency,
             timestamp: Date.now()
         });
 
-        // 2. Списываем введенное количество артефактов у игрока
+        // 2. Списываем введенное количество артефактов у игрока локально
         playerData.artifacts = currentArtifacts - amount;
         
         // 3. Сохраняем новое число в Firebase
@@ -3119,7 +3119,6 @@ async function createMarketLotAction() {
     }
 }
 
-// ЗАГРУЗКА И ОТРИСОВКА ВСЕХ ЛОТОВ (НОВЫЙ КИБЕРПАНК ДИЗАЙН)
 // ЗАГРУЗКА И ОТРИСОВКА ОРДЕРОВ (С КОЛИЧЕСТВОМ И СУММОЙ)
 function loadMarketLots() {
     db.ref('marketplace').once('value', (snapshot) => {
@@ -3145,7 +3144,7 @@ function loadMarketLots() {
                 const lot = lots[lotId];
                 const isMyLot = (lot.sellerId === myId);
 
-                // Лот может содержать несколько штук (поддержка старых лотов по умолчанию 1)
+                // Защита от старых лотов
                 const amount = lot.amount || 1;
                 
                 // Отображаем ОБЩУЮ СУММУ ордера
@@ -3207,38 +3206,38 @@ function loadMarketLots() {
     });
 }
 
-// ОТЗЫВ ОРДЕРА (ВОЗВРАТ В СТРОИТЕЛЬНЫЙ ИНВЕНТАРЬ)
+// ОТЗЫВ ОРДЕРА (ЧИСТЫЙ ВОЗВРАТ В ЧИСЛОВОЕ ПОЛЕ)
 async function cancelMarketLotAction(lotId) {
+    const myId = String(tgUser.id);
     try {
+        // 1. Извлекаем лот для проверки количества ресурсов
         const lotSnap = await db.ref(`marketplace/${lotId}`).once('value');
         const lot = lotSnap.val();
-        if (!lot) return;
+        if (!lot) {
+            alert("Ордер не найден или уже обработан.");
+            return;
+        }
 
-        const myId = String(tgUser.id);
-        const dbPath = playerData.buildingArtifacts ? 'buildingArtifacts' : 'artifacts';
+        const refundAmount = lot.amount || 1;
+
+        // 2. Начисляем артефакты обратно в локальное состояние игрока
+        playerData.artifacts = (parseInt(playerData.artifacts) || 0) + refundAmount;
         
-        // Инициализируем массив, если вдруг пуст
-        if (!playerData[dbPath]) playerData[dbPath] = [];
-        
-        // Код возврата при ОТМЕНЕ лота продавцом:
-// Находим строчку начисления артефактов и меняем +1 на +lot.amount
-const refundAmount = lot.amount || 1;
-playerData.artifacts = (parseInt(playerData.artifacts) || 0) + refundAmount;
-await db.ref(`users/${myId}/artifacts`).set(playerData.artifacts);
-        
+        // 3. Пакетное обновление Firebase: возвращаем ресурсы и удаляем лот за один шаг
         const updates = {};
-        updates[`users/${myId}/${dbPath}`] = playerData[dbPath];
+        updates[`users/${myId}/artifacts`] = playerData.artifacts;
         updates[`marketplace/${lotId}`] = null;
 
         await db.ref().update(updates);
-        alert("Ордер отменен. Ресурс вернулся на склад строительства.");
+        
+        alert(`Ордер отменен. Пачка из ${refundAmount} шт. вернулась на склад.`);
         loadMarketLots();
     } catch(e) {
         console.error("Ошибка отмены ордера:", e);
+        alert("Не удалось отменить ордер.");
     }
 }
 
-// ПОКУПКА СТРОИТЕЛЬНОГО АРТЕФАКТА
 // ПОКУПКА ПАКЕТА АРТЕФАКТОВ С ЗАЩИТОЙ И ЛОГИРОВАНИЕМ
 async function buyMarketLotAction(lotId, price, currency, sellerId) {
     const myId = String(tgUser.id);
@@ -3265,7 +3264,7 @@ async function buyMarketLotAction(lotId, price, currency, sellerId) {
 
         console.log("Пытаемся купить лот:", lot);
 
-        // Определяем количество артефактов в лоте (защита от старых лотов без amount)
+        // Определяем количество артефактов в лоте
         const boughtAmount = lot.amount || 1;
 
         // Безопасно извлекаем имя предмета
@@ -3285,7 +3284,7 @@ async function buyMarketLotAction(lotId, price, currency, sellerId) {
         playerData.artifacts = (parseInt(playerData.artifacts) || 0) + boughtAmount;
         await db.ref(`users/${myId}/artifacts`).set(playerData.artifacts);
 
-        // 6. Отправляем уведомление продавцу (если у тебя есть механика уведомлений)
+        // 6. Отправляем уведомление продавцу
         try {
             await db.ref(`users/${sellerId}/clanNotification`).set({
                 text: `Ваш ордер на ${itemName} x${boughtAmount} успешно продан! Получено +${Math.floor(price)} ${currency.toUpperCase()}.`,
@@ -3300,16 +3299,16 @@ async function buyMarketLotAction(lotId, price, currency, sellerId) {
 
         alert(`Контракт выполнен! На ваш склад зачислено ${boughtAmount} шт. артефактов.`);
         
-        // Обновляем циферки баланса на экране (если функция updateUI есть в game.js)
+        // Синхронизируем UI игры, если функция отрисовки интерфейса существует
         if (typeof updateUI === "function") updateUI(); 
+        if (typeof updateHubBalances === "function") updateHubBalances();
         
         // Обновляем витрину рынка
         loadMarketLots();
 
     } catch(e) {
-        // Выводим РЕАЛЬНУЮ причину ошибки в консоль браузера/телеграма
         console.error("КРИТИЧЕСКАЯ ОШИБКА СДЕЛКИ:", e);
-        alert(`Сбой операции. Причина: ${e.message || "неизвестна"}. Посмотрите консоль (F12).`);
+        alert(`Сбой операции. Причина: ${e.message || "неизвестна"}.`);
     }
 }
 
