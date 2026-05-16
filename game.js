@@ -2742,6 +2742,7 @@ function loadMyClanData() {
             }
 
             loadClansList();
+            initClanChat();
             
         } catch (err) {
             console.error("Ошибка отображения и пересчета клана:", err);
@@ -2954,6 +2955,102 @@ async function leaveClanAction() {
         openGuildWindow();
     } catch (e) {
         console.error("Ошибка выхода из клана:", e);
+    }
+}
+
+// ==========================================
+//        СИСТЕМА ВНУТРИКЛАНОВОГО ЧАТА       
+// ==========================================
+
+let clanChatListener = null; // Для отслеживания обновлений чата в реальном времени
+
+// Функция запуска и отрисовки чата
+function initClanChat() {
+    if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
+    
+    const clanId = playerData.clanId;
+    const chatContainer = document.getElementById('clan-chat-messages');
+    if (!chatContainer) return;
+
+    // Предотвращаем дублирование слушателей базы данных
+    if (clanChatListener) {
+        db.ref(`clans/${clanId}/chat`).off('value', clanChatListener);
+    }
+
+    // Слушаем последние 30 сообщений в реальном времени
+    clanChatListener = db.ref(`clans/${clanId}/chat`).limitToLast(30).on('value', (snapshot) => {
+        chatContainer.innerHTML = "";
+        const messages = snapshot.val();
+
+        if (!messages) {
+            chatContainer.innerHTML = "<p style='color: #4b5e80; text-align: center; font-size: 11px; font-family: monospace; padding: 10px;'>[СВЯЗЬ]: Эфир пуст. Начните общение первым!</p>";
+            return;
+        }
+
+        const myId = String(tgUser.id);
+
+        Object.keys(messages).forEach(msgId => {
+            const msg = messages[msgId];
+            const isMe = String(msg.userId) === myId;
+            const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
+
+            const msgHtml = `
+                <div style="display: flex; flex-direction: column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; margin-bottom: 8px; width: 100%;">
+                    <div style="font-size: 9px; color: ${isMe ? '#00e5ff' : '#8fa0c2'}; font-family: monospace; margin-bottom: 2px; padding: 0 4px;">
+                        ${msg.userName.toUpperCase()} [${time}]
+                    </div>
+                    <div style="background: ${isMe ? 'linear-gradient(135deg, rgba(0,229,255,0.15) 0%, rgba(0,100,150,0.25) 100%)' : 'linear-gradient(135deg, rgba(20,30,55,0.6) 0%, rgba(10,15,30,0.8) 100%)'}; 
+                                border: 1px solid ${isMe ? 'rgba(0,229,255,0.3)' : 'rgba(0,229,255,0.1)'}; 
+                                padding: 8px 12px; border-radius: ${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; 
+                                max-width: 80%; color: #fff; font-size: 12px; font-family: sans-serif; word-break: break-word; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+                        ${msg.text}
+                    </div>
+                </div>
+            `;
+            chatContainer.innerHTML += msgHtml;
+        });
+
+        // Авто-скролл чата вниз к последним сообщениям
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    });
+}
+
+// Отправка текстового сообщения
+async function sendClanMessage() {
+    const input = document.getElementById('clan-chat-input');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (text.length > 100) return alert("Сообщение слишком длинное (макс. 100 симв.)");
+
+    await pushMessageToFirebase(text);
+    input.value = "";
+}
+
+// Отправка эмодзи как крупного стикера
+async function sendClanSticker(emoji) {
+    // Оборачиваем эмодзи в тег с увеличенным размером шрифта и анимацией свечения
+    const stickerHtml = `<span style="font-size: 32px; display: inline-block; filter: drop-shadow(0 0 8px rgba(0,229,255,0.5)); animation: pulseSticker 1.5s infinite alternate;">${emoji}</span>`;
+    await pushMessageToFirebase(stickerHtml);
+}
+
+// Внутренний метод отправки в БД
+async function pushMessageToFirebase(content) {
+    if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
+    const clanId = playerData.clanId;
+    const myId = String(tgUser.id);
+    const myName = playerData.colonyName || tgUser.first_name || "Пилот";
+
+    try {
+        await db.ref(`clans/${clanId}/chat`).push({
+            userId: myId,
+            userName: myName,
+            text: content,
+            timestamp: Date.now()
+        });
+    } catch (e) {
+        console.error("Ошибка отправки сообщения:", e);
     }
 }
 
