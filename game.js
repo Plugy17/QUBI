@@ -3733,37 +3733,52 @@ function spinCasinoSlots() {
         let statusHtml = "";
         let haptic = 'warning';
 
-        // 💀 СТРОГАЯ ПРОВЕРКА КОМБИНАЦИЙ: Только 3 в ряд!
+        // 🎰 1. СТРОГАЯ ПРОВЕРКА: 3 в ряд (Игрок побеждает и уходит в плюс)
         if (res1.char === res2.char && res2.char === res3.char && res1.mult > 0) {
-            // КОМБИНАЦИЯ СРАБОТАЛА
             winAmount = Math.floor(currentCasinoBet * res1.mult);
             statusHtml = `<span style="color: #fff; animation: winPulse 0.6s infinite alternate; text-transform: uppercase; font-weight: bold;">>>> +${winAmount.toLocaleString()} QUANT <<<</span>`;
             haptic = 'success';
         } 
+        // 🛡️ 2. СИСТЕМА КЭШБЭКА: Совпали любые 2 барабана (Игрок теряет, но не всё)
         else if (res1.char === res2.char || res2.char === res3.char || res1.char === res3.char) {
-            // СЛАБАЯ КОМБИНАЦИЯ (Почти совпало, но денег не даем)
-            winAmount = 0;
-            statusHtml = "<span style='color: #ffaa00;'>Сбой синхронизации. Почти совпало...</span>";
-            haptic = 'light';
+            // Вычисляем, какой именно символ повторился
+            let matchedSymbol = (res1.char === res2.char || res1.char === res3.char) ? res1 : res2;
+            
+            if (matchedSymbol.char === '🗑️') {
+                // Две корзины мусора — возвращаем всего 20% ставки
+                winAmount = Math.floor(currentCasinoBet * 0.2);
+                statusHtml = "<span style='color: #6a7999;'>Сбор утиля: вернулось 20% ставки</span>";
+                haptic = 'light';
+            } else {
+                // Две хорошие космо-картинки — возвращаем 70% ставки
+                winAmount = Math.floor(currentCasinoBet * 0.7);
+                statusHtml = "<span style='color: #ffaa00;'>Частичный резонанс: вернулось 70% ставки</span>";
+                haptic = 'light';
+            }
         }
+        // 💀 3. ПОЛНЫЙ ПРОИГРЫШ: Все 3 символа абсолютно разные
         else {
-            // ЧИСТЫЙ ПРОИГРЫШ
             winAmount = 0;
             statusHtml = "<span style='color: #4b5e80;'>Энтропия стабильна. Потеря квантов.</span>";
             haptic = 'error';
         }
 
+        // Если выиграли или сработал кэшбэк — начисляем на счет игрока и в базу
         if (winAmount > 0) {
             playerData.quant += winAmount;
             if (typeof updateUI === 'function') updateUI();
             if (typeof userRef !== 'undefined') userRef.update({ quant: playerData.quant });
         }
 
-        // Taptic feedback
+        // Taptic feedback в зависимости от результата
         if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-            if (haptic === 'success') Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-            else if (haptic === 'warning') Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
-            else Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
+            if (haptic === 'success') {
+                Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            } else if (haptic === 'light') {
+                Telegram.WebApp.HapticFeedback.impactOccurred('light'); // Мягкий тук при кэшбэке
+            } else {
+                Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+            }
         }
 
         document.getElementById('casino-status-text').innerHTML = statusHtml;
@@ -3775,7 +3790,7 @@ function spinCasinoSlots() {
         btn.style.top = '0px';
         btn.innerText = 'Запустить Ядро';
 
-    }, 2000); // Крутим чуть дольше для солидности (2 секунды)
+    }, 2000);
 }
 
 // 1. Создаем четкую функцию запуска
