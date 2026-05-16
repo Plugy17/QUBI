@@ -384,16 +384,17 @@
     <canvas id="pvpCanvas"></canvas>
 </div>
 
-    <canvas id="gameCanvas"></canvas>
+   <canvas id="gameCanvas"></canvas>
 
-    <div id="ui-layer">
+<div id="ui-layer">
         
-    <header class="game-header">
-        <div class="user-info">
+    <header class="game-header" style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%; box-sizing: border-box;">
+        
+        <div class="user-info" style="margin-top: 4px;">
             <span id="player-name">Загрузка...</span>
         </div>
 
-        <div class="wallet-connect-wrapper">
+        <div class="wallet-connect-wrapper" style="margin-top: 4px;">
             <div id="ton-connect-btn"></div>
         </div>
         
@@ -415,12 +416,14 @@
                 <b id="qubi-val">0</b>
             </div>
 
-           <button id="missions-open-btn" onclick="openMissionsModal()" style="margin-top: 6px; width: 100%; min-width: 120px; max-width: 140px; box-sizing: border-box;">
+            <button id="missions-open-btn" onclick="openMissionsModal()" style="margin-top: 6px; width: 100%; min-width: 120px; max-width: 140px; box-sizing: border-box;">
                 <span class="glitch-text" data-text="МИССИИ">МИССИИ</span>
                 <div class="btn-glow"></div>
             </button>
 
-        </div> </header> <div id="shop-modal" class="modal-overlay" style="display: none;">
+        </div> </header>
+
+     <div id="shop-modal" class="modal-overlay" style="display: none;">
         <div class="moon-card shop-window">
             <button class="close-btn" onclick="closeShop()">×</button>
             <div class="moon-header">
