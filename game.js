@@ -2536,10 +2536,12 @@ async function joinClan(clanId) {
 // 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2)
 // 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА (ЭКРАН 2) - С ПРОВЕРКОЙ НА ПРАВА ЛИДЕРА
 // 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С ОБРАБОТКОЙ ЗАПРОСОВ РЕСУРСОВ
+// 5. ОТОБРАЖЕНИЕ СВОЕГО КЛАНА С АВТОМАТИЧЕСКИМ ПЕРЕРАСЧЕТОМ КАЗНЫ НА ЛЕТУ
 function loadMyClanData() {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
 
-    db.ref('clans/' + playerData.clanId).once('value', (snapshot) => {
+    // Слушаем данные о клане
+    db.ref('clans/' + playerData.clanId).once('value', async (snapshot) => {
         try {
             const clan = snapshot.val();
             if (!clan) {
@@ -2548,6 +2550,25 @@ function loadMyClanData() {
                 openGuildWindow();
                 return;
             }
+
+            // --- КРИТИЧЕСКОЕ ОБНОВЛЕНИЕ: Перерасчет казны по актуальным кошелькам ---
+            let freshTotalQuant = 0;
+            if (clan.members) {
+                const memberIds = Object.keys(clan.members);
+                // Проходим по каждому участнику и берем его НАСТОЯЩИЙ баланс из ветки users
+                for (const mId of memberIds) {
+                    const userSnap = await db.ref(`users/${mId}/quant`).once('value');
+                    const userActualQuant = userSnap.val() || 0;
+                    freshTotalQuant += userActualQuant;
+                }
+                
+                // Если сумма изменилась, обновляем её в базе клана прямо сейчас
+                if (Math.floor(clan.totalQuant) !== Math.floor(freshTotalQuant)) {
+                    await db.ref(`clans/${playerData.clanId}/totalQuant`).set(Math.floor(freshTotalQuant));
+                    clan.totalQuant = freshTotalQuant; // Корректируем локально для интерфейса
+                }
+            }
+            // -----------------------------------------------------------------------
 
             const nameEl = document.getElementById('clan-my-name');
             const scoreEl = document.getElementById('clan-my-total-score');
@@ -2559,7 +2580,7 @@ function loadMyClanData() {
             const leaderBlock = document.getElementById('clan-leader-requests-block');
 
             if (nameEl) nameEl.innerText = clan.name.toUpperCase();
-            if (scoreEl) scoreEl.innerText = Math.floor(clan.totalQuant);
+            if (scoreEl) scoreEl.innerText = Math.floor(clan.totalQuant); // Тут будет всегда свежая сумма!
             if (!membersContainer) return;
 
             membersContainer.innerHTML = "";
@@ -2571,15 +2592,15 @@ function loadMyClanData() {
             if (isAmILeader) {
                 if (leaveBtn) leaveBtn.style.display = 'none';
                 if (deleteBtn) deleteBtn.style.display = 'block';
-                if (requestBlock) requestBlock.style.display = 'none'; // Лидер не запрашивает у самого себя
+                if (requestBlock) requestBlock.style.display = 'none'; 
                 if (leaderBlock) {
                     leaderBlock.style.display = 'block';
-                    renderLeaderRequests(clan.requests, clan.totalQuant); // Отрисовка запросов для лидера
+                    renderLeaderRequests(clan.requests, clan.totalQuant); 
                 }
             } else {
                 if (leaveBtn) leaveBtn.style.display = 'block';
                 if (deleteBtn) deleteBtn.style.display = 'none';
-                if (requestBlock) requestBlock.style.display = 'block'; // Пират может отправить запрос
+                if (requestBlock) requestBlock.style.display = 'block'; 
                 if (leaderBlock) leaderBlock.style.display = 'none';
             }
 
@@ -2598,7 +2619,7 @@ function loadMyClanData() {
                 });
             }
         } catch (err) {
-            console.error("Ошибка отображения своего клана:", err);
+            console.error("Ошибка отображения и пересчета клана:", err);
         }
     });
 }
