@@ -2959,12 +2959,33 @@ async function leaveClanAction() {
 }
 
 // ==========================================
-//        СИСТЕМА ВНУТРИКЛАНОВОГО ЧАТА       
+//    ПОЛНОЭКРАННЫЙ КИБЕРЧАТ ГИЛЬДИИ       
 // ==========================================
 
-let clanChatListener = null; // Для отслеживания обновлений чата в реальном времени
+let clanChatListener = null;
 
-// Функция запуска и отрисовки чата
+// Открыть чат на весь экран
+function openClanChat() {
+    const chatOverlay = document.getElementById('clan-chat-overlay');
+    if (!chatOverlay) return;
+    
+    chatOverlay.style.display = 'flex';
+    initClanChat();
+}
+
+// Закрыть чат
+function closeClanChat() {
+    const chatOverlay = document.getElementById('clan-chat-overlay');
+    if (chatOverlay) chatOverlay.style.display = 'none';
+    
+    // Мягко отключаем слушатель, чтобы не тратить трафик Firebase в фоне
+    if (clanChatListener && typeof playerData !== 'undefined' && playerData.clanId) {
+        db.ref(`clans/${playerData.clanId}/chat`).off('value', clanChatListener);
+        clanChatListener = null;
+    }
+}
+
+// Инициализация потока сообщений
 function initClanChat() {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
     
@@ -2972,18 +2993,16 @@ function initClanChat() {
     const chatContainer = document.getElementById('clan-chat-messages');
     if (!chatContainer) return;
 
-    // Предотвращаем дублирование слушателей базы данных
     if (clanChatListener) {
         db.ref(`clans/${clanId}/chat`).off('value', clanChatListener);
     }
 
-    // Слушаем последние 30 сообщений в реальном времени
-    clanChatListener = db.ref(`clans/${clanId}/chat`).limitToLast(30).on('value', (snapshot) => {
+    clanChatListener = db.ref(`clans/${clanId}/chat`).limitToLast(50).on('value', (snapshot) => {
         chatContainer.innerHTML = "";
         const messages = snapshot.val();
 
         if (!messages) {
-            chatContainer.innerHTML = "<p style='color: #4b5e80; text-align: center; font-size: 11px; font-family: monospace; padding: 10px;'>[СВЯЗЬ]: Эфир пуст. Начните общение первым!</p>";
+            chatContainer.innerHTML = "<div style='color: #4b5e80; text-align: center; font-size: 12px; font-family: monospace; padding-top: 50px;'>[СВЯЗЬ]: Квантовый эфир пуст. Напишите что-нибудь!</div>";
             return;
         }
 
@@ -2995,14 +3014,16 @@ function initClanChat() {
             const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
 
             const msgHtml = `
-                <div style="display: flex; flex-direction: column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; margin-bottom: 8px; width: 100%;">
-                    <div style="font-size: 9px; color: ${isMe ? '#00e5ff' : '#8fa0c2'}; font-family: monospace; margin-bottom: 2px; padding: 0 4px;">
-                        ${msg.userName.toUpperCase()} [${time}]
+                <div style="display: flex; flex-direction: column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; margin-bottom: 12px; width: 100%;">
+                    <div style="font-size: 10px; color: ${isMe ? '#00e5ff' : '#8fa0c2'}; font-family: monospace; margin-bottom: 4px; padding: 0 6px; letter-spacing: 0.5px;">
+                        ${msg.userName.toUpperCase()} <span style="color: #3b4b69; font-size: 9px;">• ${time}</span>
                     </div>
-                    <div style="background: ${isMe ? 'linear-gradient(135deg, rgba(0,229,255,0.15) 0%, rgba(0,100,150,0.25) 100%)' : 'linear-gradient(135deg, rgba(20,30,55,0.6) 0%, rgba(10,15,30,0.8) 100%)'}; 
-                                border: 1px solid ${isMe ? 'rgba(0,229,255,0.3)' : 'rgba(0,229,255,0.1)'}; 
-                                padding: 8px 12px; border-radius: ${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'}; 
-                                max-width: 80%; color: #fff; font-size: 12px; font-family: sans-serif; word-break: break-word; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+                    <div style="background: ${isMe ? 'linear-gradient(135deg, rgba(0,229,255,0.2) 0%, rgba(0,70,120,0.35) 100%)' : 'linear-gradient(135deg, rgba(20, 30, 55, 0.7) 0%, rgba(10, 15, 30, 0.9) 100%)'}; 
+                                border: 1px solid ${isMe ? 'rgba(0,229,255,0.4)' : 'rgba(0, 229, 255, 0.15)'}; 
+                                padding: 10px 14px; 
+                                border-radius: ${isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; 
+                                max-width: 85%; color: #fff; font-size: 13px; font-family: sans-serif; word-break: break-word; 
+                                box-shadow: 0 4px 15px rgba(0,0,0,0.4), inset 0 0 10px rgba(255,255,255,0.02); backdrop-filter: blur(4px);">
                         ${msg.text}
                     </div>
                 </div>
@@ -3010,47 +3031,41 @@ function initClanChat() {
             chatContainer.innerHTML += msgHtml;
         });
 
-        // Авто-скролл чата вниз к последним сообщениям
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        // Плавный скролл к последней "сторис" чата
+        setTimeout(() => {
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+        }, 50);
     });
 }
 
-// Отправка текстового сообщения
 async function sendClanMessage() {
     const input = document.getElementById('clan-chat-input');
     if (!input) return;
     const text = input.value.trim();
     if (!text) return;
 
-    if (text.length > 100) return alert("Сообщение слишком длинное (макс. 100 симв.)");
+    if (text.length > 150) return alert("Сообщение слишком длинное!");
 
     await pushMessageToFirebase(text);
     input.value = "";
 }
 
-// Отправка эмодзи как крупного стикера
 async function sendClanSticker(emoji) {
-    // Оборачиваем эмодзи в тег с увеличенным размером шрифта и анимацией свечения
-    const stickerHtml = `<span style="font-size: 32px; display: inline-block; filter: drop-shadow(0 0 8px rgba(0,229,255,0.5)); animation: pulseSticker 1.5s infinite alternate;">${emoji}</span>`;
+    const stickerHtml = `<span style="font-size: 42px; display: inline-block; filter: drop-shadow(0 0 10px rgba(0,229,255,0.6)); animation: pulseSticker 1.2s infinite alternate; padding: 5px 0;">${emoji}</span>`;
     await pushMessageToFirebase(stickerHtml);
 }
 
-// Внутренний метод отправки в БД
 async function pushMessageToFirebase(content) {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
-    const clanId = playerData.clanId;
-    const myId = String(tgUser.id);
-    const myName = playerData.colonyName || tgUser.first_name || "Пилот";
-
     try {
-        await db.ref(`clans/${clanId}/chat`).push({
-            userId: myId,
-            userName: myName,
+        await db.ref(`clans/${playerData.clanId}/chat`).push({
+            userId: String(tgUser.id),
+            userName: playerData.colonyName || tgUser.first_name || "Пилот",
             text: content,
             timestamp: Date.now()
         });
     } catch (e) {
-        console.error("Ошибка отправки сообщения:", e);
+        console.error("Ошибка чата:", e);
     }
 }
 
