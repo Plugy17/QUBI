@@ -2666,7 +2666,6 @@ function loadMyClanData() {
 
             // ВЫЗЫВАЕМ ОБНОВЛЕННЫЙ ТОР-ЛИСТ ГИЛЬДИЙ
             loadClansList();
-            renderClansList();
             
         } catch (err) {
             console.error("Ошибка отображения и пересчета клана:", err);
