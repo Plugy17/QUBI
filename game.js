@@ -2995,24 +2995,28 @@ function switchMarketTab(tab) {
     if (tab === 'buy') {
         if (buyPage) buyPage.style.display = 'block';
         if (sellPage) sellPage.style.display = 'none';
+        
         buyTabBtn.style.color = '#00e5ff';
-        buyTabBtn.style.background = 'rgba(0,229,255,0.1)';
-        buyTabBtn.style.borderBottom = '2px solid #00e5ff';
-        sellTabBtn.style.color = '#888';
+        buyTabBtn.style.background = 'rgba(0, 229, 255, 0.15)';
+        buyTabBtn.style.borderColor = 'rgba(0, 229, 255, 0.3)';
+        
+        sellTabBtn.style.color = '#64748b';
         sellTabBtn.style.background = 'none';
-        sellTabBtn.style.borderBottom = 'none';
-        loadMarketLots(); // Подгружаем все лоты
+        sellTabBtn.style.borderColor = 'transparent';
+        loadMarketLots();
     } else {
         if (buyPage) buyPage.style.display = 'none';
         if (sellPage) sellPage.style.display = 'block';
+        
         sellTabBtn.style.color = '#ff8100';
-        sellTabBtn.style.background = 'rgba(255,129,0,0.1)';
-        sellTabBtn.style.borderBottom = '2px solid #ff8100';
-        buyTabBtn.style.color = '#888';
+        sellTabBtn.style.background = 'rgba(255, 129, 0, 0.15)';
+        sellTabBtn.style.borderColor = 'rgba(255, 129, 0, 0.3)';
+        
+        buyTabBtn.style.color = '#64748b';
         buyTabBtn.style.background = 'none';
-        buyTabBtn.style.borderBottom = 'none';
-        updateMarketInventorySelect(); // Обновляем список вещей для продажи
-        loadMarketLots(); // Обновляем списки
+        buyTabBtn.style.borderColor = 'transparent';
+        updateMarketInventorySelect();
+        loadMarketLots();
     }
 }
 
@@ -3097,7 +3101,7 @@ async function createMarketLotAction() {
     }
 }
 
-// ЗАГРУЗКА И ОТРИСОВКА ВСЕХ ЛОТОВ (И ЧУЖИХ, И СВОИХ)
+// ЗАГРУЗКА И ОТРИСОВКА ВСЕХ ЛОТОВ (НОВЫЙ КИБЕРПАНК ДИЗАЙН)
 function loadMarketLots() {
     db.ref('marketplace').once('value', (snapshot) => {
         try {
@@ -3110,8 +3114,8 @@ function loadMarketLots() {
             if (myLotsContainer) myLotsContainer.innerHTML = "";
 
             if (!lots) {
-                if (buyContainer) buyContainer.innerHTML = "<p style='color: #666; text-align: center; font-size: 12px;'>На рынке пока нет активных предложений.</p>";
-                if (myLotsContainer) myLotsContainer.innerHTML = "<p style='color: #666; font-size: 12px;'>У вас нет активных объявлений.</p>";
+                if (buyContainer) buyContainer.innerHTML = "<p style='color: #4b5e80; text-align: center; font-size: 11px; font-family: monospace; padding: 20px;'>[СИСТЕМА]: Активные лоты на орбите отсутствуют.</p>";
+                if (myLotsContainer) myLotsContainer.innerHTML = "<p style='color: #4b5e80; font-size: 11px; font-family: monospace; padding: 10px;'>[СИСТЕМА]: У вас нет запущенных ордеров.</p>";
                 return;
             }
 
@@ -3122,24 +3126,42 @@ function loadMarketLots() {
                 const lot = lots[lotId];
                 const isMyLot = (lot.sellerId === myId);
 
-                // Округляем цену для красоты
+                // Форматируем цену (добавляем разделители тысяч для дорогого вида)
                 const displayPrice = Math.floor(lot.price).toLocaleString();
                 const currencyName = lot.currency.toUpperCase();
 
-                // Шаблон карточки лота
+                // ТОПОВЫЙ НЕОНОВЫЙ ШАБЛОН КАРТОЧКИ ЛОТА
                 const lotHtml = `
-                    <div style="border: 1px solid ${isMyLot ? '#ff8100' : '#333'}; background: rgba(255,255,255,0.01); padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-                        <div>
-                            <span style="color: #00e5ff; font-weight: bold; font-size: 14px;">${lot.item.name.toUpperCase()}</span>
-                            <div style="font-size: 11px; color: #aaa; margin-top: 2px;">Характеристики: уровень ${lot.item.level || 1}</div>
-                            <div style="font-size: 10px; color: #555; margin-top: 4px;">Продавец: <span style="color: #888;">${lot.sellerName}</span>${isMyLot ? ' (Вы)' : ''}</div>
+                    <div style="position: relative; background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); padding: 16px; border-radius: 10px; border: 1px solid ${isMyLot ? 'rgba(255, 129, 0, 0.4)' : 'rgba(0, 229, 255, 0.15)'}; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 0 15px rgba(255,255,255,0.02); backdrop-filter: blur(3px);">
+                        
+                        <div style="position: absolute; left: 0; top: 15%; width: 3px; height: 70%; background: ${isMyLot ? '#ff8100' : '#00e5ff'}; box-shadow: 0 0 8px ${isMyLot ? '#ff8100' : '#00e5ff'}; border-radius: 0 4px 4px 0;"></div>
+
+                        <div style="padding-left: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="color: #fff; font-weight: bold; font-size: 14px; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(255,255,255,0.1); font-family: sans-serif;">
+                                    ${lot.item.name.toUpperCase()}
+                                </span>
+                                <span style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #8fa0c2; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-family: sans-serif;">
+                                    ${lot.item.type || 'РЕСУРС АПГРЕЙДА'}
+                                </span>
+                            </div>
+                            
+                            <div style="font-size: 11px; color: #4b5e80; margin-top: 6px; font-family: monospace;">
+                                ПОСТАВЩИК: <span style="color: #7d96c4;">${lot.sellerName}</span> ${isMyLot ? '<span style="color:#ff8100; font-weight:bold;">[ВЫ]</span>' : ''}
+                            </div>
                         </div>
-                        <div style="text-align: right; display: flex; flex-direction: column; gap: 6px; align-items: flex-end;">
-                            <span style="color: #ff8100; font-weight: bold; font-family: monospace; font-size: 14px;">${displayPrice} ${currencyName}</span>
+
+                        <div style="text-align: right; display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                            <div>
+                                <span style="color: ${currencyName === 'QUBI' ? '#ffaa00' : '#00e5ff'}; font-weight: bold; font-family: monospace; font-size: 15px; text-shadow: 0 0 10px ${currencyName === 'QUBI' ? 'rgba(255,170,0,0.3)' : 'rgba(0,229,255,0.3)'};">
+                                    ${displayPrice} <span style="font-size: 10px; background: ${currencyName === 'QUBI' ? '#ffaa00' : '#00e5ff'}; color: #000; padding: 1px 4px; border-radius: 3px; margin-left: 2px; font-weight: 900; vertical-align: middle;">${currencyName}</span>
+                                </span>
+                            </div>
+
                             ${
                                 isMyLot 
-                                ? `<button onclick="cancelMarketLotAction('${lotId}')" style="background: none; border: 1px solid #ff4b2b; color: #ff4b2b; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">ОТЗВАТЬ</button>`
-                                : `<button onclick="buyMarketLotAction('${lotId}', ${lot.price}, '${lot.currency}', '${lot.sellerId}')" style="background: #00e5ff; border: none; color: #000; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 0 5px rgba(0,229,255,0.2);">КУПИТЬ</button>`
+                                ? `<button onclick="cancelMarketLotAction('${lotId}')" style="background: rgba(255,75,43,0.05); border: 1px solid rgba(255,75,43,0.5); color: #ff4b2b; padding: 5px 12px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; letter-spacing: 0.5px; transition: all 0.2s; font-family: sans-serif;" onmouseover="this.style.background='rgba(255,75,43,0.2)'" onmouseout="this.style.background='rgba(255,75,43,0.05)'">ОТЗЫВ ОРДЕРА</button>`
+                                : `<button onclick="buyMarketLotAction('${lotId}', ${lot.price}, '${lot.currency}', '${lot.sellerId}')" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 7px 16px; border-radius: 6px; font-size: 11px; font-weight: 900; cursor: pointer; letter-spacing: 0.5px; transition: all 0.2s; font-family: sans-serif; box-shadow: 0 3px 10px rgba(0,229,255,0.2);" onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">ВЫКУПИТЬ ◢</button>`
                             }
                         </div>
                     </div>
@@ -3154,8 +3176,8 @@ function loadMarketLots() {
                 }
             });
 
-            if (!hasOtherLots && buyContainer) buyContainer.innerHTML = "<p style='color: #666; text-align: center; font-size: 12px;'>Все товары на рынке принадлежат вам.</p>";
-            if (!hasMyLots && myLotsContainer) myLotsContainer.innerHTML = "<p style='color: #666; font-size: 12px;'>У вас нет активных объявлений.</p>";
+            if (!hasOtherLots && buyContainer) buyContainer.innerHTML = "<p style='color: #4b5e80; text-align: center; font-size: 11px; font-family: monospace; padding: 20px;'>[СИСТЕМА]: Все внешние контракты принадлежат вашей колонии.</p>";
+            if (!hasMyLots && myLotsContainer) myLotsContainer.innerHTML = "<p style='color: #4b5e80; font-size: 11px; font-family: monospace; padding: 10px;'>[СИСТЕМА]: У вас нет активных объявлений.</p>";
 
         } catch (e) {
             console.error("Ошибка при чтении лотов рынка:", e);
