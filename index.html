@@ -77,12 +77,17 @@
                 🎙️
             </button>
             
-            <input id="clan-chat-input" type="text" placeholder="Сообщение экипажу..." style="flex: 1; background: #050914; border: 1px solid rgba(0, 229, 255, 0.25); color: #fff; padding: 12px 14px; border-radius: 8px; font-size: 13px; outline: none; font-family: sans-serif; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); height: 42px; box-sizing: border-box;" onkeydown="if(event.key === 'Enter') sendClanMessage()">
-            
-            <button onclick="sendClanMessage()" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 0 14px; height: 42px; border-radius: 8px; font-weight: 900; font-size: 11px; cursor: pointer; letter-spacing: 0.5px; box-shadow: 0 3px 10px rgba(0,229,255,0.3); box-sizing: border-box;">ОТПРАВИТЬ</button>
-        </div>
+           <input id="clan-chat-input" type="text" placeholder="Сообщение экипажу..." 
+       style="flex: 1; background: #050914; border: 1px solid rgba(0, 229, 255, 0.25); color: #fff; padding: 12px 14px; border-radius: 8px; font-size: 13px; outline: none; font-family: sans-serif; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); height: 42px; box-sizing: border-box;" 
+       onkeydown="if(event.key === 'Enter' || event.keyCode === 13) { event.preventDefault(); sendClanTextMessage(); }">
+        
+<button id="clan-chat-send-btn" onclick="sendClanTextMessage()" 
+        style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 0 14px; height: 42px; border-radius: 8px; font-weight: 900; font-size: 11px; cursor: pointer; letter-spacing: 0.5px; box-shadow: 0 3px 10px rgba(0,229,255,0.3); box-sizing: border-box;">
+    ОТПРАВИТЬ
+</button>
     </div>
 </div>
+            </div>
 
 <style>
 /* Кастомный красивый скроллбар чата */
