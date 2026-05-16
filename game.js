@@ -2780,6 +2780,26 @@ async function leaveClanAction() {
     }
 }
 
+// 1. Создаем четкую функцию запуска
+function startEverything() {
+    console.log("Запуск всех систем...");
+    initGame(); 
+    // Мы НЕ вызываем здесь draw(), потому что в твоем файле 
+    // regenerateEnergy уже вызывается внутри initGame (строка 206).
+    // Но если ты хочешь, чтобы планеты крутились сразу, оставь:
+    draw(); 
+    
+    // ВКЛЮЧАЕМ СЛУШАТЕЛЬ УВЕДОМЛЕНИЙ ОТ ЛИДЕРА ГИЛЬДИИ
+    listenForClanNotifications();
+}
+
+// 2. Проверяем загрузку фона и стартуем
+if (bg.complete) {
+    startEverything();
+} else {
+    bg.onload = startEverything;
+}
+
 // 11. СЛУШАТЕЛЬ УВЕДОМЛЕНИЙ ОТ ГИЛЬДИИ
 function listenForClanNotifications() {
     if (typeof tgUser === 'undefined' || !tgUser || !tgUser.id) return;
@@ -2839,24 +2859,4 @@ function showInGameAlert(message) {
         alertDiv.style.opacity = '0';
         setTimeout(() => alertDiv.remove(), 500);
     }, 4500);
-}
-
-// 1. Создаем четкую функцию запуска
-function startEverything() {
-    console.log("Запуск всех систем...");
-    initGame(); 
-    // Мы НЕ вызываем здесь draw(), потому что в твоем файле 
-    // regenerateEnergy уже вызывается внутри initGame (строка 206).
-    // Но если ты хочешь, чтобы планеты крутились сразу, оставь:
-    draw(); 
-    
-    // ВКЛЮЧАЕМ СЛУШАТЕЛЬ УВЕДОМЛЕНИЙ ОТ ЛИДЕРА ГИЛЬДИИ
-    listenForClanNotifications();
-}
-
-// 2. Проверяем загрузку фона и стартуем
-if (bg.complete) {
-    startEverything();
-} else {
-    bg.onload = startEverything;
 }
