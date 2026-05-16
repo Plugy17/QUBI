@@ -556,7 +556,7 @@ function draw() {
             if (p.isStationary) {
                 // 🛸 ЭФФЕКТ СТАЦИОНАРНОГО ПОКАЧИВАНИЯ (ДРЕЙФ НА ОРБИТЕ)
                 if (p.id === 'station' || p.id === 'pvp_planet') {
-                    const floatY = Math.sin(Date.now() * 0.002) * 8; // Базовое покачивание
+                    const floatY = Math.sin(Date.now() * 0.002) * 4; // Базовое покачивание
                     ctx.translate(0, floatY);
                 }
                 // Навешиваем ОЧЕНЬ легкое и медленное покачивание на Маркет и Казино
