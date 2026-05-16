@@ -4117,7 +4117,7 @@ function claimOrderMission() {
 }
 
 // ==========================================================
-// СИСТЕМА ПРЕДЗАГРУЗКИ КЬЮБИ И СИНХРОНИЗАЦИИ СЕТИ
+// СИСТЕМА ПРЕДЗАГРУЗКИ КЬЮБИ И СИНХРОНИЗАЦИИ СЕТИ (HD-FIX)
 // ==========================================================
 
 // Новая умная функция тотальной предзагрузки
@@ -4155,7 +4155,7 @@ function initGamePreloader() {
 
                 // Так как playerData теперь объявлен в начале скрипта, мы проверяем его готовность
                 if (typeof playerData !== 'undefined' && playerData) {
-                    // Если объект есть, но Firebase еще не добавил туда missions — создаем пустой объект, чтобы не было ошибки
+                    // Если объект есть, но Firebase еще не добавил туда missions — создаем пустой объект
                     if (!playerData.missions) {
                         playerData.missions = {};
                     }
@@ -4180,7 +4180,7 @@ function initGamePreloader() {
             }, 150);
         }),
 
-        // 3. Предзагрузка графических ассетов кошелька
+        // 3. Предзагрузка графических ассетов кошелька (чтобы иконки не прыгали)
         new Promise((resolve) => {
             const imagesToLoad = ['assets/quant-icon.png', 'assets/qubi-icon.png'];
             let loadedCount = 0;
@@ -4206,30 +4206,60 @@ function initGamePreloader() {
                 loader.style.visibility = 'hidden';
             }
             
-            // 🔥 СТАРТ ИГРЫ: Отрисовываем всё ОДИН РАЗ на чистую оперативную память
+            // 🔥 ФИКС РАЗМЫТИЯ И СМЕЩЕНИЯ: 
+            // 1. Сначала жестко адаптируем сетку координат Canvas под реальный физический размер экрана смартфона
+            if (typeof resizeCanvas === 'function') resizeCanvas(); 
+            
+            // 2. Инициализируем игровые объекты на уже подготовленный Canvas
             initGame(); 
+            
+            // 3. Запускаем цикл отрисовки (графика ляжет пиксель в пиксель)
             draw(); 
             
-            // ВКЛЮЧАЕМ СЛУШАТЕЛЬ УВЕДОМЛЕНИЙ ОТ ЛИДЕРА ГИЛЬДИИ
+            // 4. Обновляем DOM-интерфейс (балансы, ники), когда все размеры Canvas зафиксированы
+            if (typeof updateGameUI === 'function') updateGameUI();
+            if (typeof updateUI === 'function') updateUI();
+            
+            // Включаем слушатель уведомлений от лидера гильдии
             listenForClanNotifications();
             
-            console.log("📡 [Qubi Core]: Синхронизация завершена. Игра запущена без перекосов.");
+            console.log("📡 [Qubi Core]: Синхронизация завершена. Игра запущена в HD качестве.");
         }, 400);
     });
 }
 
-// 1. Модифицированная функция запуска (теперь управляет лоадером)
+// 1. Модифицированная функция запуска
 function startEverything() {
     console.log("Инициализация предзагрузчика систем Qubi...");
     initGamePreloader(); // Передаем управление лоадеру
 }
 
-// 2. Проверяем загрузку фона и стартуем
-if (bg.complete) {
-    startEverything();
-} else {
-    bg.onload = startEverything;
+// 2. Умная проверка загрузки фона в ПОЛНОМ качестве (убирает мыло и смещение вверх)
+function checkBackgroundAndStart() {
+    // bg.naturalWidth > 0 гарантирует, что картинка не просто считалась, а развернулась в полном HD-разрешении
+    if (bg.complete && bg.naturalWidth > 0) {
+        startEverything();
+    } else {
+        // Если картинка еще докачивается в кэш мобилки, вешаем событие onload
+        bg.onload = function() {
+            if (bg.naturalWidth > 0) {
+                startEverything();
+            } else {
+                // Если девайс старый и не успел отдать ширину — делаем микро-шаг в 100мс
+                setTimeout(checkBackgroundAndStart, 100);
+            }
+        };
+        
+        // Защита от полного зависания (если файл поврежден на сервере)
+        bg.onerror = function() {
+            console.error("📡 [Qubi Core]: Критическая ошибка загрузки текстуры фона. Аварийный обход.");
+            startEverything();
+        };
+    }
 }
+
+// Запускаем безопасную проверку текстуры
+checkBackgroundAndStart();
 
 // 11. СЛУШАТЕЛЬ УВЕДОМЛЕНИЙ ОТ ГИЛЬДИИ
 function listenForClanNotifications() {
