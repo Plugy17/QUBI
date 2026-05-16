@@ -557,12 +557,12 @@ function draw() {
             if (p.isStationary) {
                 // 🛸 ЭФФЕКТ СТАЦИОНАРНОГО ПОКАЧИВАНИЯ (ДРЕЙФ НА ОРБИТЕ)
                 if (p.id === 'station' || p.id === 'pvp_planet') {
-                    const floatY = Math.sin(Date.now() * 0.001) * 2; // Базовое покачивание
+                    const floatY = Math.sin(Date.now() * 0.001) * 1; // Базовое покачивание
                     ctx.translate(0, floatY);
                 }
                 // Навешиваем ОЧЕНЬ легкое и медленное покачивание на Маркет и Казино
                 else if (p.id === 'market' || p.id === 'casino_station') {
-                    const slowFloatY = Math.sin(Date.now() * 0.001) * 2; // В 2 раза медленнее и всего на 3 пикселя
+                    const slowFloatY = Math.sin(Date.now() * 0.001) * 1; // В 2 раза медленнее и всего на 3 пикселя
                     ctx.translate(0, slowFloatY);
                 }
                 
