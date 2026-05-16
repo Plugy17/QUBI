@@ -264,17 +264,18 @@ const planets = [
     // СТАНЦИЯ (ОСТАЛАСЬ НА СВОЕМ МЕСТЕ)
     { id: 'station', src: 'assets/station.png', x: window.innerWidth * 0.2, y: window.innerHeight * 0.4, size: 70, rotation: 0, speed: 0, img: new Image(), action: () => openStation() },
     
-    // ГАЛАКТИЧЕСКИЙ РЫНОК (СТАТУС: ВЫШЕ СТАНЦИИ)
+    // ГАЛАКТИЧЕСКИЙ РЫНОК (СТАТИЧНЫЙ И КРУПНЫЙ)
     { 
         id: 'market', 
-        src: 'assets/market.png', // Положи картинку рынка в папку assets (или временно укажи другой ассет, например 'assets/mars.png')
+        src: 'assets/market.png', 
         x: window.innerWidth * 0.25, 
-        y: window.innerHeight * 0.24, // Y меньше чем у Станции (0.24 < 0.40), значит на экране он будет выше!
-        size: 70, 
+        y: window.innerHeight * 0.24, 
+        size: 110, // УВЕЛИЧИЛИ МАСШТАБ (было 70)
         rotation: 0, 
-        speed: 0.0015, // Мягкое вращение торговой станции рынка
-        img: new Image(), 
-        action: () => openMarketWindow() // Вызывает наше новое P2P окно!
+        speed: 0,  // ОСТАНОВИЛИ КРУЧЕНИЕ (скорость 0)
+        img: new Image(),
+        isStationary: true, // Флаг статичности (как у PvP станции)
+        action: () => openMarketWindow()
     }
 ];
 
@@ -539,18 +540,22 @@ function draw() {
             ctx.save();
             ctx.translate(p.x, p.y); 
 
-            // ПРАВКА ТУТ: Добавляем проверку на pvp_planet
-            if (p.id === 'station' || p.id === 'pvp_planet') {
-                // Эффект парения для станции и ПВП планеты
-                const floatY = Math.sin(Date.now() * 0.002) * 8; // Сделал 8 для заметности
+            // ДОБАВЛЯЕМ 'market' В СПИСОК СТАТИЧНЫХ ОБЪЕКТОВ
+            if (p.id === 'station' || p.id === 'pvp_planet' || p.id === 'market') {
+                // Эффект парения для станции, ПВП планеты и Рынка
+                // Если ты ХОЧЕШЬ, чтобы рынок плавно парил вверх-вниз, оставь как есть. 
+                // Если нужно, чтобы он стоял ШЕСТИ ХОДОМ как вкопанный — вынеси market в отдельный if без floatY.
+                const floatY = Math.sin(Date.now() * 0.002) * 8; 
                 ctx.translate(0, floatY);
-                // Вращение (rotate) НЕ вызываем, значит планета не крутится
+                
+                // Вращение (rotate) НЕ вызываем, значит Рынок крутиться НЕ БУДЕТ
             } else {
                 // Обычные планеты крутятся
                 p.rotation += p.speed;
                 ctx.rotate(p.rotation);
             }
 
+            // Рендерим планету
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
