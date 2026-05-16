@@ -2470,41 +2470,80 @@ async function createClan(clanName) {
     }
 }
 
-// 3. ЗАГРУЗКА ТОП-ЛИСТА КЛАНОВ (БЕЗОПАСНАЯ КОРРЕКТНАЯ ВЕРСИЯ)
+// 3. ЗАГРУЗКА ТОП-ЛИСТА КЛАНОВ ДЛЯ ОБОИХ ЭКРАНОВ (С УМНОЙ ПОДСВЕТКОЙ И ФИЛЬТРОМ КНОПОК)
 function loadClansList() {
-    const listContainer = document.getElementById('clans-list-container');
-    if (!listContainer) return;
+    const containerScreen1 = document.getElementById('clans-list-container');
+    const containerScreen2 = document.getElementById('clan-main-clans-list-container');
+    
+    if (!containerScreen1 && !containerScreen2) return;
 
     db.ref('clans').orderByChild('totalQuant').limitToLast(10).once('value', (snapshot) => {
         try {
             const clansData = snapshot.val();
-            listContainer.innerHTML = "";
+            
+            // Сбрасываем контейнеры перед заполнением
+            if (containerScreen1) containerScreen1.innerHTML = "";
+            if (containerScreen2) containerScreen2.innerHTML = "";
 
-            // ИСПРАВЛЕНО: Теперь вся логика обработки находится строго под проверкой на null
             if (!clansData) {
-                listContainer.innerHTML = "<p style='color: #666; font-size: 13px;'>Пока нет созданных гильдий. Будьте первыми!</p>";
+                const noClansHtml = "<p style='color: #666; font-size: 13px;'>Пока нет созданных гильдий. Будьте первыми!</p>";
+                if (containerScreen1) containerScreen1.innerHTML = noClansHtml;
+                if (containerScreen2) containerScreen2.innerHTML = noClansHtml;
                 return;
             }
 
-            // Сортируем по убыванию очков (выполняется только если данные есть)
+            // Сортируем по убыванию очков
             const sortedClans = Object.keys(clansData).map(id => ({ id, ...clansData[id] }))
                 .sort((a, b) => b.totalQuant - a.totalQuant);
 
+            // Рендерим топ-список
             sortedClans.forEach((clan, index) => {
-                const row = document.createElement('div');
-                row.style = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 6px; border: 1px solid #222;";
-                row.innerHTML = `
-                    <div>
-                        <span style="color: #ff8100; font-weight: bold; margin-right: 10px;">#${index + 1}</span>
-                        <span style="font-weight: bold;">${clan.name}</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span style="color: #00e5ff; font-size: 14px;">${Math.floor(clan.totalQuant)} Q</span>
-                        <button onclick="joinClan('${clan.id}')" style="background: #00e5ff; border: none; color: #000; padding: 4px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">ВСТУПИТЬ</button>
-                    </div>
-                `;
-                listContainer.appendChild(row);
+                const membersCount = clan.members ? Object.keys(clan.members).length : 0;
+                const isMyClan = (typeof playerData !== 'undefined' && playerData.clanId === clan.id);
+                
+                // 1. ГЕНЕРИРУЕМ СТРОКУ ДЛЯ ЭКРАНА 1 (Где кнопки "Вступить" нужны)
+                if (containerScreen1) {
+                    const row1 = document.createElement('div');
+                    row1.style = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 6px; border: 1px solid #222;";
+                    row1.innerHTML = `
+                        <div>
+                            <span style="color: ${index === 0 ? '#ff8100' : index === 1 ? '#aaa' : index === 2 ? '#cd7f32' : '#56617a'}; font-weight: bold; margin-right: 10px; font-family: monospace;">#${index + 1}</span>
+                            <span style="font-weight: bold; color: #fff;">${clan.name.toUpperCase()}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span style="color: #00e5ff; font-size: 14px; font-family: monospace;">${Math.floor(clan.totalQuant).toLocaleString()} Q</span>
+                            <button onclick="joinClan('${clan.id}')" style="background: #00e5ff; border: none; color: #000; padding: 4px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px;">ВСТУПИТЬ</button>
+                        </div>
+                    `;
+                    containerScreen1.appendChild(row1);
+                }
+
+                // 2. ГЕНЕРИРУЕМ СТРОКУ ДЛЯ ЭКРАНА 2 (Где кнопок нет, но есть подсветка своего клана)
+                if (containerScreen2) {
+                    const row2 = document.createElement('div');
+                    
+                    // Если это клан игрока — выделяем его футуристичной оранжевой рамкой
+                    const borderStyle = isMyClan 
+                        ? "border: 1px solid #ff8100; background: rgba(255,129,0,0.05); box-shadow: 0 0 10px rgba(255,129,0,0.1);" 
+                        : "border: 1px solid #222; background: rgba(255,255,255,0.02);";
+
+                    row2.style = `display: flex; justify-content: space-between; align-items: center; padding: 10px; border-radius: 6px; ${borderStyle}`;
+                    row2.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="color: ${index === 0 ? '#ff8100' : index === 1 ? '#aaa' : index === 2 ? '#cd7f32' : '#56617a'}; font-weight: bold; font-family: monospace;">#${index + 1}</span>
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="font-weight: bold; color: ${isMyClan ? '#ff8100' : '#fff'};">${clan.name.toUpperCase()}</span>
+                                <span style="color: #666; font-size: 10px;">Пиратов: ${membersCount}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="color: #00e5ff; font-weight: bold; font-family: monospace; font-size: 14px;">${Math.floor(clan.totalQuant).toLocaleString()} Q</span>
+                        </div>
+                    `;
+                    containerScreen2.appendChild(row2);
+                }
             });
+
         } catch (err) {
             console.error("Ошибка обработки списка кланов:", err);
         }
@@ -2624,6 +2663,11 @@ function loadMyClanData() {
                     membersContainer.appendChild(item);
                 });
             }
+
+            // ВЫЗЫВАЕМ ОБНОВЛЕННЫЙ ТОР-ЛИСТ ГИЛЬДИЙ
+            loadClansList();
+            renderClansList();
+            
         } catch (err) {
             console.error("Ошибка отображения и пересчета клана:", err);
         }
