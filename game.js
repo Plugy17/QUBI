@@ -270,7 +270,7 @@ const planets = [
         src: 'assets/market.png', 
         x: window.innerWidth * 0.25, 
         y: window.innerHeight * 0.24, 
-        size: 110, // УВЕЛИЧИЛИ МАСШТАБ (было 70)
+        size: 130, // УВЕЛИЧИЛИ МАСШТАБ (было 70)
         rotation: 0, 
         speed: 0,  // ОСТАНОВИЛИ КРУЧЕНИЕ (скорость 0)
         img: new Image(),
