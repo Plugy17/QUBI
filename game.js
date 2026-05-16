@@ -2959,33 +2959,33 @@ async function leaveClanAction() {
 }
 
 // ==========================================
-//    ПОЛНОЭКРАННЫЙ КИБЕРЧАТ ГИЛЬДИИ       
+//  ПОЛНОЭКРАННЫЙ КИБЕРЧАТ С ГОЛОСОВЫМИ (10с)
 // ==========================================
 
 let clanChatListener = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingTimeout = null;
+let isRecording = false;
 
-// Открыть чат на весь экран
 function openClanChat() {
     const chatOverlay = document.getElementById('clan-chat-overlay');
     if (!chatOverlay) return;
-    
     chatOverlay.style.display = 'flex';
     initClanChat();
 }
 
-// Закрыть чат
 function closeClanChat() {
     const chatOverlay = document.getElementById('clan-chat-overlay');
     if (chatOverlay) chatOverlay.style.display = 'none';
+    if (isRecording) stopAudioRecording(false); // Отмена при закрытии
     
-    // Мягко отключаем слушатель, чтобы не тратить трафик Firebase в фоне
     if (clanChatListener && typeof playerData !== 'undefined' && playerData.clanId) {
         db.ref(`clans/${playerData.clanId}/chat`).off('value', clanChatListener);
         clanChatListener = null;
     }
 }
 
-// Инициализация потока сообщений
 function initClanChat() {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
     
@@ -3002,7 +3002,7 @@ function initClanChat() {
         const messages = snapshot.val();
 
         if (!messages) {
-            chatContainer.innerHTML = "<div style='color: #4b5e80; text-align: center; font-size: 12px; font-family: monospace; padding-top: 50px;'>[СВЯЗЬ]: Квантовый эфир пуст. Напишите что-нибудь!</div>";
+            chatContainer.innerHTML = "<div style='color: #4b5e80; text-align: center; font-size: 12px; font-family: monospace; padding-top: 50px;'>[СВЯЗЬ]: Квантовый эфир пуст.</div>";
             return;
         }
 
@@ -3013,37 +3013,124 @@ function initClanChat() {
             const isMe = String(msg.userId) === myId;
             const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
 
+            // Проверяем, является ли сообщение голосовым (закодированным в Base64)
+            let messageContent = msg.text;
+            if (msg.text && msg.text.startsWith('data:audio/')) {
+                messageContent = `
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
+                        <span style="font-size: 18px;">🎙️</span>
+                        <audio src="${msg.text}" controls controlsList="nodownload" style="width: 180px; height: 30px; filter: invert(1) hue-rotate(180deg); opacity: 0.85;"></audio>
+                    </div>
+                `;
+            }
+
             const msgHtml = `
                 <div style="display: flex; flex-direction: column; align-items: ${isMe ? 'flex-end' : 'flex-start'}; margin-bottom: 12px; width: 100%;">
-                    <div style="font-size: 10px; color: ${isMe ? '#00e5ff' : '#8fa0c2'}; font-family: monospace; margin-bottom: 4px; padding: 0 6px; letter-spacing: 0.5px;">
+                    <div style="font-size: 10px; color: ${isMe ? '#00e5ff' : '#8fa0c2'}; font-family: monospace; margin-bottom: 4px; padding: 0 6px;">
                         ${msg.userName.toUpperCase()} <span style="color: #3b4b69; font-size: 9px;">• ${time}</span>
                     </div>
                     <div style="background: ${isMe ? 'linear-gradient(135deg, rgba(0,229,255,0.2) 0%, rgba(0,70,120,0.35) 100%)' : 'linear-gradient(135deg, rgba(20, 30, 55, 0.7) 0%, rgba(10, 15, 30, 0.9) 100%)'}; 
                                 border: 1px solid ${isMe ? 'rgba(0,229,255,0.4)' : 'rgba(0, 229, 255, 0.15)'}; 
                                 padding: 10px 14px; 
                                 border-radius: ${isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; 
-                                max-width: 85%; color: #fff; font-size: 13px; font-family: sans-serif; word-break: break-word; 
-                                box-shadow: 0 4px 15px rgba(0,0,0,0.4), inset 0 0 10px rgba(255,255,255,0.02); backdrop-filter: blur(4px);">
-                        ${msg.text}
+                                max-width: 85%; color: #fff; font-size: 13px; word-break: break-word; 
+                                box-shadow: 0 4px 15px rgba(0,0,0,0.4); backdrop-filter: blur(4px);">
+                        ${messageContent}
                     </div>
                 </div>
             `;
             chatContainer.innerHTML += msgHtml;
         });
 
-        // Плавный скролл к последней "сторис" чата
         setTimeout(() => {
             chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
         }, 50);
     });
 }
 
+// --- ФУНКЦИИ ЗАПИСИ ГОЛОСА ---
+
+async function toggleVoiceRecording() {
+    const btn = document.getElementById('clan-chat-voice-btn');
+    if (!btn) return;
+
+    if (!isRecording) {
+        // Запуск записи
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                
+                // Переводим аудио файл в строку Base64 для Firebase
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = async () => {
+                    const base64Audio = reader.result;
+                    // Отправляем в базу, только если запись не была отменена и файл не пустой
+                    if (base64Audio && isRecording === false && audioChunks.length > 0) {
+                        await pushMessageToFirebase(base64Audio);
+                    }
+                };
+
+                // Отключаем микрофон
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            isRecording = true;
+            mediaRecorder.start();
+            
+            // Визуальный эффект записи
+            btn.innerHTML = "🛑 10с";
+            btn.style.background = "linear-gradient(90deg, #ff4b2b, #ff416c)";
+            btn.style.boxShadow = "0 0 15px rgba(255,75,43,0.6)";
+            
+            // Ограничение: Ровно через 10 секунд запись выключится сама
+            recordingTimeout = setTimeout(() => {
+                if (isRecording) stopAudioRecording(true);
+            }, 10000);
+
+        } catch (err) {
+            console.error("Доступ к микрофону запрещен:", err);
+            alert("Не удалось получить доступ к микрофону. Разрешите его в настройках Telegram.");
+        }
+    } else {
+        // Остановка записи пользователем (сохраняем и отправляем)
+        stopAudioRecording(true);
+    }
+}
+
+function stopAudioRecording(shouldSave) {
+    if (recordingTimeout) clearTimeout(recordingTimeout);
+    
+    const btn = document.getElementById('clan-chat-voice-btn');
+    if (btn) {
+        btn.innerHTML = "🎙️";
+        btn.style.background = "rgba(0, 229, 255, 0.1)";
+        btn.style.boxShadow = "none";
+    }
+
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        if (!shouldSave) audioChunks = []; // Сбрасываем данные, если отмена
+        isRecording = false; // Ставим false ДО вызова stop, чтобы отработал триггер в onstop
+        mediaRecorder.stop();
+    } else {
+        isRecording = false;
+    }
+}
+
+// --- ОТПРАВКА СТАНДАРТНОГО ТЕКСТА ---
 async function sendClanMessage() {
     const input = document.getElementById('clan-chat-input');
     if (!input) return;
     const text = input.value.trim();
     if (!text) return;
-
     if (text.length > 150) return alert("Сообщение слишком длинное!");
 
     await pushMessageToFirebase(text);
