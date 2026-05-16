@@ -3096,11 +3096,43 @@ function initClanChat() {
             chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
         }, 50);
     });
+
+    // ⚡ НАВЕШИВАЕМ СЛУШАТЕЛИ НА ОТПРАВКУ ТЕКСТА (То, что случайно удалили)
+    const chatInput = document.getElementById('clan-chat-input');
+    const sendBtn = document.getElementById('clan-chat-send-btn'); // Кнопка отправки текста (самолетик)
+
+    if (chatInput) {
+        // Отправка по кнопке Enter
+        chatInput.onkeydown = function(e) {
+            if (e.key === 'Enter') {
+                sendClanTextMessage();
+            }
+        };
+    }
+
+    if (sendBtn) {
+        // Отправка по клику на самолётик
+        sendBtn.onclick = function() {
+            sendClanTextMessage();
+        };
+    }
+}
+
+// 💬 НОВАЯ ФУНКЦИЯ ДЛЯ ОТПРАВКИ ОБЫЧНОГО ТЕКСТА
+async function sendClanTextMessage() {
+    const chatInput = document.getElementById('clan-chat-input');
+    if (!chatInput) return;
+
+    const text = chatInput.value.trim();
+    if (text.length === 0) return; // Пустые не шлем
+
+    chatInput.value = ""; // Очищаем поле сразу
+    chatInput.focus();
+
+    await pushMessageToFirebase(text);
 }
 
 // --- ФУНКЦИИ ЗАПИСИ ГОЛОСА ---
-
-// --- ИСПРАВЛЕННЫЕ ФУНКЦИИ ЗАПИСИ ГОЛОСА ---
 
 async function toggleVoiceRecording() {
     const btn = document.getElementById('clan-chat-voice-btn');
@@ -3108,16 +3140,14 @@ async function toggleVoiceRecording() {
 
     if (!isRecording) {
         try {
-            // Запрашиваем доступ строго к аудио-каналу
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             audioChunks = [];
             
-            // Определяем, какой аудио-формат поддерживается устройством (iOS / Android / PC)
             let options = {};
             if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
                 options = { mimeType: 'audio/webm;codecs=opus' };
             } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-                options = { mimeType: 'audio/mp4' }; // Для старых iOS устройств
+                options = { mimeType: 'audio/mp4' }; 
             } else if (MediaRecorder.isTypeSupported('audio/wav')) {
                 options = { mimeType: 'audio/wav' };
             }
@@ -3137,23 +3167,18 @@ async function toggleVoiceRecording() {
                         return;
                     }
 
-                    // Сохраняем Blob с правильным типом миме-типа устройства
                     const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-                    
-                    // Переводим аудио файл в строку Base64
                     const reader = new FileReader();
                     reader.readAsDataURL(audioBlob);
                     reader.onloadend = async () => {
                         try {
                             const base64Audio = reader.result;
                             
-                            // Важно: Проверяем, что строка Base64 успешно сформировалась
                             if (!base64Audio || base64Audio === "data:") {
                                 alert("Ошибка: Не удалось перевести аудио в формат передачи.");
                                 return;
                             }
                             
-                            // Отправляем в базу
                             await pushMessageToFirebase(base64Audio);
                         } catch (firebaseErr) {
                             alert("Ошибка отправки в Firebase: " + firebaseErr.message);
@@ -3162,21 +3187,17 @@ async function toggleVoiceRecording() {
                 } catch (stopErr) {
                     alert("Ошибка обработки аудио: " + stopErr.message);
                 } finally {
-                    // В любом случае освобождаем микрофон устройства
                     stream.getTracks().forEach(track => track.stop());
                 }
             };
 
-            // Запускаем запись и настраиваем сбор данных каждые 500мс
             isRecording = true;
             mediaRecorder.start(500); 
             
-            // Визуальный эффект записи
             btn.innerHTML = "🛑 10с";
             btn.style.background = "linear-gradient(90deg, #ff4b2b, #ff416c)";
             btn.style.boxShadow = "0 0 15px rgba(255,75,43,0.6)";
             
-            // Ограничение времени
             recordingTimeout = setTimeout(() => {
                 if (isRecording) stopAudioRecording(true);
             }, 10000);
@@ -3186,7 +3207,6 @@ async function toggleVoiceRecording() {
             alert("Микрофон заблокирован. Разрешите доступ к микрофону в настройках Telegram / браузера.");
         }
     } else {
-        // Остановка записи пользователем
         stopAudioRecording(true);
     }
 }
@@ -3202,8 +3222,7 @@ function stopAudioRecording(shouldSave) {
     }
 
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
-        if (!shouldSave) audioChunks = []; // Если отменили
-        // Переводим в false строго перед вызовом .stop(), чтобы триггер не игнорировал запись
+        if (!shouldSave) audioChunks = []; 
         isRecording = false;
         mediaRecorder.stop();
     } else {
@@ -3222,7 +3241,6 @@ async function pushMessageToFirebase(content) {
     const chatRef = db.ref(`clans/${clanId}/chat`);
 
     try {
-        // 1. Сначала отправляем новое сообщение
         await chatRef.push({
             userId: String(tgUser.id),
             userName: playerData.colonyName || tgUser.first_name || "Пилот",
@@ -3230,20 +3248,16 @@ async function pushMessageToFirebase(content) {
             timestamp: Date.now()
         });
 
-        // 2. АВТО-ЧИСТКА: Удаляем сообщения старше 24 часов
-        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000); // Текущее время минус 24 часа в миллисекундах
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000); 
         
-        // Делаем запрос к ветке чата, отбирая всё, что создано ДО отметки "один день назад"
         const oldMessagesSnapshot = await chatRef.orderByChild('timestamp').endAt(oneDayAgo).once('value');
         const oldMessages = oldMessagesSnapshot.val();
 
         if (oldMessages) {
             const updates = {};
-            // Формируем пакет на удаление (выставляем null для каждого старого сообщения)
             Object.keys(oldMessages).forEach(msgId => {
                 updates[msgId] = null;
             });
-            // Удаляем всё одним быстрым запросом
             await chatRef.update(updates);
             console.log(`[ЧАТ]: Успешно удалено устаревших сообщений: ${Object.keys(updates).length}`);
         }
