@@ -3854,6 +3854,10 @@ function spinCasinoSlots() {
     }, 2000);
 }
 
+// ==========================================================
+// СИСТЕМА УПРАВЛЕНИЯ МОДАЛЬНЫМ ОКНОМ И НАГРАДАМИ (ОПТИМИЗИРОВАНО)
+// ==========================================================
+
 // Открытие модального окна миссий
 function openMissionsModal() {
     const overlay = document.getElementById('missions-overlay');
@@ -3863,6 +3867,7 @@ function openMissionsModal() {
     }
 }
 
+// Закрытие модального окна миссий
 function closeMissionsModal() {
     const overlay = document.getElementById('missions-overlay');
     if (overlay) overlay.style.display = 'none';
@@ -3870,14 +3875,17 @@ function closeMissionsModal() {
 
 // Вспомогательная функция безопасного сохранения данных в Firebase
 function syncMissionsWithFirebase() {
-    if (typeof playerData !== 'undefined' && typeof tgUser !== 'undefined') {
+    if (typeof playerData !== 'undefined' && typeof tgUser !== 'undefined' && typeof db !== 'undefined') {
         db.ref(`users/${tgUser.id}`).update({ missions: playerData.missions })
-            .then(() => { if (typeof updateUI === 'function') updateUI(); })
-            .catch(e => console.error("Ошибка синхронизации миссий:", e));
+            .then(() => { 
+                if (typeof updateUI === 'function') updateUI(); 
+                if (typeof updateGameUI === 'function') updateGameUI();
+            })
+            .catch(e => console.error("📡 [Ошибка Firebase]: Синхронизация миссий сорвалась:", e));
     }
 }
 
-// Визуальное отключение выполненной кнопки
+// Визуальное переключение выполненной кнопки в режим «ГОТОВО»
 function setButtonCompleted(btnId) {
     const btn = document.getElementById(btnId);
     if (btn) {
@@ -3898,17 +3906,22 @@ function checkMissionsStatus() {
     // Инициализируем ветку миссий, если её нет у игрока
     if (!playerData.missions) playerData.missions = {};
     
-    const todayStr = new Date().toISOString().split('T')[0]; // Формат "2026-05-16"
+    const todayStr = new Date().toISOString().split('T')[0]; // Актуальная дата сервера
 
-    // 1. Проверяем разовые миссии (навсегда)
-    const permanentMissions = ['m_sub_qubi', 'm_sub_durov', 'm_guild', 'm_order'];
+    // 1. Проверяем разовые миссии (навсегда) + защита от разницы в ID подписок
+    const permanentMissions = [
+        'm_qubi', 'm_sub_qubi', 
+        'm_durov', 'm_sub_durov', 
+        'm_guild', 'm_order'
+    ];
+    
     permanentMissions.forEach(mId => {
         if (playerData.missions[mId] === true || playerData.missions[mId] === "completed") {
             setButtonCompleted(mId);
         }
     });
 
-    // 2. Проверяем ежедневные миссии
+    // 2. Проверяем ежедневные миссии (сброс раз в сутки)
     const dailyMissions = ['m_daily', 'm_quant_500', 'm_quant_1000', 'm_qubi_100', 'm_qubi_500', 'm_raid'];
     dailyMissions.forEach(mId => {
         // Если дата выполнения совпадает с сегодняшней — квест сегодня уже сдан
@@ -3918,7 +3931,7 @@ function checkMissionsStatus() {
     });
 }
 
-// Начисление награды
+// Надежное начисление награды в объект игрока
 function grantMissionReward(rewardAmount, rewardType) {
     if (typeof playerData === 'undefined') return;
     
@@ -3926,21 +3939,32 @@ function grantMissionReward(rewardAmount, rewardType) {
         playerData.energy = (playerData.energy || 0) + rewardAmount;
     } else if (rewardType === 'credits') {
         playerData.credits = (playerData.credits || 0) + rewardAmount;
-    } else if (rewardType === 'quanta') {
-        playerData.quanta = (playerData.quanta || 0) + rewardAmount;
+    } else if (rewardType === 'quanta' || rewardType === 'quant') {
+        // Начисляем в оба возможных варианта переменной, чтобы баланс в хедере точно обновился
+        if (typeof playerData.quanta !== 'undefined') playerData.quanta = (playerData.quanta || 0) + rewardAmount;
+        if (typeof playerData.quant !== 'undefined') playerData.quant = (playerData.quant || 0) + rewardAmount;
     } else if (rewardType === 'artifact') {
-        // Логика добавления артефактов (массив или объект инвентаря)
         if (!playerData.inventory) playerData.inventory = [];
-        playerData.inventory.push(rewardAmount); // rewardAmount может быть ID артефакта, например "art_rare_01"
+        playerData.inventory.push(rewardAmount); 
     }
     
-    // Вызываем твою общую функцию обновления интерфейса игры, если она есть
+    // Мгновенно перерисовываем игровой интерфейс, чтобы цифры изменились на экране
     if (typeof updateGameUI === 'function') updateGameUI();
+    if (typeof updateUI === 'function') updateUI();
 }
 
 // ==========================================================
-// ЛОГИКА ОБРАБОТКИ КОНКРЕТНЫХ КВЕСТОВ
+// ЛОГИКА ОБРАБОТКИ КОНКРЕТНЫХ КВЕСТОВ (ЗАЩИЩЕННАЯ ВЕРСИЯ)
 // ==========================================================
+
+// Вспомогательная функция для безопасного вывода сообщений без вылета из Telegram
+function showGameAlert(message) {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
+        window.Telegram.WebApp.showAlert(message);
+    } else {
+        alert(message); // Запасной вариант только для тестов в браузере ПК
+    }
+}
 
 // 1. Ежедневный подарок
 function claimDailyReward() {
@@ -3951,7 +3975,7 @@ function claimDailyReward() {
     grantMissionReward(500, 'energy');
     setButtonCompleted('m_daily');
     syncMissionsWithFirebase();
-    alert("⚡ Энергопакет вскрыт! Получено: +500 энергии.");
+    showGameAlert("⚡ Энергопакет вскрыт! Получено: +500 энергии.");
 }
 
 // 2. Ежедневный сбор квантов (500 и 1000)
@@ -3960,8 +3984,6 @@ function claimQuantMission(requiredQuanta, rewardAmount) {
     const todayStr = new Date().toISOString().split('T')[0];
     if (playerData.missions[mId] === todayStr) return;
 
-    // Проверяем, сколько квантов игрок добыл ЗА СЕГОДНЯ
-    // У тебя должен быть счетчик playerData.dailyQuantaCollected, сбрасываемый раз в сутки
     const currentCollected = playerData.dailyQuantaCollected || 0;
 
     if (currentCollected >= requiredQuanta) {
@@ -3969,9 +3991,9 @@ function claimQuantMission(requiredQuanta, rewardAmount) {
         grantMissionReward(rewardAmount, 'quanta');
         setButtonCompleted(mId);
         syncMissionsWithFirebase();
-        alert(`🎯 Задача выполнена! Получено: +${rewardAmount} Квантов.`);
+        showGameAlert(`🎯 Задача выполнена! Получено: +${rewardAmount} Квантов.`);
     } else {
-        alert(`Недостаточно данных. Вы собрали ${currentCollected}/${requiredQuanta} квантов за сегодня.`);
+        showGameAlert(`Недостаточно данных. Вы собрали ${currentCollected}/${requiredQuanta} квантов за сегодня.`);
     }
 }
 
@@ -3981,7 +4003,6 @@ function claimQubiMission(requiredQubi) {
     const todayStr = new Date().toISOString().split('T')[0];
     if (playerData.missions[mId] === todayStr) return;
 
-    // Проверяем дневной счетчик пойманных кьюби
     const currentQubi = playerData.dailyQubiCollected || 0;
 
     if (currentQubi >= requiredQubi) {
@@ -3992,9 +4013,9 @@ function claimQubiMission(requiredQubi) {
         
         setButtonCompleted(mId);
         syncMissionsWithFirebase();
-        alert(`🎰 Артефакт синтезирован! В инвентарь добавлен: ${artName}.`);
+        showGameAlert(`🎰 Артефакт синтезирован! В инвентарь добавлен: ${artName}.`);
     } else {
-        alert(`Сканирование пустоты... Вы поймали только ${currentQubi}/${requiredQubi} Кьюби.`);
+        showGameAlert(`Сканирование пустоты... Вы поймали только ${currentQubi}/${requiredQubi} Кьюби.`);
     }
 }
 
@@ -4003,58 +4024,61 @@ function claimRaidMission() {
     const todayStr = new Date().toISOString().split('T')[0];
     if (playerData.missions['m_raid'] === todayStr) return;
 
-    // Проверяем флаг успешного рейда за сегодня
     if (playerData.dailySuccessfulRaids > 0) {
         playerData.missions['m_raid'] = todayStr;
         grantMissionReward(1000, 'credits');
         setButtonCompleted('m_raid');
         syncMissionsWithFirebase();
-        alert("⚔️ Тактический триумф! Награда: +1,000 Кредитов.");
+        showGameAlert("⚔️ Тактический триумф! Награда: +1,000 Кредитов.");
     } else {
-        alert("Бортовой компьютер не зафиксировал успешных побед в рейдах за сегодня.");
+        showGameAlert("Бортовой компьютер не зафиксировал успешных побед в рейдах за сегодня.");
     }
 }
 
-// 5. Социальные подписки (Qubi и Дуров) — один раз навсегда
+// 5. Социальные подписки (Qubi и Дуров) — с безопасным асинхронным confirm от Telegram
 function executeSocialMission(mId, url, rewardAmount, rewardType) {
     if (typeof playerData === 'undefined') return;
     if (!playerData.missions) playerData.missions = {};
     if (playerData.missions[mId] === true || playerData.missions[mId] === "completed") return;
 
-    // Проверяем, запущено ли приложение внутри Telegram
-    if (window.Telegram && window.Telegram.WebApp) {
-        // Открываем ссылку внутри Telegram поверх игры (не закрывая Mini App)
+    // 1. Открываем ссылку строго встроенным методом (без вылета)
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
         window.Telegram.WebApp.openTelegramLink(url);
     } else {
-        // Запасной вариант для тестов в обычном браузере на ПК
         window.open(url, '_blank');
     }
 
-    // Показываем игроку красивое окно проверки прямо в игре
+    // 2. Запускаем нативную асинхронную проверку, которая не вешает и не закрывает приложение
     setTimeout(() => {
-        // Имитируем онлайн-сканирование сети
-        let isConfirmed = confirm("Бортовой компьютер: Проверить статус подписки в сети Telegram?");
+        const checkMessage = "Бортовой компьютер: Проверить статус подписки в сети Telegram?";
         
-        if (isConfirmed) {
-            playerData.missions[mId] = true; // Записываем выполнение навсегда
-            grantMissionReward(rewardAmount, rewardType);
-            setButtonCompleted(mId);
-            syncMissionsWithFirebase();
-            
-            // Встроенное уведомление Telegram вместо грубого alert
-            if (window.Telegram && window.Telegram.WebApp.showAlert) {
-                window.Telegram.WebApp.showAlert(`📡 Синхронизация успешна! Награда: +${rewardAmount} зачислено.`);
-            } else {
-                alert(`📡 Синхронизация успешна! Награда: +${rewardAmount} зачислено.`);
-            }
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showConfirm) {
+            // Нативный метод Telegram принимает callback-функцию и НЕ закрывает приложение
+            window.Telegram.WebApp.showConfirm(checkMessage, function(isConfirmed) {
+                if (isConfirmed) {
+                    processSuccessfulSubscription(mId, rewardAmount, rewardType);
+                } else {
+                    showGameAlert("Ошибка: Подписка не обнаружена. Попробуйте еще раз.");
+                }
+            });
         } else {
-            if (window.Telegram && window.Telegram.WebApp.showAlert) {
-                window.Telegram.WebApp.showAlert("Ошибка: Подписка не обнаружена. Попробуйте еще раз.");
+            // Запасной старый вариант только для ПК браузера
+            if (confirm(checkMessage)) {
+                processSuccessfulSubscription(mId, rewardAmount, rewardType);
             } else {
                 alert("Ошибка: Подписка не обнаружена. Попробуйте еще раз.");
             }
         }
-    }, 1500); // Даем 1.5 секунды игроку перейти в микро-окно
+    }, 2000); // Даем 2 секунды на ознакомление с каналом
+}
+
+// Вынесли логику успеха подписки в отдельную чистую функцию
+function processSuccessfulSubscription(mId, rewardAmount, rewardType) {
+    playerData.missions[mId] = true;
+    grantMissionReward(rewardAmount, rewardType);
+    setButtonCompleted(mId);
+    syncMissionsWithFirebase();
+    showGameAlert(`📡 Синхронизация успешна! Награда: +${rewardAmount} ресурсов зачислено.`);
 }
 
 // 6. Вступить в гильдию — один раз навсегда
@@ -4063,40 +4087,31 @@ function claimGuildMission() {
     if (!playerData.missions) playerData.missions = {};
     if (playerData.missions['m_guild'] === true) return;
 
-    // Онлайн-проверка: смотрим, записан ли у игрока клан прямо сейчас в базе
     if (playerData.clanId && playerData.clanId !== "") {
         playerData.missions['m_guild'] = true;
         grantMissionReward(5000, 'credits');
         setButtonCompleted('m_guild');
         syncMissionsWithFirebase();
-        
-        if (window.Telegram && window.Telegram.WebApp.showAlert) {
-            window.Telegram.WebApp.showAlert("🛡️ Клан-протокол подтвержден! Награда: +5,000 Кредитов.");
-        } else {
-            alert("🛡️ Клан-протокол подтвержден! Награда: +5,000 Кредитов.");
-        }
+        showGameAlert("🛡️ Клан-протокол подтвержден! Награда: +5,000 Кредитов.");
     } else {
-        if (window.Telegram && window.Telegram.WebApp.showAlert) {
-            window.Telegram.WebApp.showAlert("Ошибка сканирования: Вы не состоите в клане. Вступите в гильдию через терминал связи!");
-        } else {
-            alert("Ошибка сканирования: Вы не состоите в клане. Вступите в гильдию через терминал связи!");
-        }
+        showGameAlert("Ошибка сканирования: Вы не состоите в клане. Вступите в гильдию через терминал связи!");
     }
 }
 
 // 7. Продать первый ордер — один раз навсегда
 function claimOrderMission() {
+    if (typeof playerData === 'undefined') return;
+    if (!playerData.missions) playerData.missions = {};
     if (playerData.missions['m_order'] === true) return;
 
-    // Проверяем флаг успешной продажи на маркете
     if (playerData.hasSoldFirstOrder === true) {
         playerData.missions['m_order'] = true;
         grantMissionReward(2000, 'credits');
         setButtonCompleted('m_order');
         syncMissionsWithFirebase();
-        alert("📈 Первая сделка подтверждена биржей! Награда: +2,000 Кредитов.");
+        showGameAlert("📈 Первая сделка подтверждена биржей! Награда: +2,000 Кредитов.");
     } else {
-        alert("У вас пока нет закрытых и проданных ордеров на торговой площадке.");
+        showGameAlert("У вас пока нет закрытых и проданных ордеров на торговой площадке.");
     }
 }
 
