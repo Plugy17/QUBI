@@ -3022,61 +3022,42 @@ function switchMarketTab(tab) {
 
 // Перезаполнение селектора СТРОИТЕЛЬНЫМИ артефактами из инвентаря
 // Перезаполнение селектора СТРОИТЕЛЬНЫМИ артефактами из инвентаря
+// Перезаполнение селектора числовыми артефактами для улучшения зданий
 function updateMarketInventorySelect() {
     const select = document.getElementById('market-item-select');
     if (!select) return;
     select.innerHTML = "";
 
-    // Проверяем абсолютно ВСЕ возможные названия массивов ресурсов в твоей игре:
-    const myArtifacts = playerData.buildingArtifacts || 
-                        playerData.artifacts || 
-                        playerData.materials || 
-                        playerData.resources;
+    // Берем число артефактов из твоей переменной playerData.artifacts
+    const artifactCount = parseInt(playerData.artifacts) || 0;
 
-    // ВЫВОД В КОНСОЛЬ ДЛЯ ДИАГНОСТИКИ (Нажми F12 в браузере, чтобы увидеть, что там)
-    console.log("Попытка загрузить артефакты для рынка. Найдено:", myArtifacts);
-    console.log("Весь playerData игрока:", playerData);
-
-    if (!myArtifacts || myArtifacts.length === 0) {
+    // Если у игрока 0 артефактов
+    if (artifactCount <= 0) {
         const opt = document.createElement('option');
-        // Сделали красивый футуристичный текст-заглушку
-        opt.text = "◤ СКЛАД ПУСТ: НЕТ ДОСТУПНЫХ РЕСУРСОВ ◢";
+        opt.text = "◤ СКЛАД ПУСТ: НЕТ АРТЕФАКТОВ ДЛЯ ЗДАНИЙ ◢";
         opt.value = "";
         select.appendChild(opt);
         return;
     }
 
-    myArtifacts.forEach((item, index) => {
-        // Защита: если элемент массива это просто строка или число, а не объект
-        let itemName = "";
-        let itemType = "АРТЕФАКТ";
-
-        if (typeof item === 'object' && item !== null) {
-            itemName = item.name || "Неизвестный артефакт";
-            itemType = item.type || "МАТЕРИАЛ";
-        } else {
-            // Если у тебя массив простых строк, например ["Железо", "Уран"]
-            itemName = String(item);
-        }
-
-        const opt = document.createElement('option');
-        opt.value = index;
-        opt.text = `${itemName.toUpperCase()} (${itemType})`;
-        select.appendChild(opt);
-    });
+    // Если артефакты есть, создаем один пункт, но показываем общее количество
+    const opt = document.createElement('option');
+    opt.value = "building_artifact"; // Специальный маркер предмета
+    opt.text = `ДРЕВНИЙ АРТЕФАКТ УЛУЧШЕНИЯ (ДОСТУПНО: ${artifactCount} ШТ)`;
+    select.appendChild(opt);
 }
 
 // СОЗДАНИЕ ЛОТА (ПРОДАЖА СТРОИТЕЛЬНОГО АРТЕФАКТА)
+// ВЫСТАВЛЕНИЕ АРТЕФАКТА НА БИРЖУ
 async function createMarketLotAction() {
     const select = document.getElementById('market-item-select');
     const priceInput = document.getElementById('market-price-input');
     const currencySelect = document.getElementById('market-currency-select');
 
-    if (!select || !priceInput || !currencySelect || select.value === "") {
-        return alert("У вас нет строительных артефактов для продажи!");
+    if (!select || !priceInput || !currencySelect || select.value !== "building_artifact") {
+        return alert("Выберите артефакт для продажи!");
     }
 
-    const itemIndex = parseInt(select.value);
     const price = parseInt(priceInput.value);
     const currency = currencySelect.value;
 
@@ -3084,38 +3065,43 @@ async function createMarketLotAction() {
         return alert("Укажите корректную цену!");
     }
 
-    // Ссылка на правильный массив ресурсов
-    const myArtifacts = playerData.buildingArtifacts || playerData.artifacts || [];
-    const artifact = myArtifacts[itemIndex];
-    
+    // Проверяем текущее число артефактов перед отправкой
+    let currentArtifacts = parseInt(playerData.artifacts) || 0;
+    if (currentArtifacts <= 0) {
+        return alert("У вас нет доступных артефактов!");
+    }
+
     const myId = String(tgUser.id);
     const myName = playerData.colonyName || tgUser.first_name || "Торговец";
 
     try {
-        // 1. Публикуем строительный лот на рынке
+        // 1. Публикуем лот на рынке (сохраняем структуру, чтобы карточка красиво отрисовалась)
         const lotRef = db.ref('marketplace').push();
         await lotRef.set({
             sellerId: myId,
             sellerName: myName,
-            item: artifact, // Передаем сам строительный ресурс
+            item: { 
+                name: "Артефакт улучшения", 
+                type: "РЕСУРС АПГРЕЙДА" 
+            },
             price: price,
             currency: currency,
-            isBuildingAsset: true, // Пометка для логики, что это ресурс для зданий
             timestamp: Date.now()
         });
 
-        // 2. Удаляем его из строительного инвентаря игрока
-        myArtifacts.splice(itemIndex, 1);
+        // 2. Списываем ровно 1 артефакт у игрока локально
+        playerData.artifacts = currentArtifacts - 1;
         
-        // 3. Сохраняем обновленный массив в Firebase (поменяй путь на свой, если он другой)
-        const dbPath = playerData.buildingArtifacts ? 'buildingArtifacts' : 'artifacts';
-        await db.ref(`users/${myId}/${dbPath}`).set(myArtifacts);
+        // 3. Сохраняем измененное число в Firebase по твоему пути
+        await db.ref(`users/${myId}/artifacts`).set(playerData.artifacts);
 
-        alert("Строительный артефакт выставлен на биржу!");
+        alert("Артефакт улучшения выставлен на биржу!");
         priceInput.value = "";
+        
+        // Перерисовываем вкладку продажи
         switchMarketTab('sell');
     } catch(e) {
-        console.error("Ошибка при создании лота:", e);
+        console.error("Ошибка выставления лота:", e);
         alert("Не удалось запустить ордер.");
     }
 }
@@ -3217,8 +3203,9 @@ async function cancelMarketLotAction(lotId) {
         // Инициализируем массив, если вдруг пуст
         if (!playerData[dbPath]) playerData[dbPath] = [];
         
-        // Возвращаем строительный артефакт на склад
-        playerData[dbPath].push(lot.item);
+        // Код возврата при ОТМЕНЕ лота продавцом:
+playerData.artifacts = (parseInt(playerData.artifacts) || 0) + 1;
+await db.ref(`users/${myId}/artifacts`).set(playerData.artifacts);
 
         const updates = {};
         updates[`users/${myId}/${dbPath}`] = playerData[dbPath];
@@ -3252,9 +3239,9 @@ async function buyMarketLotAction(lotId, price, currency, sellerId) {
             return;
         }
 
-        // 1. Списываем валюту (QUANT или QUBI) у покупателя
-        playerData[currency] -= price;
-        await db.ref(`users/${myId}/${currency}`).set(playerData[currency]);
+       // Код начисления при ПОКУПКЕ лота покупателем:
+playerData.artifacts = (parseInt(playerData.artifacts) || 0) + 1;
+await db.ref(`users/${myId}/artifacts`).set(playerData.artifacts);
 
         // 2. Начисляем её продавцу
         await db.ref(`users/${sellerId}/${currency}`).transaction(current => (current || 0) + price);
