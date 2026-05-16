@@ -555,26 +555,19 @@ function draw() {
             ctx.translate(p.x, p.y); 
 
             if (p.isStationary) {
-                // 🛸 ЭФФЕКТ СТАЦИОНАРНОГО ПОКАЧИВАНИЯ (ДРЕЙФ НА ОРБИТЕ)
-                if (p.id === 'station' || p.id === 'pvp_planet') {
-                    const floatY = Math.sin(Date.now() * 0.001) * 1; // Базовое покачивание
+                // 🛸 ОСТАВЛЯЕМ ПОКАЧИВАНИЕ ТОЛЬКО ДЛЯ БАЗОВОЙ СТАНЦИИ
+                if (p.id === 'station') {
+                    const floatY = Math.sin(Date.now() * 0.001) * 2; 
                     ctx.translate(0, floatY);
-                }
-                // Навешиваем ОЧЕНЬ легкое и медленное покачивание на Маркет и Казино
-                else if (p.id === 'market' || p.id === 'casino_station') {
-                    const slowFloatY = Math.sin(Date.now() * 0.001) * 1; // В 2 раза медленнее и всего на 3 пикселя
-                    ctx.translate(0, slowFloatY);
                 }
                 
                 // --- УНИКАЛЬНЫЙ ЭФФЕКТ ДЛЯ РЫНКА: МИГАЮЩИЕ ОГНИ ---
                 if (p.id === 'market') {
-                    // Рисуем саму планету рынка (сначала подложку)
                     ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
 
                     const time = Date.now();
                     const light1 = Math.sin(time * 0.005) > 0;
                     const light2 = Math.sin(time * 0.003 + 2) > 0;
-
                     const radius = p.size * 0.45;
 
                     const lightPositions = [
@@ -602,12 +595,51 @@ function draw() {
                     return;
                 }
 
+                // --- 🎰 УНИКАЛЬНЫЙ ЭФФЕКТ ДЛЯ КАЗИНО: ЛАС-ВЕГАС ОГНИ (БЕЗ АУРЫ) ---
+                if (p.id === 'casino_station') {
+                    // Рисуем саму станцию казино без подложек
+                    ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+
+                    const time = Date.now();
+                    // Слегка смещаем фазы, чтобы казино мигало в своем ритме
+                    const casinoLight1 = Math.sin(time * 0.006) > 0; 
+                    const casinoLight2 = Math.sin(time * 0.004 + 1.5) > 0;
+                    const radius = p.size * 0.46; // Огоньки прямо по контуру
+
+                    // Лас-Вегас палитра: Фиолетовый, Розовый маджента и Золотой
+                    const casinoLights = [
+                        { x: -radius * 0.5, y: -radius * 0.8, status: casinoLight1, color: '#ff00ff' }, // Розовый топ-лево
+                        { x: radius * 0.5, y: -radius * 0.8, status: casinoLight1, color: '#ff00ff' },  // Розовый топ-право
+                        { x: -radius, y: 0, status: casinoLight2, color: '#9d00ff' },                  // Фиолетовый лево
+                        { x: radius, y: 0, status: casinoLight2, color: '#9d00ff' },                   // Фиолетовый право
+                        { x: 0, y: radius, status: !casinoLight1, color: '#ffcc00' },                  // Золотой низ
+                        { x: -radius * 0.5, y: radius * 0.8, status: !casinoLight2, color: '#ffcc00' }, // Золотой боковой
+                        { x: radius * 0.5, y: radius * 0.8, status: !casinoLight2, color: '#ffcc00' }   // Золотой боковой
+                    ];
+
+                    casinoLights.forEach(dot => {
+                        if (dot.status) {
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2); // Маленькие диодные лампочки
+                            ctx.shadowBlur = 8; // Легкое, аккуратное свечение самой лампочки
+                            ctx.shadowColor = dot.color;
+                            ctx.fillStyle = dot.color;
+                            ctx.fill();
+                            ctx.restore();
+                        }
+                    });
+
+                    ctx.restore();
+                    return;
+                }
+
             } else {
                 p.rotation += p.speed;
                 ctx.rotate(p.rotation);
             }
 
-            // Рендерим остальные планеты
+            // Рендерим ПВП и остальные обычные планеты
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
