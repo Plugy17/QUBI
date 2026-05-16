@@ -3049,7 +3049,7 @@ function updateMarketInventorySelect() {
     myArtifacts.forEach((item, index) => {
         // Защита: если элемент массива это просто строка или число, а не объект
         let itemName = "";
-        let itemType = "РЕСУРС";
+        let itemType = "АРТЕФАКТ";
 
         if (typeof item === 'object' && item !== null) {
             itemName = item.name || "Неизвестный артефакт";
