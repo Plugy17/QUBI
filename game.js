@@ -540,23 +540,63 @@ function draw() {
             ctx.save();
             ctx.translate(p.x, p.y); 
 
-            // РАЗДЕЛЯЕМ ЭФФЕКТЫ ДЛЯ СТАТИЧНЫХ ОБЪЕКТОВ
-            if (p.id === 'market') {
-                // ДЛЯ РЫНКА: Никакого вращения, никакого парения. 
-                // Он просто зафиксирован в своей точке координат.
-            } 
-            else if (p.id === 'station' || p.id === 'pvp_planet') {
-                // Эффект парения остается ТОЛЬКО для станции и ПВП планеты
-                const floatY = Math.sin(Date.now() * 0.002) * 8;
-                ctx.translate(0, floatY);
-            } 
-            else {
-                // Обычные планеты крутятся по своей оси
+            if (p.isStationary) {
+                if (p.id === 'station' || p.id === 'pvp_planet') {
+                    const floatY = Math.sin(Date.now() * 0.002) * 8;
+                    ctx.translate(0, floatY);
+                }
+                
+                // --- УНИКАЛЬНЫЙ ЭФФЕКТ ДЛЯ РЫНКА: МИГАЮЩИЕ ОГНИ ---
+                if (p.id === 'market') {
+                    // Рисуем саму планету рынка (сначала подложку)
+                    ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+
+                    // Вычисляем фазы мигания на основе времени
+                    // Огни будут загораться по очереди каждые несколько миллисекунд
+                    const time = Date.now();
+                    const light1 = Math.sin(time * 0.005) > 0;  // Частота первого типа огней
+                    const light2 = Math.sin(time * 0.003 + 2) > 0; // Вторая фаза (со смещением)
+
+                    // Массив координат огней относительно ЦЕНТРА рынка (в зависимости от размера)
+                    // Размещаем их по краям "планеты", имитируя посадочные доки
+                    const radius = p.size * 0.45; // Чуть ближе к краю планеты
+
+                    const lightPositions = [
+                        { x: -radius, y: 0, status: light1, color: '#00ffcc' }, // Левый док (бирюзовый)
+                        { x: radius, y: 0, status: light1, color: '#00ffcc' },  // Правый док
+                        { x: 0, y: -radius, status: light2, color: '#ffea00' }, // Верхний маяк (желтый)
+                        { x: -radius * 0.7, y: -radius * 0.7, status: !light1, color: '#ff3300' }, // Северо-запад (предупреждающий красный)
+                        { x: radius * 0.7, y: radius * 0.7, status: !light1, color: '#ff3300' }   // Юго-восток
+                    ];
+
+                    lightPositions.forEach(dot => {
+                        if (dot.status) { // Если в этой фазе огонь должен гореть
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2); // Размер огонька — 3 пикселя
+                            
+                            // Добавляем эффект неонового свечения для самой точки
+                            ctx.shadowBlur = 10;
+                            ctx.shadowColor = dot.color;
+                            ctx.fillStyle = dot.color;
+                            ctx.fill();
+                            ctx.restore();
+                        }
+                    });
+
+                    // Так как мы уже отрисовали картинку рынка внутри этого if, 
+                    // предотвращаем повторную отрисовку ниже, временно уменьшая размер до 0
+                    ctx.restore();
+                    return;
+                }
+                // --------------------------------------------------
+
+            } else {
                 p.rotation += p.speed;
                 ctx.rotate(p.rotation);
             }
 
-            // Рендерим планету
+            // Рендерим остальные планеты
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
