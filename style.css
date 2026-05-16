@@ -1304,23 +1304,23 @@ canvas {
 }
 
 /* ========================================================
-   ИМПОРТ ШРИФТА И СТИЛИ КНОПКИ «МИССИИ» (СОХРАНЯЕМ)
+   ИМПОРТ ШРИФТА И СТИЛИ КНОПКИ «МИССИИ» (ОБНОВЛЕНО ПОД КОШЕЛЕК)
    ======================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
 
 #missions-open-btn {
-    position: fixed;
-    top: 20px;
-    left: 20px; /* Настроить положение на экране (например: right: 20px или top: 80px) */
-    z-index: 10;
+    /* ⚡ Убрали position: fixed, top и left, чтобы кнопка встала под счет */
+    display: inline-block;
+    position: relative; /* Нужно для правильной работы эффекта свечения .btn-glow */
+    
     font-family: 'Orbitron', 'Courier New', monospace;
-    font-size: 14px;
+    font-size: 12px;       /* Слегка уменьшили шрифт для аккуратности */
     font-weight: 900;
     letter-spacing: 2px;
     color: #000;
     background: linear-gradient(135deg, #00ffcc 0%, #00aaff 100%);
     border: 2px solid #00ffcc;
-    padding: 10px 24px;
+    padding: 8px 0;        /* Внутренние отступы сверху/снизу, влево/вправо убираем, так как ширина фиксирована */
     border-radius: 4px;
     cursor: pointer;
     text-transform: uppercase;
@@ -1355,7 +1355,7 @@ canvas {
 }
 
 /* ========================================================
-   ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ОКНА МИССИЙ (ДОБАВЛЯЕМ СЮДА ЖЕ)
+   ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ОКНА МИССИЙ (БОРТОВОЙ ЖУРНАЛ)
    ======================================================== */
 
 /* Делаем скролл на телефонах очень мягким (инерционный скролл iOS) */
