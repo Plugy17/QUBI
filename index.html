@@ -12,34 +12,111 @@
 </head>
 <body>
 
-    <div id="missions-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.92); backdrop-filter: blur(8px); z-index: 100; flex-direction: column; font-family: 'Orbitron', sans-serif; color: #fff;">
+   <div id="missions-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.95); backdrop-filter: blur(10px); z-index: 100; flex-direction: column; font-family: 'Orbitron', sans-serif; color: #fff;">
     
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid rgba(0, 229, 255, 0.2); background: linear-gradient(180deg, rgba(0,229,255,0.05) 0%, rgba(0,0,0,0) 100%);">
         <div>
-            <div style="font-size: 18px; font-weight: 900; color: #00e5ff; letter-spacing: 1px; text-shadow: 0 0 10px rgba(0,229,255,0.5);">БОРТОВОЙ ЖУРНАЛ</div>
+            <div style="font-size: 18px; font-weight: 900; color: #00e5ff; letter-spacing: 1px; text-shadow: 0 0 10px rgba(0,229,255,0.5);">БОРТОВОЙ ЖУРНАЛ КВЕСТОВ</div>
             <div style="font-size: 9px; color: #4b5e80; font-family: monospace; margin-top: 2px;">[СТАТУС]: СИНХРОНИЗАЦИЯ С СЕРВЕРОМ СЕТИ...</div>
         </div>
-        <button onclick="closeMissionsModal()" style="background: none; border: 1px solid rgba(255, 51, 0, 0.4); color: #ff3300; font-size: 14px; font-weight: bold; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(255,51,0,0.1);">✕</button>
+        <button onclick="closeMissionsModal()" style="background: none; border: 1px solid rgba(255, 51, 0, 0.4); color: #ff3300; font-size: 14px; font-weight: bold; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
     </div>
 
-    <div id="missions-list-container" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+    <div id="missions-list-container" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
         
-        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #ffcc00; padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
+        <div style="font-size: 11px; color: #ffcc00; letter-spacing: 2px; font-weight: 900; margin-top: 5px; font-family: monospace;">// ЦИКЛИЧЕСКИЕ СИСТЕМЫ (РАЗ В ДЕНЬ)</div>
+
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #ffcc00; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <div style="font-size: 14px; font-weight: 700; color: #fff;">ЭНЕРГЕТИЧЕСКИЙ ЗАРЯД</div>
-                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 4px; font-weight: 100;">Заберите ежедневный подарок корпорации</div>
-                <div style="font-size: 11px; color: #ffcc00; margin-top: 6px; font-family: monospace;">Награда: +500 ⚡</div>
+                <div style="font-size: 13px; font-weight: 700;">ЭНЕРГЕТИЧЕСКИЙ ЗАРЯД</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Заберите ежедневный подарок корпорации</div>
+                <div style="font-size: 11px; color: #ffcc00; margin-top: 4px; font-family: monospace;">Награда: +500 ⚡</div>
             </div>
-            <button id="mission-daily-btn" onclick="claimDailyReward()" style="background: linear-gradient(90deg, #ffcc00, #ff9900); border: none; color: #000; padding: 10px 16px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer; box-shadow: 0 0 10px rgba(255,204,0,0.3);">ЗАБРАТЬ</button>
+            <button id="m_daily" onclick="claimDailyReward()" style="background: linear-gradient(90deg, #ffcc00, #ff9900); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ЗАБРАТЬ</button>
         </div>
 
-        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #00e5ff; padding: 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #ffcc00; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <div style="font-size: 14px; font-weight: 700; color: #fff;">ИНФОРМАЦИОННЫЙ КАНАЛ</div>
-                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 4px; font-weight: 100;">Подпишитесь на квантовый канал связи игры</div>
-                <div style="font-size: 11px; color: #00e5ff; margin-top: 6px; font-family: monospace;">Награда: +2,500 💰</div>
+                <div style="font-size: 13px; font-weight: 700;">СБОР КВАНТОВ I</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Соберите 500 квантов за сегодня</div>
+                <div style="font-size: 11px; color: #ffcc00; margin-top: 4px; font-family: monospace;">Награда: +200 дополнительных Квантов</div>
             </div>
-            <button id="mission-sub-btn" onclick="followTelegramChannel()" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 10px 16px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer; box-shadow: 0 0 10px rgba(0,229,255,0.3);">ВЫПОЛНИТЬ</button>
+            <button id="m_quant_500" onclick="claimQuantMission(500, 200)" style="background: linear-gradient(90deg, #ffcc00, #ff9900); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ПРОВЕРИТЬ</button>
+        </div>
+
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #ffcc00; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 13px; font-weight: 700;">СБОР КВАНТОВ II</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Соберите 1000 квантов за сегодня</div>
+                <div style="font-size: 11px; color: #ffcc00; margin-top: 4px; font-family: monospace;">Награда: +500 дополнительных Квантов</div>
+            </div>
+            <button id="m_quant_1000" onclick="claimQuantMission(1000, 500)" style="background: linear-gradient(90deg, #ffcc00, #ff9900); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ПРОВЕРИТЬ</button>
+        </div>
+
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #ffcc00; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 13px; font-weight: 700;">ОХОТА ЗА КЬЮБИ I</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Добудьте 100 Кьюби за текущие сутки</div>
+                <div style="font-size: 11px; color: #ffcc00; margin-top: 4px; font-family: monospace;">Награда: СЛУЧАЙНЫЙ АРТЕФАКТ</div>
+            </div>
+            <button id="m_qubi_100" onclick="claimQubiMission(100)" style="background: linear-gradient(90deg, #ffcc00, #ff9900); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ПРОВЕРИТЬ</button>
+        </div>
+
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #ffcc00; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 13px; font-weight: 700;">ОХОТА ЗА КЬЮБИ II</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Добудьте 500 Кьюби за текущие сутки</div>
+                <div style="font-size: 11px; color: #ffcc00; margin-top: 4px; font-family: monospace;">Награда: РЕДКИЙ АРТЕФАКТ</div>
+            </div>
+            <button id="m_qubi_500" onclick="claimQubiMission(500)" style="background: linear-gradient(90deg, #ffcc00, #ff9900); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ПРОВЕРИТЬ</button>
+        </div>
+
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #ffcc00; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 13px; font-weight: 700;">КОСМИЧЕСКИЙ НАБЕГ</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Совершите 1 успешный рейд на сектор</div>
+                <div style="font-size: 11px; color: #ffcc00; margin-top: 4px; font-family: monospace;">Награда: +1,000 Кредитов 💰</div>
+            </div>
+            <button id="m_raid" onclick="claimRaidMission()" style="background: linear-gradient(90deg, #ffcc00, #ff9900); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ПРОВЕРИТЬ</button>
+        </div>
+
+
+        <div style="font-size: 11px; color: #00e5ff; letter-spacing: 2px; font-weight: 900; margin-top: 15px; font-family: monospace;">// ГЛОБАЛЬНЫЕ ПРОТОКОЛЫ (ОДИН РАЗ НАВСЕГДА)</div>
+
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #00e5ff; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 13px; font-weight: 700;">КАНАЛ QUBI GAME</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Подпишитесь на официальный канал игры</div>
+                <div style="font-size: 11px; color: #00e5ff; margin-top: 4px; font-family: monospace;">Награда: +2,500 Кредитов 💰</div>
+            </div>
+            <button id="m_sub_qubi" onclick="executeSocialMission('m_sub_qubi', 'https://t.me/qubi_game', 2500, 'credits')" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ВЫПОЛНИТЬ</button>
+        </div>
+
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #00e5ff; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 13px; font-weight: 700;">КАНАЛ ПАВЛА ДУРОВА</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Подпишитесь на блог основателя Telegram</div>
+                <div style="font-size: 11px; color: #00e5ff; margin-top: 4px; font-family: monospace;">Награда: +3,000 Кредитов 💰</div>
+            </div>
+            <button id="m_sub_durov" onclick="executeSocialMission('m_sub_durov', 'https://t.me/durov', 3000, 'credits')" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ВЫПОЛНИТЬ</button>
+        </div>
+
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #00e5ff; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 13px; font-weight: 700;">КОСМИЧЕСКИЙ КЛАН</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Вступите в любую гильдию (клан)</div>
+                <div style="font-size: 11px; color: #00e5ff; margin-top: 4px; font-family: monospace;">Награда: +5,000 Кредитов 💰</div>
+            </div>
+            <button id="m_guild" onclick="claimGuildMission()" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ПРОВЕРИТЬ</button>
+        </div>
+
+        <div style="background: linear-gradient(135deg, rgba(20, 30, 55, 0.6) 0%, rgba(10, 15, 30, 0.8) 100%); border: 1px solid rgba(0, 229, 255, 0.15); border-left: 4px solid #00e5ff; padding: 14px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-size: 13px; font-weight: 700;">МЕЖГАЛАКТИЧЕСКИЙ КУПЕЦ</div>
+                <div style="font-size: 11px; color: #8fa0c2; font-family: sans-serif; margin-top: 2px;">Успешно продайте свой первый ордер на Маркете</div>
+                <div style="font-size: 11px; color: #00e5ff; margin-top: 4px; font-family: monospace;">Награда: +2,000 Кредитов 💰</div>
+            </div>
+            <button id="m_order" onclick="claimOrderMission()" style="background: linear-gradient(90deg, #00e5ff, #00aaff); border: none; color: #000; padding: 10px 14px; border-radius: 6px; font-weight: 900; font-size: 11px; cursor: pointer;">ПРОВЕРИТЬ</button>
         </div>
 
     </div>
