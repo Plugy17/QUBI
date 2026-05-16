@@ -602,31 +602,6 @@ function draw() {
                     return;
                 }
 
-                // --- 🎰 УНИКАЛЬНЫЙ ЭФФЕКТ ДЛЯ КАЗИНО: НЕОНОВОЕ СВЕЧЕНИЕ АУРЫ ---
-                if (p.id === 'casino_station') {
-                    ctx.save();
-                    
-                    // Вычисляем пульсацию свечения на основе времени (плавно меняем размер от 15 до 30px)
-                    const glowPulse = 20 + Math.sin(Date.now() * 0.001) * 2;
-                    
-                    // Настраиваем неоновое размытие Canvas под казино (бирюзово-киберпанковый цвет)
-                    ctx.shadowBlur = glowPulse;
-                    ctx.shadowColor = '#00e5ff';
-                    
-                    // Рисуем невидимый круг-подложку, чтобы создать глубокую ауру за текстурой
-                    ctx.beginPath();
-                    ctx.arc(0, 0, p.size * 0.4, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(0, 229, 255, 0.15)'; // Мягкое внутреннее заполнение
-                    ctx.fill();
-                    
-                    ctx.restore();
-
-                    // Отрисовываем поверх ауры саму картинку казино
-                    ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
-                    ctx.restore();
-                    return;
-                }
-
             } else {
                 p.rotation += p.speed;
                 ctx.rotate(p.rotation);
