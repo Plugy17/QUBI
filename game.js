@@ -4115,17 +4115,89 @@ function claimOrderMission() {
     }
 }
 
-// 1. Создаем четкую функцию запуска
-function startEverything() {
-    console.log("Запуск всех систем...");
-    initGame(); 
-    // Мы НЕ вызываем здесь draw(), потому что в твоем файле 
-    // regenerateEnergy уже вызывается внутри initGame (строка 206).
-    // Но если ты хочешь, чтобы планеты крутились сразу, оставь:
-    draw(); 
+// ==========================================================
+// СИСТЕМА ПРЕДЗАГРУЗКИ КЬЮБИ И СИНХРОНИЗАЦИИ СЕТИ
+// ==========================================================
+
+// Новая умная функция тотальной предзагрузки
+function initGamePreloader() {
+    const progressFill = document.getElementById('loader-progress-fill');
+    const percentText = document.getElementById('loader-percentage');
+    const loader = document.getElementById('cyber-loader');
     
-    // ВКЛЮЧАЕМ СЛУШАТЕЛЬ УВЕДОМЛЕНИЙ ОТ ЛИДЕРА ГИЛЬДИИ
-    listenForClanNotifications();
+    let currentProgress = 0;
+    
+    // Имитируем плавный базовый поток загрузки ядра
+    let progressInterval = setInterval(() => {
+        if (currentProgress < 75) { 
+            currentProgress += Math.floor(Math.random() * 5) + 1;
+            if (currentProgress > 75) currentProgress = 75;
+            updateLoaderUI(currentProgress);
+        }
+    }, 100);
+
+    function updateLoaderUI(val) {
+        if (progressFill) progressFill.style.width = val + '%';
+        if (percentText) percentText.textContent = val + '%';
+    }
+
+    // Комплексная проверка готовности всех компонентов среды (Промисы)
+    Promise.all([
+        // 1. Проверяем загрузку шрифтов
+        document.fonts ? document.fonts.ready : Promise.resolve(),
+        
+        // 2. Ждем данные игрока от Firebase (Проверяем раз в 150мс, пока playerData не загрузится)
+        new Promise((resolve) => {
+            let checkFirebase = setInterval(() => {
+                if (typeof playerData !== 'undefined' && playerData && playerData.missions) {
+                    clearInterval(checkFirebase);
+                    resolve();
+                }
+            }, 150);
+        }),
+
+        // 3. Предзагрузка графических ассетов кошелька
+        new Promise((resolve) => {
+            const imagesToLoad = ['assets/quant-icon.png', 'assets/qubi-icon.png'];
+            let loadedCount = 0;
+            if (imagesToLoad.length === 0) resolve();
+            imagesToLoad.forEach(src => {
+                const img = new Image();
+                img.src = src;
+                img.onload = img.onerror = () => {
+                    loadedCount++;
+                    if (loadedCount === imagesToLoad.length) resolve();
+                };
+            });
+        })
+    ]).then(() => {
+        // База данных и текстуры на месте! Добиваем прогресс-бар до 100%
+        clearInterval(progressInterval);
+        updateLoaderUI(100);
+        
+        // Даем 400мс на красивое завершение анимации полосы прогресса
+        setTimeout(() => {
+            if (loader) {
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+            }
+            
+            // 🔥 СТАРТ ИГРЫ: Отрисовываем всё ОДИН РАЗ на чистую оперативную память
+            initGame(); 
+            draw(); 
+            
+            // ВКЛЮЧАЕМ СЛУШАТЕЛЬ УВЕДОМЛЕНИЙ ОТ ЛИДЕРА ГИЛЬДИИ
+            listenForClanNotifications();
+            
+            console.log("📡 [Qubi Core]: Синхронизация завершена. Игра запущена без перекосов.");
+        }, 400);
+    });
+}
+
+// 1. Модифицированная функция запуска (теперь управляет лоадером)
+function startEverything() {
+    console.log("Инициализация предзагрузчика систем Qubi...");
+    initGamePreloader(); // Передаем управление лоадеру
 }
 
 // 2. Проверяем загрузку фона и стартуем
@@ -4156,7 +4228,6 @@ function listenForClanNotifications() {
 
 // Вспомогательная функция для красивого вывода уведомления прямо на игровой экран
 function showInGameAlert(message) {
-    // Создаем элемент уведомления динамически
     const alertDiv = document.createElement('div');
     alertDiv.style = `
         position: fixed;
@@ -4182,13 +4253,11 @@ function showInGameAlert(message) {
     alertDiv.innerText = message.toUpperCase();
     document.body.appendChild(alertDiv);
 
-    // Анимация появления (выезжает сверху вниз за кнопки ТГ)
     setTimeout(() => {
         alertDiv.style.transform = 'translateX(-50%) translateY(100px)';
         alertDiv.style.opacity = '1';
     }, 100);
 
-    // Анимация исчезновения через 4 секунды
     setTimeout(() => {
         alertDiv.style.transform = 'translateX(-50%) translateY(-100px)';
         alertDiv.style.opacity = '0';
