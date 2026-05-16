@@ -282,9 +282,9 @@ const planets = [
     {
         id: 'casino_station',
         src: 'assets/casino.png', // Путь к твоей новой картинке
-        x: window.innerWidth * 0.8, // Размещаем в свободной зоне справа внизу
-        y: window.innerHeight * 0.72,
-        size: 80,
+        x: window.innerWidth * 0.24, // Размещаем в свободной зоне справа внизу
+        y: window.innerHeight * 0.75,
+        size: 120,
         rotation: 0,
         speed: 0, // Слегка крутится
         img: new Image(),
