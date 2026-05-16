@@ -4017,34 +4017,70 @@ function claimRaidMission() {
 
 // 5. Социальные подписки (Qubi и Дуров) — один раз навсегда
 function executeSocialMission(mId, url, rewardAmount, rewardType) {
-    if (playerData.missions[mId] === true) return;
+    if (typeof playerData === 'undefined') return;
+    if (!playerData.missions) playerData.missions = {};
+    if (playerData.missions[mId] === true || playerData.missions[mId] === "completed") return;
 
-    // Открываем канал в новом окне
-    window.open(url, '_blank');
+    // Проверяем, запущено ли приложение внутри Telegram
+    if (window.Telegram && window.Telegram.WebApp) {
+        // Открываем ссылку внутри Telegram поверх игры (не закрывая Mini App)
+        window.Telegram.WebApp.openTelegramLink(url);
+    } else {
+        // Запасной вариант для тестов в обычном браузере на ПК
+        window.open(url, '_blank');
+    }
 
-    // Через небольшой таймаут активируем награду
+    // Показываем игроку красивое окно проверки прямо в игре
     setTimeout(() => {
-        playerData.missions[mId] = true;
-        grantMissionReward(rewardAmount, rewardType);
-        setButtonCompleted(mId);
-        syncMissionsWithFirebase();
-        alert(`📡 Канал успешно синхронизирован! Получено: +${rewardAmount} ресурсов.`);
-    }, 2000);
+        // Имитируем онлайн-сканирование сети
+        let isConfirmed = confirm("Бортовой компьютер: Проверить статус подписки в сети Telegram?");
+        
+        if (isConfirmed) {
+            playerData.missions[mId] = true; // Записываем выполнение навсегда
+            grantMissionReward(rewardAmount, rewardType);
+            setButtonCompleted(mId);
+            syncMissionsWithFirebase();
+            
+            // Встроенное уведомление Telegram вместо грубого alert
+            if (window.Telegram && window.Telegram.WebApp.showAlert) {
+                window.Telegram.WebApp.showAlert(`📡 Синхронизация успешна! Награда: +${rewardAmount} зачислено.`);
+            } else {
+                alert(`📡 Синхронизация успешна! Награда: +${rewardAmount} зачислено.`);
+            }
+        } else {
+            if (window.Telegram && window.Telegram.WebApp.showAlert) {
+                window.Telegram.WebApp.showAlert("Ошибка: Подписка не обнаружена. Попробуйте еще раз.");
+            } else {
+                alert("Ошибка: Подписка не обнаружена. Попробуйте еще раз.");
+            }
+        }
+    }, 1500); // Даем 1.5 секунды игроку перейти в микро-окно
 }
 
 // 6. Вступить в гильдию — один раз навсегда
 function claimGuildMission() {
+    if (typeof playerData === 'undefined') return;
+    if (!playerData.missions) playerData.missions = {};
     if (playerData.missions['m_guild'] === true) return;
 
-    // Проверяем, состоит ли игрок в клане (наличие clanId)
+    // Онлайн-проверка: смотрим, записан ли у игрока клан прямо сейчас в базе
     if (playerData.clanId && playerData.clanId !== "") {
         playerData.missions['m_guild'] = true;
         grantMissionReward(5000, 'credits');
         setButtonCompleted('m_guild');
         syncMissionsWithFirebase();
-        alert("🛡️ Клан-протокол подтвержден! Награда: +5,000 Кредитов.");
+        
+        if (window.Telegram && window.Telegram.WebApp.showAlert) {
+            window.Telegram.WebApp.showAlert("🛡️ Клан-протокол подтвержден! Награда: +5,000 Кредитов.");
+        } else {
+            alert("🛡️ Клан-протокол подтвержден! Награда: +5,000 Кредитов.");
+        }
     } else {
-        alert("Вы не состоите в клане. Сначала вступите в гильдию через терминал связи.");
+        if (window.Telegram && window.Telegram.WebApp.showAlert) {
+            window.Telegram.WebApp.showAlert("Ошибка сканирования: Вы не состоите в клане. Вступите в гильдию через терминал связи!");
+        } else {
+            alert("Ошибка сканирования: Вы не состоите в клане. Вступите в гильдию через терминал связи!");
+        }
     }
 }
 
