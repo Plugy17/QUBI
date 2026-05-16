@@ -2507,9 +2507,9 @@ function spawnPvPWallsLoop() {
 
 // --- ЛОГИКА ГИЛЬДИЙ И КЛАНОВ ---
 
-// ==========================================
-//        СИСТЕМА КОСМИЧЕСКИХ ГИЛЬДИЙ
-// ==========================================
+// ==========================================================
+//        СИСТЕМА КОСМИЧЕСКИХ ГИЛЬДИЙ (С 3D КУБОМ)
+// ==========================================================
 
 // 1. ОТКРЫТИЕ ОКНА И ПРОВЕРКА СТАТУСА
 async function openGuildWindow() {
@@ -2518,6 +2518,13 @@ async function openGuildWindow() {
     if (!clanWin) return console.error("Элемент 'clan-window' не найден в HTML!");
     
     clanWin.style.display = 'block';
+    
+    // ВКЛЮЧАЕМ 3D КУБ (Индикатор начала синхронизации ядра гильдии)
+    const guildCube = document.getElementById('guild-cube-container');
+    if (guildCube) {
+        guildCube.style.display = 'flex';
+        guildCube.style.opacity = '1';
+    }
     
     const noClanScreen = document.getElementById('clan-no-clan-screen');
     const mainScreen = document.getElementById('clan-main-screen');
@@ -2611,6 +2618,10 @@ function loadClansList() {
                 const noClansHtml = "<p style='color: #4b5e80; text-align: center; font-size: 11px; font-family: monospace; padding: 20px;'>[СИСТЕМА]: Активные гильдии в данном секторе отсутствуют.</p>";
                 if (containerScreen1) containerScreen1.innerHTML = noClansHtml;
                 if (containerScreen2) containerScreen2.innerHTML = noClansHtml;
+                
+                // Скрываем куб, если загрузка пуста
+                const guildCube = document.getElementById('guild-cube-container');
+                if (guildCube) guildCube.style.display = 'none';
                 return;
             }
 
@@ -2671,6 +2682,11 @@ function loadClansList() {
                     containerScreen2.appendChild(row2);
                 }
             });
+
+            // ПЛАВНО ОСТАВЛЯЕМ КУБ КАК ДЕКОР ИЛИ СКРЫВАЕМ (По желанию: можно поставить style.display = 'none')
+            // Оставим его крутиться вверху окна для красоты интерфейса!
+            const guildCube = document.getElementById('guild-cube-container');
+            if (guildCube) guildCube.style.opacity = '0.7'; 
 
         } catch (err) {
             console.error("Ошибка обработки списка кланов:", err);
@@ -2792,6 +2808,10 @@ function loadMyClanData() {
                 });
             }
 
+            // Фиксация куба: данные загрузились, куб стабильно крутится на фоне интерфейса
+            const guildCube = document.getElementById('guild-cube-container');
+            if (guildCube) guildCube.style.opacity = '1';
+
             loadClansList();
             initClanChat();
             
@@ -2867,7 +2887,7 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
     const clanId = playerData.clanId;
 
     if (isApproved && totalQuant < amount) {
-        return alert("В казне гильдии недостаточно QUANT для одобрения этого запроса (общая сумма кошельков меньше запроса)!");
+        return alert("В казне гильдии недостаточно QUANT для одобрения этого запроса!");
     }
 
     try {
@@ -2926,7 +2946,7 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
                 timestamp: Date.now()
             });
 
-            alert("Запрос одобрен! Сумма списана со всех участников пропорционально их кошелькам и выдана игроку.");
+            alert("Запрос одобрен! Сумма распределена.");
         } else {
             await db.ref(`users/${targetUserId}/clanNotification`).set({
                 text: `Ваш запрос на получение ${Math.floor(amount)} QUANT был отклонен Лидером.`,
@@ -2947,11 +2967,8 @@ async function answerClanRequest(reqId, isApproved, amount, targetUserId, totalQ
 async function deleteClanAction() {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
     
-    const confirmFirst = confirm("ВНИМАНИЕ! Вы действительно хотите ПОЛНОСТЬЮ УДАЛИТЬ эту гильдию? Все участники будут исключены!");
+    const confirmFirst = confirm("ВНИМАНИЕ! Вы действительно хотите ПОЛНОСТЬЮ УДАЛИТЬ эту гильдию?");
     if (!confirmFirst) return;
-
-    const confirmSecond = confirm("Это действие необратимо! Подтвердить уничтожение сектора гильдии?");
-    if (!confirmSecond) return;
 
     const clanId = playerData.clanId;
     const myId = String(tgUser.id);
@@ -2963,7 +2980,7 @@ async function deleteClanAction() {
         if (!clanData) return;
 
         if (clanData.leaderId !== myId) {
-            alert("Ошибка безопасности: Вы не являетесь создателем этой гильдии!");
+            alert("Ошибка безопасности!");
             return;
         }
 
@@ -2979,11 +2996,10 @@ async function deleteClanAction() {
         await db.ref(`clans/${clanId}`).remove();
         playerData.clanId = "";
         
-        alert("Гильдия была официально ликвидирована.");
+        alert("Гильдия ликвидирована.");
         openGuildWindow(); 
     } catch (e) {
         console.error("Критическая ошибка при удалении гильдии:", e);
-        alert("Не удалось распустить гильдию. Попробуйте позже.");
     }
 }
 
