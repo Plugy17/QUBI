@@ -3168,15 +3168,38 @@ async function sendClanSticker(emoji) {
 
 async function pushMessageToFirebase(content) {
     if (typeof playerData === 'undefined' || !playerData || !playerData.clanId) return;
+    const clanId = playerData.clanId;
+    const chatRef = db.ref(`clans/${clanId}/chat`);
+
     try {
-        await db.ref(`clans/${playerData.clanId}/chat`).push({
+        // 1. Сначала отправляем новое сообщение
+        await chatRef.push({
             userId: String(tgUser.id),
             userName: playerData.colonyName || tgUser.first_name || "Пилот",
             text: content,
             timestamp: Date.now()
         });
+
+        // 2. АВТО-ЧИСТКА: Удаляем сообщения старше 24 часов
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000); // Текущее время минус 24 часа в миллисекундах
+        
+        // Делаем запрос к ветке чата, отбирая всё, что создано ДО отметки "один день назад"
+        const oldMessagesSnapshot = await chatRef.orderByChild('timestamp').endAt(oneDayAgo).once('value');
+        const oldMessages = oldMessagesSnapshot.val();
+
+        if (oldMessages) {
+            const updates = {};
+            // Формируем пакет на удаление (выставляем null для каждого старого сообщения)
+            Object.keys(oldMessages).forEach(msgId => {
+                updates[msgId] = null;
+            });
+            // Удаляем всё одним быстрым запросом
+            await chatRef.update(updates);
+            console.log(`[ЧАТ]: Успешно удалено устаревших сообщений: ${Object.keys(updates).length}`);
+        }
+
     } catch (e) {
-        console.error("Ошибка чата:", e);
+        console.error("Ошибка чата или авто-чистки:", e);
     }
 }
 
