@@ -1302,3 +1302,49 @@ canvas {
     background: #00e5ff;
     border-radius: 3px;
 }
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
+
+#missions-open-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px; /* Расположи её, где тебе удобнее (например, под чатом или в углу) */
+    z-index: 10;
+    font-family: 'Orbitron', 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #000;
+    background: linear-gradient(135deg, #00ffcc 0%, #00aaff 100%);
+    border: 2px solid #00ffcc;
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.5);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+#missions-open-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 5px rgba(0, 255, 204, 0.8);
+}
+
+/* Эффект мерцания текста при наведении/активности */
+.glitch-text {
+    position: relative;
+    display: inline-block;
+}
+
+/* Пульсирующий задний фон у кнопки */
+.btn-glow {
+    position: absolute;
+    top: -50%; left: -50%; right: -50%; bottom: -50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+    transform: scale(0);
+    transition: transform 0.5s ease;
+}
+#missions-open-btn:hover .btn-glow {
+    transform: scale(1);
+}
