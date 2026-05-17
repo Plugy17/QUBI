@@ -4401,28 +4401,23 @@ for (let i = 0; i < MAX_HISTORY; i++) {
 
 // Логика ежесекундного изменения цены и обновления экрана
 function tickExchangeMarket() {
-    // Искусственный тренд: случайное блуждание с легким возвратом к среднему
-    const changePercent = (Math.random() - 0.5) * 0.006; // До +-0.6% в секунду
+    const changePercent = (Math.random() - 0.5) * 0.006; 
     const oldPrice = currentQubiPrice;
     currentQubiPrice *= (1 + changePercent);
     
-    // Ограничиваем цену, чтобы не ушла в ноль
     if (currentQubiPrice < 0.01) currentQubiPrice = 0.01;
 
     priceHistory.push(currentQubiPrice);
     if (priceHistory.length > MAX_HISTORY) priceHistory.shift();
 
-    // Перерисовываем график и UI
     renderExchangeChart();
     updatePositionProfit();
     
-    // Обновляем главный дисплей цены
     const priceDisplay = document.getElementById('exch-price-val');
     if (priceDisplay) {
         priceDisplay.innerText = currentQubiPrice.toFixed(4) + ' USDT';
         priceDisplay.style.color = currentQubiPrice >= oldPrice ? '#00e5ff' : '#ff4b2b';
         
-        // Стрелочка направления движения цены
         const arrow = document.getElementById('exch-price-arrow');
         if (arrow) {
             arrow.innerText = currentQubiPrice >= oldPrice ? '▲' : '▼';
@@ -4441,7 +4436,6 @@ function renderExchangeChart() {
     
     ctx.clearRect(0, 0, w, h);
     
-    // Сетка
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
     for(let i = 0; i < w; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke(); }
@@ -4451,38 +4445,31 @@ function renderExchangeChart() {
     const maxP = Math.max(...priceHistory);
     const range = maxP - minP || 0.01;
 
-    // Отрисовка неоновой линии графика
     ctx.beginPath();
     ctx.lineWidth = 2.5;
     
-    // Градиент под графиком
     const gradient = ctx.createLinearGradient(0, 0, 0, h);
     gradient.addColorStop(0, 'rgba(0, 229, 255, 0.15)');
     gradient.addColorStop(1, 'rgba(0, 229, 255, 0.0)');
 
     for (let i = 0; i < priceHistory.length; i++) {
         const x = (i / (MAX_HISTORY - 1)) * w;
-        // Переворачиваем ось Y, закладываем отступы в 15px
         const y = h - 15 - ((priceHistory[i] - minP) / range) * (h - 30);
-        
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
     }
     
-    // Эффект свечения линии
     ctx.strokeStyle = '#00e5ff';
     ctx.shadowBlur = 8;
     ctx.shadowColor = '#00e5ff';
     ctx.stroke();
-    ctx.shadowBlur = 0; // Сбрасываем тень для других элементов
+    ctx.shadowBlur = 0; 
 
-    // Замыкаем контур для градиента заливки
     ctx.lineTo((priceHistory.length - 1) / (MAX_HISTORY - 1) * w, h);
     ctx.lineTo(0, h);
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Линия точки входа (Entry Price), если открыта позиция
     if (activePosition) {
         const entryY = h - 15 - ((activePosition.entryPrice - minP) / range) * (h - 30);
         if (entryY >= 0 && entryY <= h) {
@@ -4492,7 +4479,7 @@ function renderExchangeChart() {
             ctx.moveTo(0, entryY);
             ctx.lineTo(w, entryY);
             ctx.stroke();
-            ctx.setLineDash([]); // Сброс пунктира
+            ctx.setLineDash([]); 
         }
     }
 }
@@ -4506,10 +4493,8 @@ function updatePositionProfit() {
     }
     if (posWidget) posWidget.style.display = 'block';
 
-    // Считаем изменение цены в процентах
     const priceChangePct = (currentQubiPrice - activePosition.entryPrice) / activePosition.entryPrice;
     
-    // PnL с учетом плеча
     let pnlPct = priceChangePct * activePosition.leverage;
     if (activePosition.type === 'SHORT') pnlPct = -pnlPct;
 
@@ -4524,9 +4509,13 @@ function updatePositionProfit() {
         pnlText.style.color = pnlAmount >= 0 ? '#00ffcc' : '#ff4b2b';
     }
 
-    // ⚠️ Механика ЛИКВИДАЦИИ (Если убыток достиг 100% от маржи)
+    // ⚠️ МЕХАНИКА АВТО-ЛИКВИДАЦИИ (Убыток достиг 100% маржи)
     if (pnlPct <= -1.0) {
-        // Позиция ликвидирована!
+        // Вызов твоего красивого внутриигрового алерта
+        if (typeof showInGameAlert === 'function') {
+            showInGameAlert(`⚠️ ЛИКВИДАЦИЯ: Позиция ${activePosition.type} ${activePosition.leverage}x принудительно закрыта.`);
+        }
+
         activePosition = null;
         if (window.Telegram && Telegram.WebApp.HapticFeedback) {
             Telegram.WebApp.HapticFeedback.notificationOccurred('error');
@@ -4536,7 +4525,6 @@ function updatePositionProfit() {
         return;
     }
 
-    // Предупреждение о близкой ликвидации (убыток > 75%)
     if (liqText) {
         if (pnlPct <= -0.75) {
             liqText.style.display = 'block';
@@ -4550,20 +4538,24 @@ function updatePositionProfit() {
 // Открытие позиции (LONG или SHORT)
 function openTradingPosition(type) {
     if (activePosition) {
+        if (typeof showInGameAlert === 'function') {
+            showInGameAlert("У вас уже есть открытый контракт!");
+        }
         document.getElementById('exch-status-msg').innerText = "Ошибка: Сначала закройте текущую позицию!";
         return;
     }
     if (!playerData || (playerData.quant || 0) < currentExchangeBet) {
+        if (typeof showInGameAlert === 'function') {
+            showInGameAlert("Недостаточно QUANT для обеспечения маржи!");
+        }
         document.getElementById('exch-status-msg').innerText = "Недостаточно QUANT для обеспечения маржи.";
         return;
     }
 
-    // Списываем маржу со счета
     playerData.quant -= currentExchangeBet;
     if (typeof updateUI === 'function') updateUI();
     if (typeof userRef !== 'undefined') userRef.update({ quant: playerData.quant });
 
-    // Фиксируем сделку
     activePosition = {
         type: type,
         entryPrice: currentQubiPrice,
@@ -4571,8 +4563,12 @@ function openTradingPosition(type) {
         leverage: currentLeverage
     };
 
+    // Уведомление об успешном входе на рынок через твой алерт
+    if (typeof showInGameAlert === 'function') {
+        showInGameAlert(`🚀 Открыт контракт: ${type} c плечом ${currentLeverage}x!`);
+    }
+
     document.getElementById('exch-status-msg').innerHTML = `Позиция <span style="color:${type==='LONG'?'#00ffcc':'#ff4b2b'}">${type} ${currentLeverage}x</span> успешно открыта!`;
-    
     document.getElementById('pos-type-display').innerText = `${activePosition.type} ${activePosition.leverage}x`;
     document.getElementById('pos-entry-display').innerText = activePosition.entryPrice.toFixed(4);
 
@@ -4582,7 +4578,7 @@ function openTradingPosition(type) {
     updatePositionProfit();
 }
 
-// Ручное закрытие позиции (фиксация профита или убытка)
+// Ручное закрытие позиции (Market Close с уведомлением)
 function closeTradingPosition() {
     if (!activePosition) return;
 
@@ -4591,7 +4587,6 @@ function closeTradingPosition() {
     if (activePosition.type === 'SHORT') pnlPct = -pnlPct;
 
     const pnlAmount = activePosition.margin * pnlPct;
-    // Возвращаем маржу + чистый результат сделки
     const finalReturn = activePosition.margin + pnlAmount;
 
     if (finalReturn > 0) {
@@ -4600,11 +4595,20 @@ function closeTradingPosition() {
         if (typeof userRef !== 'undefined') userRef.update({ quant: playerData.quant });
     }
 
+    // 🔔 ВЫЗОВ ВСПЛЫВАЮЩЕГО УВЕДОМЛЕНИЯ СВЕХРУ ЧЕРЕЗ ТВОЙ АЛЕРТ
+    if (typeof showInGameAlert === 'function') {
+        if (pnlAmount >= 0) {
+            showInGameAlert(`📈 Позиция закрыта! Профит: +${Math.floor(pnlAmount)} Q`);
+        } else {
+            showInGameAlert(`📉 Позиция закрыта в минус: ${Math.floor(pnlAmount)} Q`);
+        }
+    }
+
     if (window.Telegram && Telegram.WebApp.HapticFeedback) {
         Telegram.WebApp.HapticFeedback.notificationOccurred(pnlAmount >= 0 ? 'success' : 'warning');
     }
 
-    document.getElementById('exch-status-msg').innerHTML = `Позиция закрыта. Результат: <span style="color:${pnlAmount>=0?'#00ffcc':'#ff4b2b'}">${pnlAmount >= 0 ? '+' : ''}${pnlAmount.toFixed(1)} Q</span>`;
+    document.getElementById('exch-status-msg').innerHTML = `Позиция closed. Результат: <span style="color:${pnlAmount>=0?'#00ffcc':'#ff4b2b'}">${pnlAmount >= 0 ? '+' : ''}${pnlAmount.toFixed(1)} Q</span>`;
     
     activePosition = null;
     updatePositionProfit();
@@ -4624,6 +4628,7 @@ function setExchangeLeverage(lev) {
     });
 }
 
+// Выбор маржи
 function setExchangeBet(amount) {
     if (activePosition) return;
     currentExchangeBet = amount;
@@ -4631,6 +4636,7 @@ function setExchangeBet(amount) {
     if (display) display.innerText = currentExchangeBet;
 }
 
+// Открытие интерфейса биржи
 function openCryptoExchange() {
     let overlay = document.getElementById('crypto-exchange-overlay');
     if (!overlay) {
@@ -4709,16 +4715,15 @@ function openCryptoExchange() {
     }
     overlay.style.display = 'flex';
     
-    // Запускаем ежесекундный рыночный тик
     if (!exchangeInterval) {
         exchangeInterval = setInterval(tickExchangeMarket, 1000);
     }
 }
 
+// Закрытие интерфейса биржи
 function closeCryptoExchange() {
     const overlay = document.getElementById('crypto-exchange-overlay');
     if (overlay) overlay.style.display = 'none';
-    // Выключаем тик при закрытии окна для экономии процессора смартфона
     if (exchangeInterval) {
         clearInterval(exchangeInterval);
         exchangeInterval = null;
