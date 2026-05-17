@@ -4132,6 +4132,56 @@ function claimOrderMission() {
     }
 }
 
+// ==========================================================================
+// ГЕНЕРАЦИЯ КУБИКОВ НА ЗАДНЕМ ПЛАНЕ ГЛАВНОГО МЕНЮ
+// ==========================================================================
+(function() {
+    function createMainMenuBgCube() {
+        const earthScreen = document.getElementById('earth-screen');
+        const runnerWindow = document.getElementById('runner-window');
+        const pvpWindow = document.getElementById('pvp-window');
+        const loaderWindow = document.getElementById('cyber-loader');
+
+        // ПРОВЕРКА: Если открыт экран колонии Земли, раннер, PvP или загрузчик — кубы на фон меню НЕ спавним!
+        if (earthScreen && earthScreen.style.display === 'block') return;
+        if (runnerWindow && runnerWindow.style.display === 'block') return;
+        if (pvpWindow && pvpWindow.style.display === 'block') return;
+        if (loaderWindow && loaderWindow.style.display !== 'none') return;
+
+        const container = document.createElement('div');
+        container.className = 'menu-bg-cube-container';
+        
+        // Рандомная горизонтальная точка спавна (0% - 96%)
+        container.style.left = Math.random() * 96 + '%';
+        
+        // Разная скорость падения для эффекта глубины космоса (от 6 до 11 секунд)
+        const duration = Math.random() * 5 + 6;
+        container.style.animationDuration = duration + 's';
+
+        // Создаем миниатюрные 3D грани (размер 10px, сдвиг на 5px)
+        container.innerHTML = `
+            <div class="menu-bg-cube">
+                <div style="transform: rotateY(0deg) translateZ(5px);"></div>
+                <div style="transform: rotateY(180deg) translateZ(5px);"></div>
+                <div style="transform: rotateY(90deg) translateZ(5px);"></div>
+                <div style="transform: rotateY(-90deg) translateZ(5px);"></div>
+                <div style="transform: rotateX(90deg) translateZ(5px);"></div>
+                <div style="transform: rotateX(-90deg) translateZ(5px);"></div>
+            </div>
+        `;
+
+        document.body.appendChild(container);
+
+        // Очищаем DOM дерево, чтобы игра не лагала на телефонах
+        setTimeout(() => {
+            container.remove();
+        }, duration * 1000);
+    }
+
+    // Каждые 800мс мягко добавляем новый кубик
+    setInterval(createMainMenuBgCube, 800);
+})();
+
 // ==========================================================
 // СИСТЕМА ПРЕДЗАГРУЗКИ КЬЮБИ И СИНХРОНИЗАЦИИ СЕТИ (HD-FIX)
 // ==========================================================
