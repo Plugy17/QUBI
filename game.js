@@ -4799,6 +4799,392 @@ function bringAlertToFront() {
     }, 50);
 }
 
+// Функция открытия главного меню QUBI PASS
+function openQubiPassMenu() {
+    let overlay = document.getElementById('qubi-pass-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'qubi-pass-overlay';
+        overlay.style = `
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at 50% 20%, #0a1120 0%, #000 100%);
+            z-index: 100000; display: none; flex-direction: column;
+            font-family: 'Urbanist', sans-serif; color: #fff; overflow: hidden;
+        `;
+
+        overlay.innerHTML = `
+            <div style="padding: 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 229, 255, 0.2); background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);">
+                <div>
+                    <h2 style="margin: 0; color: #00e5ff; font-size: 24px; letter-spacing: 2px;">QUBI PASS</h2>
+                    <p id="pass-status-text" style="margin: 0; font-size: 10px; color: #5f759e;">STATUS: ${playerData.qubiPass.purchased ? 'PREMIUM ACTIVATED' : 'FREE ACCESS (LOCKED)'}</p>
+                </div>
+                <button onclick="closeQubiPassMenu()" style="background: none; border: 1px solid #ff4b2b; color: #ff4b2b; padding: 5px 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">CLOSE</button>
+            </div>
+
+            <div style="padding: 20px; background: rgba(0, 229, 255, 0.05);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                    <span>Прогресс Куба #${playerData.qubiPass.currentCube}</span>
+                    <span id="pass-xp-display">${playerData.qubiPass.currentXP} / ${playerData.qubiPass.xpToNextCube} XP</span>
+                </div>
+                <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; border: 1px solid rgba(0, 229, 255, 0.3);">
+                    <div id="pass-progress-fill" style="width: ${(playerData.qubiPass.currentXP / playerData.qubiPass.xpToNextCube) * 100}%; height: 100%; background: linear-gradient(90deg, #00e5ff, #00ff66); box-shadow: 0 0 10px #00e5ff;"></div>
+                </div>
+            </div>
+
+            <div id="cubes-container" style="flex: 1; overflow-y: auto; padding: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; align-content: start;">
+                </div>
+
+            <div id="buy-pass-footer" style="padding: 20px; background: rgba(0,0,0,0.8); border-top: 1px solid rgba(255,255,255,0.1); display: ${playerData.qubiPass.purchased ? 'none' : 'block'};">
+                <button onclick="processPassPayment()" style="width: 100%; padding: 18px; background: linear-gradient(135deg, #007aff 0%, #00e5ff 100%); border: none; border-radius: 15px; color: #fff; font-size: 18px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 20px rgba(0, 122, 255, 0.4);">
+                    АКТИВИРОВАТЬ ЗА 2 TON
+                </button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        injectCubeStyles();
+    }
+    
+    overlay.style.display = 'flex';
+    renderPassCubes();
+}
+
+function closeQubiPassMenu() {
+    const overlay = document.getElementById('qubi-pass-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Рендеринг 50-ти 3D кубов
+function renderPassCubes() {
+    const container = document.getElementById('cubes-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (let i = 1; i <= 50; i++) {
+        const isUnlocked = i < playerData.qubiPass.currentCube;
+        const isCurrent = i === playerData.qubiPass.currentCube;
+        const isClaimed = playerData.qubiPass.claimedCubes.includes(i);
+        const reward = qubiPassRewardsList[i];
+
+        const cubeCard = document.createElement('div');
+        cubeCard.style = `
+            background: rgba(255,255,255,0.03); border-radius: 20px; padding: 15px;
+            border: 1px solid ${isUnlocked ? 'rgba(0, 255, 102, 0.3)' : 'rgba(255,255,255,0.1)'};
+            text-align: center; position: relative; opacity: ${isUnlocked || isCurrent ? '1' : '0.5'};
+            filter: ${isUnlocked || isCurrent ? 'none' : 'grayscale(1)'};
+        `;
+
+        cubeCard.innerHTML = `
+            <div style="font-size: 10px; color: #5f759e; margin-bottom: 10px;">LEVEL ${i}</div>
+            
+            <div class="cube-scene" onclick="attemptClaim(${i})">
+                <div class="cube ${isClaimed ? 'cube-open' : ''} ${isUnlocked ? 'cube-ready' : ''}">
+                    <div class="cube-face front">${reward.icon}</div>
+                    <div class="cube-face back">${reward.icon}</div>
+                    <div class="cube-face right">${reward.icon}</div>
+                    <div class="cube-face left">${reward.icon}</div>
+                    <div class="cube-face top">${reward.icon}</div>
+                    <div class="cube-face bottom">${reward.icon}</div>
+                </div>
+            </div>
+
+            <div style="font-size: 12px; margin-top: 10px; font-weight: bold; color: ${isClaimed ? '#5f759e' : '#fff'}">
+                ${isClaimed ? 'ПОЛУЧЕНО' : reward.title}
+            </div>
+            <div style="font-size: 10px; color: #00e5ff;">${reward.count > 1 ? 'x'+reward.count : ''}</div>
+        `;
+        container.appendChild(cubeCard);
+    }
+}
+
+// Логика нажатия на куб
+function attemptClaim(cubeId) {
+    const success = claimCubeReward(cubeId);
+    if (success) {
+        renderPassCubes(); // Перерисовываем, чтобы куб "открылся"
+        updatePassUI();
+    }
+}
+
+// Интеграция твоей оплаты TON
+function processPassPayment() {
+    // Здесь вызываешь свою готовую функцию оплаты TON
+    // Пример:
+    console.log("Запуск оплаты 2 TON...");
+    
+    // Предположим, у тебя есть вызов: 
+    sendTonTransaction(2, "Activation Qubi Pass", (status) => {
+        if (status === 'success') {
+            playerData.qubiPass.purchased = true;
+            document.getElementById('buy-pass-footer').style.display = 'none';
+            document.getElementById('pass-status-text').innerText = 'STATUS: PREMIUM ACTIVATED';
+            showInGameAlert("🔥 QUBI PASS АКТИВИРОВАН!");
+            renderPassCubes();
+            if (typeof userRef !== 'undefined') userRef.update({ qubiPass: playerData.qubiPass });
+        }
+    });
+}
+
+// Стили для 3D трансформации кубиков
+function injectCubeStyles() {
+    if (document.getElementById('cube-3d-styles')) return;
+    const styles = document.createElement('style');
+    styles.id = 'cube-3d-styles';
+    styles.innerHTML = `
+        .cube-scene {
+            width: 60px; height: 60px; perspective: 200px; margin: 0 auto; cursor: pointer;
+        }
+        .cube {
+            width: 100%; height: 100%; position: relative; transform-style: preserve-3d;
+            transform: rotateX(-20deg) rotateY(45deg); transition: transform 0.5s;
+            animation: cubeRotate 4s infinite linear;
+        }
+        .cube-ready {
+            animation: cubeFloat 2s infinite ease-in-out;
+            filter: drop-shadow(0 0 10px #00ff66);
+        }
+        .cube-face {
+            position: absolute; width: 60px; height: 60px; background: rgba(0, 229, 255, 0.2);
+            border: 2px solid #00e5ff; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; box-sizing: border-box;
+        }
+        .cube-open {
+            transform: scale(0) rotateX(180deg) !important;
+            opacity: 0;
+            transition: all 0.5s ease-in;
+        }
+        /* Координаты граней */
+        .front  { transform: rotateY(0deg) translateZ(30px); }
+        .back   { transform: rotateY(180deg) translateZ(30px); }
+        .right  { transform: rotateY(90deg) translateZ(30px); }
+        .left   { transform: rotateY(-90deg) translateZ(30px); }
+        .top    { transform: rotateX(90deg) translateZ(30px); }
+        .bottom { transform: rotateX(-90deg) translateZ(30px); }
+
+        @keyframes cubeRotate {
+            from { transform: rotateX(-20deg) rotateY(0deg); }
+            to { transform: rotateX(-20deg) rotateY(360deg); }
+        }
+        @keyframes cubeFloat {
+            0%, 100% { transform: translateY(0) rotateX(-20deg) rotateY(45deg); }
+            50% { transform: translateY(-10px) rotateX(-20deg) rotateY(225deg); border-color: #00ff66; }
+        }
+    `;
+    document.head.appendChild(styles);
+}
+
+function updatePassUI() {
+    const fill = document.getElementById('pass-progress-fill');
+    const xpText = document.getElementById('pass-xp-display');
+    if (fill) fill.style.width = (playerData.qubiPass.currentXP / playerData.qubiPass.xpToNextCube) * 100 + '%';
+    if (xpText) xpText.innerText = `${playerData.qubiPass.currentXP} / ${playerData.qubiPass.xpToNextCube} XP`;
+}
+
+// Инжектируем стили для анимации кнопки QUBI PASS
+(function injectPassIconStyles() {
+    if (document.getElementById('qubi-pass-icon-styles')) return;
+    const styles = document.createElement('style');
+    styles.id = 'qubi-pass-icon-styles';
+    styles.innerHTML = `
+        @keyframes passPulse {
+            0% { transform: scale(1); box-shadow: 0 0 8px rgba(0, 229, 255, 0.4), inset 0 0 8px rgba(0, 229, 255, 0.2); }
+            50% { transform: scale(1.06); box-shadow: 0 0 22px rgba(0, 229, 255, 0.8), inset 0 0 14px rgba(0, 229, 255, 0.5); border-color: #00e5ff; }
+            100% { transform: scale(1); box-shadow: 0 0 8px rgba(0, 229, 255, 0.4), inset 0 0 8px rgba(0, 229, 255, 0.2); }
+        }
+        .qubi-pass-btn {
+            position: fixed;
+            bottom: 140px; /* Подними или опусти, чтобы встало ровно над твоей энергией */
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(7, 11, 22, 0.85);
+            border: 2px solid rgba(0, 229, 255, 0.3);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: passPulse 2s infinite ease-in-out;
+            transition: transform 0.1s ease;
+        }
+        .qubi-pass-btn:active {
+            transform: scale(0.85) !important;
+        }
+        .qubi-pass-btn img {
+            width: 34px;
+            height: 34px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 4px #00e5ff);
+        }
+    `;
+    document.head.appendChild(styles);
+
+    // Создаем саму кнопку на экране
+    const passBtn = document.createElement('div');
+    passBtn.className = 'qubi-pass-btn';
+    passBtn.onclick = openQubiPassMenu; // Функция открытия меню Пасса
+    passBtn.innerHTML = `<img src="qubi-pass.png" alt="Qubi Pass">`;
+    document.body.appendChild(passBtn);
+})();
+
+// Инициализация структуры данных QUBI PASS (вызывать при старте игры)
+function initQubiPassData() {
+    if (!playerData.qubiPass) {
+        playerData.qubiPass = {
+            purchased: false,      // Куплен ли за 2 TON
+            currentCube: 1,        // На каком кубе сейчас (от 1 до 50)
+            currentXP: 0,          // Опыт внутри текущего куба
+            xpToNextCube: 1000,    // Опыт для открытия текущего куба
+            claimedCubes: [],      // Список уже открытых и забранных кубов
+            dailyQubiCollected: 0, // Набрано Кьюби за сегодня
+            dailyQuantCollected: 0  // Набрано Квантов за сегодня
+        };
+    }
+}
+initQubiPassData();
+
+/**
+ * Вызывать эту функцию КАЖДЫЙ РАЗ, когда игрок получает Кьюби или Кванты
+ * @param {string} type - 'QUBI' или 'QUANT'
+ * @param {number} amount - сколько собрано
+ */
+function trackResourceCollection(type, amount) {
+    if (!playerData.qubiPass) initQubiPassData();
+    
+    // Формула конвертации: например, 1 Кьюби = 1 XP, 1 Квант = 5 XP
+    let xpGained = 0;
+    if (type === 'QUBI') {
+        playerData.qubiPass.dailyQubiCollected += amount;
+        xpGained = amount * 1; 
+    } else if (type === 'QUANT') {
+        playerData.qubiPass.dailyQuantCollected += amount;
+        xpGained = amount * 5;
+    }
+
+    // Добавляем опыт в прогресс куба
+    playerData.qubiPass.currentXP += xpGained;
+
+    // Проверяем, заполнился ли текущий куб (уровень)
+    while (playerData.qubiPass.currentXP >= playerData.qubiPass.xpToNextCube) {
+        playerData.qubiPass.currentXP -= playerData.qubiPass.xpToNextCube;
+        
+        if (playerData.qubiPass.currentCube < 50) {
+            playerData.qubiPass.currentCube++;
+            // Каждый следующий куб требует на 200 XP больше
+            playerData.qubiPass.xpToNextCube += 200; 
+            
+            if (typeof showInGameAlert === 'function') {
+                showInGameAlert(`📦 КУБ РАЗБЛОКИРОВАН: Куб #${playerData.qubiPass.currentCube - 1} готов к открытию!`);
+            }
+        } else {
+            // Максимальный 50 уровень достигнут
+            playerData.qubiPass.currentXP = playerData.qubiPass.xpToNextCube;
+            break;
+        }
+    }
+
+    // Сохраняем в БД/Сейв
+    if (typeof userRef !== 'undefined') userRef.update({ qubiPass: playerData.qubiPass });
+}
+
+const QUBI_PASS_MAX_CUBES = 50;
+const qubiPassRewardsList = [];
+
+// Функция генерации пула наград (запустить один раз при старте)
+function generatePassRewardsPool() {
+    const artifactTypes = ["Золотой блок", "Квантовое ядро", "Энерго-кристалл", "Платформа", "Титановый пилон"];
+    const moduleTypes = ["Бустер кликов 2х", "Авто-майнер v1", "Оптимизатор энергии", "Квантовый радар"];
+
+    for (let i = 1; i <= QUBI_PASS_MAX_CUBES; i++) {
+        let reward = {};
+        
+        if (i % 3 === 1) {
+            // Тип 1: Артефакты для стройки (от 50 и больше)
+            let count = 50 + (i * 2); // С каждым кубом артефактов чуть больше
+            let randomArtifact = artifactTypes[Math.floor(Math.random() * artifactTypes.length)];
+            reward = {
+                type: 'ARTIFACT',
+                title: `${randomArtifact}`,
+                count: count,
+                icon: '🛠️',
+                claim: () => {
+                    if (!playerData.inventory) playerData.inventory = {};
+                    playerData.inventory[randomArtifact] = (playerData.inventory[randomArtifact] || 0) + count;
+                }
+            };
+        } else if (i % 3 === 2) {
+            // Тип 2: Кьюби (фиксированно 500)
+            reward = {
+                type: 'QUBI',
+                title: 'Кьюби коины',
+                count: 500,
+                icon: '🪙',
+                claim: () => {
+                    playerData.qubi = (playerData.qubi || 0) + 500;
+                }
+            };
+        } else {
+            // Тип 3: Модули из магазина
+            let randomModule = moduleTypes[Math.floor(Math.random() * moduleTypes.length)];
+            reward = {
+                type: 'MODULE',
+                title: `Модуль: ${randomModule}`,
+                count: 1,
+                icon: '💾',
+                claim: () => {
+                    if (!playerData.modules) playerData.modules = [];
+                    playerData.modules.push(randomModule);
+                }
+            };
+        }
+        qubiPassRewardsList[i] = reward;
+    }
+}
+generatePassRewardsPool();
+
+function claimCubeReward(cubeNumber) {
+    const pass = playerData.qubiPass;
+
+    if (!pass.purchased) {
+        if (typeof showInGameAlert === 'function') {
+            showInGameAlert("🔒 Требуется активация QUBI PASS за 2 TON!");
+        }
+        return false;
+    }
+
+    if (cubeNumber >= pass.currentCube && pass.currentXP < pass.xpToNextCube) {
+        if (typeof showInGameAlert === 'function') {
+            showInGameAlert("🔒 Этот куб еще заблокирован. Копите опыт!");
+        }
+        return false;
+    }
+
+    if (pass.claimedCubes.includes(cubeNumber)) {
+        if (typeof showInGameAlert === 'function') {
+            showInGameAlert("👀 Награда с этого куба уже получена!");
+        }
+        return false;
+    }
+
+    // Выдаем награду из пула
+    const reward = qubiPassRewardsList[cubeNumber];
+    if (reward) {
+        reward.claim(); // Активируем лямбду добавления ресурсов в профиль
+        pass.claimedCubes.push(cubeNumber); // Записываем куб в собранные
+        
+        if (typeof showInGameAlert === 'function') {
+            showInGameAlert(`🎁 Успешно открыт Куб #${cubeNumber}! Получено: ${reward.title} x${reward.count}`);
+        }
+        
+        if (typeof updateUI === 'function') updateUI();
+        if (typeof userRef !== 'undefined') userRef.update({ qubiPass: pass, ...playerData });
+        
+        return true; // Сигнал для анимации взрыва куба в UI
+    }
+    return false;
+}
+
 // ==========================================================
 // СИСТЕМА ПРЕДЗАГРУЗКИ КЬЮБИ И СИНХРОНИЗАЦИИ СЕТИ (HD-FIX)
 // ==========================================================
