@@ -4689,9 +4689,9 @@ function openCryptoExchange() {
         overlay.style = `
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: radial-gradient(circle at center, rgba(6,10,24,0.95) 0%, rgba(2,3,8,1) 100%);
-            z-index: 25000; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 999; flex-direction: column; align-items: center; justify-content: center;
             box-sizing: border-box; padding: 10px; font-family: 'Courier New', monospace; backdrop-filter: blur(6px);
-        `;
+        `; 
         
         overlay.innerHTML = `
             <div style="background: linear-gradient(145deg, #090e1a 0%, #03050c 100%); border: 2px solid rgba(0,229,255,0.3); border-radius: 24px; padding: 20px 16px; width: 94%; max-width: 365px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); text-align: center; position: relative;">
