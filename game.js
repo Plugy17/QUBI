@@ -4903,65 +4903,57 @@ function bringAlertToFront() {
 }
 
 // ============================================================================
-//               ОБНОВЛЕННЫЙ ИНТЕРФЕЙС QUBI PASS: КИБЕР-ДИЗАЙН И 3D
+//   ОПТИМИЗИРОВАННЫЙ МОДУЛЬ QUBI PASS: ЧИСТАЯ ЛОГИКА И СБОР НАГРАД
 // ============================================================================
 
+/**
+ * Открывает меню QUBI PASS, переключает состояние интерфейса и запускает рендер
+ */
 function openQubiPassMenu() {
     if (typeof playerData === 'undefined' || !playerData.qubiPass) return;
 
-    let overlay = document.getElementById('qubi-pass-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'qubi-pass-overlay';
-        overlay.style = `
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at 50% 10%, #0d1a30 0%, #020612 100%);
-            z-index: 100000; display: none; flex-direction: column;
-            font-family: 'Urbanist', system-ui, -apple-system, sans-serif; color: #fff; overflow: hidden;
-        `;
-        document.body.appendChild(overlay);
-        injectCubeStyles();
+    const overlay = document.getElementById('qubi-pass-overlay');
+    if (!overlay) return;
+
+    const isPremium = playerData.qubiPass.purchased;
+    
+    // Скрываем или показываем футер покупки в зависимости от статуса премиума
+    const buyFooter = document.getElementById('buy-pass-footer');
+    if (buyFooter) buyFooter.style.display = isPremium ? 'none' : 'block';
+    
+    // Синхронизируем визуальный индикатор режима пасса в шапке
+    const indicator = document.getElementById('pass-status-indicator');
+    const statusText = document.getElementById('pass-status-text');
+    if (indicator) {
+        indicator.style.background = isPremium ? '#00ff66' : '#ff3366';
+        indicator.style.boxShadow = `0 0 8px ${isPremium ? '#00ff66' : '#ff3366'}`;
+    }
+    if (statusText) {
+        statusText.innerText = isPremium ? 'PREMIUM ACCESS' : 'FREE MODE (LOCKED)';
+        statusText.style.color = isPremium ? '#00ff66' : '#7e9bbd';
     }
 
-    overlay.innerHTML = `
-        <div style="padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; background: rgba(6, 11, 25, 0.7); backdrop-filter: blur(20px); border-bottom: 2px solid rgba(0, 229, 255, 0.15); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);">
-            <div>
-                <h2 style="margin: 0; color: #00e5ff; font-size: 26px; font-weight: 900; letter-spacing: 3px; text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);">QUBI PASS</h2>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                    <span style="width: 6px; height: 6px; background: ${playerData.qubiPass.purchased ? '#00ff66' : '#ff3366'}; border-radius: 50%; box-shadow: 0 0 8px ${playerData.qubiPass.purchased ? '#00ff66' : '#ff3366'};"></span>
-                    <p id="pass-status-text" style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: ${playerData.qubiPass.purchased ? '#00ff66' : '#7e9bbd'};">
-                        ${playerData.qubiPass.purchased ? 'PREMIUM ACCESS' : 'FREE MODE (LOCKED)'}
-                    </p>
-                </div>
-            </div>
-            <button onclick="closeQubiPassMenu()" style="background: rgba(255, 75, 43, 0.1); border: 1px solid #ff4b2b; color: #ff4b2b; padding: 8px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 12px; letter-spacing: 1px; transition: all 0.3s; box-shadow: inset 0 0 10px rgba(255,75,43,0.2);" onmouseover="this.style.background='#ff4b2b'; this.style.color='#fff'" onmouseout="this.style.background='rgba(255,75,43,0.1)'; this.style.color='#ff4b2b'">
-                ЗАКРЫТЬ
-            </button>
-        </div>
-
-        <div style="padding: 25px; background: rgba(0, 229, 255, 0.02); border-bottom: 1px solid rgba(255,255,255,0.05);">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
-                <span style="color: #fff;">Текущий уровень: <span style="color: #00e5ff; font-size: 16px;">#${playerData.qubiPass.currentCube}</span></span>
-                <span id="pass-xp-display" style="color: #00ff66; text-shadow: 0 0 10px rgba(0,255,102,0.3);">${playerData.qubiPass.currentXP} / ${playerData.qubiPass.xpToNextCube} XP</span>
-            </div>
-            <div style="width: 100%; height: 12px; background: rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; border: 1px solid rgba(0, 229, 255, 0.2); padding: 2px; box-sizing: border-box;">
-                <div id="pass-progress-fill" style="width: ${(playerData.qubiPass.currentXP / playerData.qubiPass.xpToNextCube) * 100}%; height: 100%; background: linear-gradient(90deg, #00e5ff 0%, #00ff66 100%); border-radius: 20px; box-shadow: 0 0 15px #00e5ff; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-            </div>
-        </div>
-
-        <div id="cubes-container" style="flex: 1; overflow-y: auto; padding: 25px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; align-content: start; background: linear-gradient(180deg, rgba(2,6,18,0) 0%, rgba(1,3,10,0.6) 100%);"></div>
-
-        <div id="buy-pass-footer" style="padding: 25px; background: rgba(4, 8, 20, 0.9); border-top: 1px solid rgba(0, 229, 255, 0.15); display: ${playerData.qubiPass.purchased ? 'none' : 'block'}; box-shadow: 0 -10px 30px rgba(0,0,0,0.7);">
-            <button onclick="processPassPayment()" style="width: 100%; padding: 18px; background: linear-gradient(135deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%); border: none; border-radius: 16px; color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 2px; cursor: pointer; box-shadow: 0 6px 25px rgba(67, 100, 247, 0.45); transition: all 0.3s; text-shadow: 0 2px 4px rgba(0,0,0,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(67, 100, 247, 0.6)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 25px rgba(67, 100, 247, 0.45)'">
-                АКТИВИРОВАТЬ PREMIUM ЗА 2 TON
-            </button>
-        </div>
-    `;
+    // Активируем видимость (включает pointer-events: auto в CSS для кликов по кубам)
+    overlay.classList.add('active');
     
-    overlay.style.display = 'flex';
+    // Обновляем прогресс-бар и строим сетку кубов
+    updatePassUI();
     renderPassCubes();
 }
 
+/**
+ * Закрывает меню QUBI PASS и полностью освобождает экран для Canvas (планет)
+ */
+function closeQubiPassMenu() {
+    const overlay = document.getElementById('qubi-pass-overlay');
+    if (overlay) {
+        overlay.classList.remove('active'); // Скрывает слой и убирает pointer-events через CSS
+    }
+}
+
+/**
+ * Генерирует 50 кубов на основе текущего прогресса игрока без инлайн-стилей верстки
+ */
 function renderPassCubes() {
     const container = document.getElementById('cubes-container');
     if (!container) return;
@@ -4973,6 +4965,13 @@ function renderPassCubes() {
         const isClaimed = playerData.qubiPass.claimedCubes.includes(i);
         const reward = qubiPassRewardsList[i];
 
+        // Назначаем класс для 3D анимаций куба, прописанных в твоем style.css
+        let cubeClass = 'cube-locked';
+        if (isClaimed) cubeClass = 'cube-open';
+        else if (isUnlocked) cubeClass = 'cube-ready';
+        else if (isCurrent) cubeClass = 'cube-current';
+
+        // Рассчитываем только динамический цвет границ и фона карточки на лету
         let borderStyle = 'rgba(255, 255, 255, 0.08)';
         let bgStyle = 'rgba(255, 255, 255, 0.02)';
         if (isCurrent) {
@@ -4984,28 +4983,26 @@ function renderPassCubes() {
         }
 
         const cubeCard = document.createElement('div');
-        cubeCard.setAttribute('data-id', i); // Жестко привязываем уникальный ID к карточке в DOM
+        cubeCard.setAttribute('data-id', i);
+        cubeCard.setAttribute('onclick', `attemptClaim(${i})`); // Клик на всей карточке для надежности тапа
+        
         cubeCard.style = `
-            background: ${bgStyle}; border-radius: 24px; padding: 25px 15px;
-            border: 1px solid ${borderStyle}; backdrop-filter: blur(10px);
-            text-align: center; position: relative; display: flex; flex-direction: column; align-items: center;
+            background: ${bgStyle}; 
+            border: 1px solid ${borderStyle};
+            border-radius: 24px; padding: 25px 15px; text-align: center; position: relative; 
+            display: flex; flex-direction: column; align-items: center; cursor: pointer;
             opacity: ${isUnlocked || isCurrent ? '1' : '0.4'};
             filter: ${isUnlocked || i <= playerData.qubiPass.currentCube ? 'none' : 'grayscale(0.8)'};
-            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            transition: all 0.4s ease;
             box-shadow: ${isCurrent ? '0 10px 30px rgba(0,229,255,0.1)' : 'none'};
         `;
 
-        let cubeClass = 'cube-locked';
-        if (isClaimed) cubeClass = 'cube-open';
-        else if (isUnlocked) cubeClass = 'cube-ready';
-        else if (isCurrent) cubeClass = 'cube-current';
-
         cubeCard.innerHTML = `
-            <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: ${isCurrent ? '#00e5ff' : '#5f759eworkflow'}; margin-bottom: 25px;">
+            <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: ${isCurrent ? '#00e5ff' : '#5f759e'}; margin-bottom: 25px; pointer-events: none;">
                 КУБ УРОВНЯ ${i}
             </div>
             
-            <div class="cube-scene" onclick="attemptClaim(${i})">
+            <div class="cube-scene" style="pointer-events: none;">
                 <div class="cube ${cubeClass}">
                     <div class="cube-face front"><span>${reward?.icon || '🪙'}</span></div>
                     <div class="cube-face back"><span>${reward?.icon || '🪙'}</span></div>
@@ -5017,10 +5014,10 @@ function renderPassCubes() {
                 <div class="cube-shadow ${isClaimed ? 'shadow-hide' : ''}"></div>
             </div>
 
-            <div style="font-size: 14px; font-weight: 800; margin-top: 25px; letter-spacing: 0.5px; color: ${isClaimed ? '#5f759e' : '#fff'}; transition: color 0.3s;">
+            <div style="font-size: 14px; font-weight: 800; margin-top: 25px; letter-spacing: 0.5px; color: ${isClaimed ? '#5f759e' : '#fff'}; pointer-events: none;">
                 ${isClaimed ? 'НАГРАДА СОБРАНА' : (reward?.title || 'Награда')}
             </div>
-            <div style="font-size: 12px; font-weight: 700; color: #00e5ff; margin-top: 4px; min-height: 14px;">
+            <div style="font-size: 12px; font-weight: 700; color: #00e5ff; margin-top: 4px; min-height: 14px; pointer-events: none;">
                 ${reward?.count > 1 && !isClaimed ? 'Количество: ' + reward.count : ''}
             </div>
         `;
@@ -5028,105 +5025,9 @@ function renderPassCubes() {
     }
 }
 
-function injectCubeStyles() {
-    if (document.getElementById('cube-3d-styles')) return;
-    const styles = document.createElement('style');
-    styles.id = 'cube-3d-styles';
-    styles.innerHTML = `
-        .cube-scene { 
-            width: 70px; height: 70px; 
-            perspective: 350px; 
-            margin: 0 auto; 
-            position: relative;
-            cursor: pointer;
-        }
-        
-        .cube { 
-            width: 100%; height: 100%; 
-            position: relative; 
-            transform-style: preserve-3d; 
-            transform: rotateX(-25deg) rotateY(45deg); 
-            transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s ease; 
-        }
-        
-        .cube-face { 
-            position: absolute; 
-            width: 70px; height: 70px; 
-            background: rgba(10, 25, 50, 0.85); 
-            border: 1.5px solid rgba(0, 229, 255, 0.4); 
-            display: flex; align-items: center; justify-content: center; 
-            box-sizing: border-box;
-            box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.3);
-            transition: all 0.4s;
-        }
-        .cube-face span { font-size: 26px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
-
-        .front  { transform: rotateY(0deg) translateZ(35px); }
-        .back   { transform: rotateY(180deg) translateZ(35px); }
-        .right  { transform: rotateY(90deg) translateZ(35px); }
-        .left   { transform: rotateY(-90deg) translateZ(35px); }
-        .top    { transform: rotateX(90deg) translateZ(35px); }
-        .bottom { transform: rotateX(-90deg) translateZ(35px); }
-
-        .cube-locked .cube-face {
-            background: rgba(20, 25, 35, 0.9);
-            border-color: rgba(255,255,255,0.1);
-            box-shadow: none;
-        }
-
-        .cube-current { animation: cubeSpin 6s infinite linear; }
-        .cube-current .cube-face {
-            border-color: #00e5ff;
-            box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.5), 0 0 10px rgba(0, 229, 255, 0.2);
-        }
-
-        .cube-ready { animation: cubeFloat 2.5s infinite ease-in-out; }
-        .cube-ready .cube-face {
-            background: rgba(10, 45, 30, 0.85);
-            border-color: #00ff66;
-            box-shadow: inset 0 0 20px rgba(0, 255, 102, 0.6), 0 0 15px rgba(0, 255, 102, 0.3);
-        }
-
-        /* Жесткий оверрайд стилей для красивого взрыва */
-        .cube.cube-open { 
-            transform: scale(0) rotateX(180deg) rotateY(360deg) !important; 
-            opacity: 0 !important; 
-            pointer-events: none !important;
-        }
-
-        .cube-shadow {
-            position: absolute; bottom: -15px; left: 10px; width: 50px; height: 8px;
-            background: rgba(0, 0, 0, 0.6); border-radius: 50%; filter: blur(4px);
-            transform: rotateX(90deg); z-index: -1; 
-            transition: transform 0.45s, opacity 0.45s;
-        }
-        .cube-ready + .cube-shadow { animation: shadowPulse 2.5s infinite ease-in-out; }
-        
-        .cube-shadow.shadow-hide { 
-            opacity: 0 !important; 
-            transform: scale(0) rotateX(90deg) !important; 
-        }
-
-        @keyframes cubeSpin {
-            from { transform: rotateX(-25deg) rotateY(0deg); }
-            to { transform: rotateX(-25deg) rotateY(360deg); }
-        }
-        @keyframes cubeFloat {
-            0%, 100% { transform: translateY(0) rotateX(-25deg) rotateY(45deg); }
-            50% { transform: translateY(-12px) rotateX(20deg) rotateY(225deg); }
-        }
-        @keyframes shadowPulse {
-            0%, 100% { transform: scale(1) rotateX(90deg); opacity: 0.6; filter: blur(4px); }
-            50% { transform: scale(0.6) rotateX(90deg); opacity: 0.2; filter: blur(7px); }
-        }
-    `;
-    document.head.appendChild(styles);
-}
-
-// ============================================================================
-//         ОСТАЛЬНЫЕ ФУНКЦИИ МОДУЛЯ QUBI PASS (ЛОГИКА, КЛИКИ, НАГРАДЫ)
-// ============================================================================
-
+/**
+ * Проверяет условия клика, запускает тактильный отклик, 3D взрыв и выдает награду
+ */
 function attemptClaim(cubeId) {
     console.log(`📡 [QUBI DEBUGER] Клик по кубу #${cubeId}`);
     
@@ -5169,15 +5070,21 @@ function attemptClaim(cubeId) {
 
     const reward = qubiPassRewardsList[cubeId];
     if (reward) {
+        // Запуск вибрации Telegram (если запущено внутри Telegram)
+        if (window.Telegram && Telegram.WebApp && Telegram.WebApp.isVersionAtLeast('6.1')) {
+            try { Telegram.WebApp.HapticFeedback.impactOccurred('medium'); } catch (e) {}
+        }
+
+        // Добавляем классы взрыва модели куба из твоего CSS
         const targetCard = document.querySelector(`#cubes-container [data-id="${cubeId}"]`);
         if (targetCard) {
             const targetCube = targetCard.querySelector('.cube');
             const targetShadow = targetCard.querySelector('.cube-shadow');
-            
             if (targetCube) targetCube.classList.add('cube-open');
             if (targetShadow) targetShadow.classList.add('shadow-hide');
         }
 
+        // Ждем завершения 3D анимации сворачивания куба (450мс)
         setTimeout(() => {
             reward.claim(); 
             pass.claimedCubes.push(cubeId); 
@@ -5206,6 +5113,9 @@ function attemptClaim(cubeId) {
     }
 }
 
+/**
+ * Обрабатывает асинхронную оплату через платежный шлюз TON_CONNECT_UI
+ */
 async function processPassPayment() {
     const buyButton = document.querySelector('#buy-pass-footer button');
     const originalText = buyButton ? buyButton.innerText : "АКТИВИРОВАТЬ PREMIUM ЗА 2 TON";
@@ -5218,7 +5128,7 @@ async function processPassPayment() {
     }
 
     try {
-        // Вызов твоей функции интеграции с TON_CONNECT_UI
+        // Твоя функция интеграции транзакций с TON_CONNECT_UI
         const isPaid = await payWithTON(2, 'qubi_pass_premium');
 
         if (isPaid) {
@@ -5243,6 +5153,9 @@ async function processPassPayment() {
     }
 }
 
+/**
+ * Переключает флаги премиума в локальных данных, Firebase и перерисовывает шапку меню
+ */
 function activatePremiumData() {
     if (!playerData.qubiPass) return;
     
@@ -5252,9 +5165,14 @@ function activatePremiumData() {
     if (footer) footer.style.display = 'none';
     
     const statusText = document.getElementById('pass-status-text');
+    const indicator = document.getElementById('pass-status-indicator');
     if (statusText) {
         statusText.innerText = 'PREMIUM ACCESS';
         statusText.style.color = '#00ff66';
+    }
+    if (indicator) {
+        indicator.style.background = '#00ff66';
+        indicator.style.boxShadow = '0 0 8px #00ff66';
     }
     
     if (typeof showInGameAlert === 'function') {
@@ -5268,10 +5186,14 @@ function activatePremiumData() {
     }
 }
 
+/**
+ * Начисляет XP за сбор QUBI/QUANT ресурсов и рассчитывает автоматический левелап пасса
+ */
 function trackResourceCollection(type, amount) {
     if (typeof playerData === 'undefined' || !playerData || !playerData.qubiPass) return;
     
     let xpGained = 0;
+    const maxCubes = typeof QUBI_PASS_MAX_CUBES !== 'undefined' ? QUBI_PASS_MAX_CUBES : 50;
     
     if (type === 'QUBI') {
         playerData.qubiPass.dailyQubiCollected = (playerData.qubiPass.dailyQubiCollected || 0) + amount;
@@ -5284,10 +5206,10 @@ function trackResourceCollection(type, amount) {
     playerData.qubiPass.currentXP += xpGained;
     
     while (playerData.qubiPass.currentXP >= playerData.qubiPass.xpToNextCube) {
-        if (playerData.qubiPass.currentCube < QUBI_PASS_MAX_CUBES) {
+        if (playerData.qubiPass.currentCube < maxCubes) {
             playerData.qubiPass.currentXP -= playerData.qubiPass.xpToNextCube;
             playerData.qubiPass.currentCube++;
-            playerData.qubiPass.xpToNextCube += 200; 
+            playerData.qubiPass.xpToNextCube += 200; // Прогрессивное усложнение уровней
             
             if (typeof showInGameAlert === 'function') {
                 showInGameAlert(`📦 КУБ РАЗБЛОКИРОВАН: Награда уровня #${playerData.qubiPass.currentCube - 1} готова к сбору!`);
@@ -5305,23 +5227,26 @@ function trackResourceCollection(type, amount) {
     }
 }
 
+/**
+ * Обновляет текстовые поля опыта и шкалу прогресс-бара внутри интерфейса пасса
+ */
 function updatePassUI() {
+    if (typeof playerData === 'undefined' || !playerData.qubiPass) return;
+
     const fill = document.getElementById('pass-progress-fill');
     const xpText = document.getElementById('pass-xp-display');
-    
-    if (typeof playerData === 'undefined' || !playerData.qubiPass) return;
+    const lvlText = document.getElementById('pass-level-display');
     
     if (fill) {
-        fill.style.width = (playerData.qubiPass.currentXP / playerData.qubiPass.xpToNextCube) * 100 + '%';
+        const percentage = (playerData.qubiPass.currentXP / playerData.qubiPass.xpToNextCube) * 100;
+        fill.style.width = Math.min(percentage, 100) + '%';
     }
     if (xpText) {
         xpText.innerText = `${playerData.qubiPass.currentXP} / ${playerData.qubiPass.xpToNextCube} XP`;
     }
-}
-
-function closeQubiPassMenu() {
-    const overlay = document.getElementById('qubi-pass-overlay');
-    if (overlay) overlay.style.display = 'none';
+    if (lvlText) {
+        lvlText.innerText = `#${playerData.qubiPass.currentCube}`;
+    }
 }
 
 // ==========================================================
