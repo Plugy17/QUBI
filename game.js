@@ -399,6 +399,22 @@ function initGame() {
         if (snapshot.exists()) {
             playerData = snapshot.val();
             
+            // 🛡️ ЗАПЛАТКА ДЛЯ СТАРИЧКОВ: Если у игрока в базе нет qubiPass, добавляем его структуру
+            if (!playerData.qubiPass) {
+                playerData.qubiPass = {
+                    purchased: false,          // По умолчанию премиум заблокирован
+                    currentCube: 1,            // Старт с 1-го уровня (Куб #1)
+                    currentXP: 0,              // 0 очков опыта
+                    xpToNextCube: 1000,        // Нужно 1000 XP для первого левелапа
+                    claimedCubes: [],          // Массив ID кубов, с которых уже забрали награду
+                    dailyQubiCollected: 0,     // Статистика для трекера (если нужна)
+                    dailyQuantCollected: 0     // Статистика для трекера (если нужна)
+                };
+                // Сразу отправляем структуру в Firebase, чтобы при следующем входе она уже была
+                userRef.update({ qubiPass: playerData.qubiPass });
+                console.log("⚡ [QUBI DB]: Старому игроку успешно добавлена структура QUBI PASS");
+            }
+            
             // Проверка и инициализация данных
             const now = Date.now();
             if (!playerData.lastEnergyUpdate) {
@@ -414,9 +430,10 @@ function initGame() {
             updateUI();
             syncWithLeaderboard(); 
         } else {
-            // Новый игрок
+            // Новый игрок (берет playerData со всеми ветками из начала файла script.js)
             playerData.lastEnergyUpdate = Date.now();
             userRef.set(playerData);
+            console.log("⚡ [QUBI DB]: Создан новый игрок со структурой QUBI PASS");
         }
         hideLoading();
     });
@@ -877,19 +894,59 @@ function openRunnerWindow() {
     console.log("🚀 Полет начат. Списано 20 энергии. Остаток:", playerData.energy);
 }
 
+// --- ФУНКЦИЯ НАЧИСЛЕНИЯ ОПЫТА В QUBI PASS ---
+function earnQubiPassXP(amount) {
+    if (!playerData || !playerData.qubiPass) return;
+
+    let qp = playerData.qubiPass;
+    qp.currentXP += amount;
+
+    console.log(`✨ [QUBI PASS]: Получено ${amount} XP. Всего: ${qp.currentXP}/${qp.xpToNextCube}`);
+
+    // Цикл на случай, если опыта привалило сразу на несколько уровней вперед
+    while (qp.currentXP >= qp.xpToNextCube) {
+        qp.currentXP -= qp.xpToNextCube; // Переносим остаток опыта на следующий уровень
+        qp.currentCube += 1;            // Повышаем уровень Куба
+        
+        // Увеличиваем требования к XP для следующего куба (например, на +200 XP сложнее с каждым уровнем)
+        qp.xpToNextCube = 1000 + (qp.currentCube - 1) * 200; 
+
+        console.log(`🎉 [QUBI PASS] ЛЕВЕЛ-АП! Теперь у вас Куб #${qp.currentCube}. До следующего нужно: ${qp.xpToNextCube} XP`);
+        
+        if (window.Telegram && Telegram.WebApp.showAlert) {
+            Telegram.WebApp.showAlert(`🎉 Новый уровень QUBI PASS! Достигнут Куб #${qp.currentCube}!`);
+        }
+    }
+}
+
 function closeRunnerWindow() {
     isRunnerActive = false;
     
     // Прибавляем собранное за сессию к основным данным игрока
     playerData.quant += sessionQuants;
     playerData.qubi = (playerData.qubi || 0) + sessionQubi;
-    playerData.artifacts = (playerData.artifacts || 0) + (sessionArtifacts || 0); // СОХРАНЯЕМ АРТЕФАКТЫ
+    playerData.artifacts = (playerData.artifacts || 0) + (sessionArtifacts || 0);
     
-    // Сохраняем всё в Firebase
+    // 🌟 ИНТЕГРАЦИЯ С QUBI PASS: Переводим ресурсы в опыт
+    if (playerData.qubiPass) {
+        // Формула: 1 Квант = 2 XP, 1 QUBI = 15 XP, 1 Артефакт = 50 XP
+        let gainedXP = (sessionQuants * 2) + (sessionQubi * 15) + ((sessionArtifacts || 0) * 50);
+        
+        if (gainedXP > 0) {
+            earnQubiPassXP(gainedXP);
+            
+            // Обновляем ежедневную статистику в профиле (для трекеров внутри Пасса)
+            playerData.qubiPass.dailyQuantCollected = (playerData.qubiPass.dailyQuantCollected || 0) + sessionQuants;
+            playerData.qubiPass.dailyQubiCollected = (playerData.qubiPass.dailyQubiCollected || 0) + sessionQubi;
+        }
+    }
+    
+    // Сохраняем всё в Firebase (теперь включая обновленный qubiPass)
     userRef.update({ 
         quant: playerData.quant, 
         qubi: playerData.qubi,
-        artifacts: playerData.artifacts // ОТПРАВЛЯЕМ В ОБЛАКО
+        artifacts: playerData.artifacts,
+        qubiPass: playerData.qubiPass // <-- ОБЯЗАТЕЛЬНО отправляем обновленный пасс в облако
     }).then(() => {
         syncWithLeaderboard();
         updateUI(); 
