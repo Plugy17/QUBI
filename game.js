@@ -3640,24 +3640,24 @@ async function buyMarketLotAction(lotId, price, currency, sellerId) {
     }
 }
 
-// ==========================================
-//   ХАРДКОРНОЕ 3D КАЗИНО «СИНГУЛЯРНОСТЬ»
-// ==========================================
+// ==========================================================================
+//   ХАРДКОРНОЕ ПОЛНОЦЕННОЕ 3D КАЗИНО «СИНГУЛЯРНОСТЬ» (КИНЕМАТОГРАФИЧНОЕ)
+// ==========================================================================
 
 let currentCasinoBet = 10;
 let isCasinoSpinning = false;
 
-// 💀 ОБНОВЛЕННАЯ ЖАДНАЯ МАТЕМАТИКА (Символы, множители и веса)
+// Символы, множители и веса
 const CASINO_SYMBOLS = [
-    { char: '🗑️', mult: 0,   weight: 50 }, // ЧАСТЫЙ ПРОИГРЫШ: Космический Мусор
-    { char: '🪐', mult: 1.2, weight: 50 }, // СЛАБАЯ КОМБИНАЦИЯ: Планета
-    { char: '🚀', mult: 2.5, weight: 30 }, // СРЕДНЯЯ: Ракета
-    { char: '💎', mult: 8,   weight: 20 }, // РЕДКАЯ: Кристалл
-    { char: '👾', mult: 20,  weight: 10  }, // ОЧЕНЬ РЕДКАЯ: Пришелец
-    { char: '🌀', mult: 50,  weight: 5  }  // ДЖЕКПОТ: Сингулярность
+    { char: '🗑️', mult: 0,   weight: 50 }, // Космический Мусор
+    { char: '🪐', mult: 1.2, weight: 50 }, // Планета
+    { char: '🚀', mult: 2.5, weight: 30 }, // Ракета
+    { char: '💎', mult: 8,   weight: 20 }, // Кристалл
+    { char: '👾', mult: 20,  weight: 10 }, // Пришелец
+    { char: '🌀', mult: 50,  weight: 5  }  // Сингулярность
 ];
 
-// Добавляем CSS стили для анимаций в DOM (один раз при запуске игры)
+// Генерируем расширенные CSS 3D стили для цилиндров
 (function injectCasinoStyles() {
     if (document.getElementById('casino-3d-styles')) return;
     const styles = document.createElement('style');
@@ -3667,15 +3667,67 @@ const CASINO_SYMBOLS = [
             0% { text-shadow: 0.5px 0 0 #0f0, -0.5px 0 0 #f00; }
             100% { text-shadow: -0.5px 0 0 #0f0, 0.5px 0 0 #f00; }
         }
-        @keyframes reelSpin {
-            0% { transform: rotateX(0deg); filter: blur(0px); }
-            50% { transform: rotateX(180deg); filter: blur(2px); }
-            100% { transform: rotateX(360deg); filter: blur(0px); }
-        }
         @keyframes winPulse {
             0% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #00e5ff; transform: scale(1); }
             100% { text-shadow: 0 0 10px #fff, 0 0 20px #00e5ff, 0 0 30px #00e5ff; transform: scale(1.05); }
         }
+        
+        /* Стили трехмерного барабана */
+        .casino-reel-container {
+            width: 76px;
+            height: 90px;
+            background: #03050a;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            /* Важно: закладываем глубокую перспективу для сильного изгиба */
+            perspective: 200px; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+        
+        /* Тень сверху и снизу барабана, создающая эффект глубины внутри корпуса */
+        .casino-reel-shadow {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 75%, rgba(0,0,0,0.9) 100%);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Сам вращающийся 3D цилиндр */
+        .casino-cylinder {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            /* Плавное торможение в конце */
+            transition: transform 2.5s cubic-bezier(0.1, 0.8, 0.1, 1); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Грани цилиндра (всего 6 штук по количеству символов) */
+        .casino-slot-face {
+            position: absolute;
+            width: 100%;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            backface-visibility: hidden; /* Прячем невидимые задние грани */
+            user-select: none;
+        }
+
+        /* Расставляем грани по кругу радиусом 48px (каждая повернута на 60 градусов: 360 / 6) */
+        .face-0 { transform: rotateX(0deg) translateZ(48px); }
+        .face-1 { transform: rotateX(60deg) translateZ(48px); }
+        .face-2 { transform: rotateX(120deg) translateZ(48px); }
+        .face-3 { transform: rotateX(180deg) translateZ(48px); }
+        .face-4 { transform: rotateX(240deg) translateZ(48px); }
+        .face-5 { transform: rotateX(300deg) translateZ(48px); }
     `;
     document.head.appendChild(styles);
 })();
@@ -3690,6 +3742,20 @@ function getRandomSlotSymbol() {
     return CASINO_SYMBOLS[0];
 }
 
+// Вспомогательная функция сборки граней 3D цилиндра
+function generateCylinderHTML(id) {
+    return `
+        <div class="casino-reel-container">
+            <div class="casino-reel-shadow"></div>
+            <div id="${id}" class="casino-cylinder">
+                ${CASINO_SYMBOLS.map((sym, index) => `
+                    <div class="casino-slot-face face-${index}">${sym.char}</div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
 function openCosmoCasino() {
     let overlay = document.getElementById('cosmo-casino-overlay');
     if (!overlay) {
@@ -3697,42 +3763,36 @@ function openCosmoCasino() {
         overlay.id = 'cosmo-casino-overlay';
         overlay.style = `
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at center, rgba(12,15,38,0.9) 0%, rgba(3,5,17,1) 100%);
+            background: radial-gradient(circle at center, rgba(8,10,28,0.92) 0%, rgba(2,3,10,1) 100%);
             z-index: 25000; flex-direction: column; align-items: center; justify-content: center;
-            box-sizing: border-box; padding: 20px; font-family: 'Courier New', monospace; backdrop-filter: blur(5px);
+            box-sizing: border-box; padding: 20px; font-family: 'Courier New', monospace; backdrop-filter: blur(6px);
         `;
         
         overlay.innerHTML = `
-            <div style="background: linear-gradient(145deg, #0f1630 0%, #080d1a 100%); border: 2px solid rgba(0,229,255,0.4); border-radius: 20px; padding: 30px 24px; width: 90%; max-width: 380px; box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,229,255,0.1); text-align: center; position: relative; perspective: 1000px;">
+            <div style="background: linear-gradient(145deg, #0b1124 0%, #050812 100%); border: 2px solid rgba(0,229,255,0.35); border-radius: 24px; padding: 30px 20px; width: 92%; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,229,255,0.05); text-align: center; position: relative;">
                 
-                <button onclick="closeCosmoCasino()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #8fa0c2; font-size: 16px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer;">✕</button>
+                <button onclick="closeCosmoCasino()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #8fa0c2; font-size: 14px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">✕</button>
                 
-                <div style="color: rgba(0,229,255,0.7); font-size: 10px; letter-spacing: 3px; font-weight: bold; margin-bottom: 5px;">[ СЛОТ-МОДУЛЬ «3D» ]</div>
-                <div style="color: #fff; font-size: 22px; font-weight: 900; margin-bottom: 25px; animation: glitch 0.3s infinite alternate; text-transform: uppercase;">СИНГУЛЯРНОСТЬ</div>
+                <div style="color: rgba(0,229,255,0.6); font-size: 9px; letter-spacing: 4px; font-weight: bold; margin-bottom: 5px;">[ КИНЕТИЧЕСКОЕ 3D ЯДРО ]</div>
+                <div style="color: #fff; font-size: 24px; font-weight: 900; margin-bottom: 25px; animation: glitch 0.4s infinite alternate; text-transform: uppercase; letter-spacing: 1px;">СИНГУЛЯРНОСТЬ</div>
                 
-                <div style="display: flex; gap: 12px; justify-content: center; background: #03050c; border: 2px solid #000; padding: 20px 15px; border-radius: 14px; margin-bottom: 25px; box-shadow: inset 0 0 30px rgba(0,0,0,0.9), 0 5px 15px rgba(0,229,255,0.15);">
-                    <div style="width: 70px; height: 75px; background: linear-gradient(180deg, #111 0%, #222 50%, #111 100%); border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); position: relative; overflow: hidden; perspective: 100px;">
-                        <div id="slot-reel-1" style="font-size: 48px; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: absolute; transform-style: preserve-3d; transition: transform 0.1s; color: #fff;">🗑️</div>
-                    </div>
-                    <div style="width: 70px; height: 75px; background: linear-gradient(180deg, #111 0%, #222 50%, #111 100%); border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); position: relative; overflow: hidden; perspective: 100px;">
-                        <div id="slot-reel-2" style="font-size: 48px; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: absolute; transform-style: preserve-3d; transition: transform 0.1s; color: #fff;">🚀</div>
-                    </div>
-                    <div style="width: 70px; height: 75px; background: linear-gradient(180deg, #111 0%, #222 50%, #111 100%); border-radius: 6px; border: 1px solid rgba(255,255,255,0.03); position: relative; overflow: hidden; perspective: 100px;">
-                        <div id="slot-reel-3" style="font-size: 48px; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: absolute; transform-style: preserve-3d; transition: transform 0.1s; color: #fff;">🪐</div>
-                    </div>
+                <div style="display: flex; gap: 10px; justify-content: center; background: #010205; border: 2px solid #000; padding: 16px 12px; border-radius: 16px; margin-bottom: 25px; box-shadow: inset 0 0 25px rgba(0,0,0,1), 0 4px 20px rgba(0,229,255,0.1);">
+                    ${generateCylinderHTML('slot-reel-1')}
+                    ${generateCylinderHTML('slot-reel-2')}
+                    ${generateCylinderHTML('slot-reel-3')}
                 </div>
 
-                <div id="casino-status-text" style="color: #6a7999; font-size: 13px; min-height: 20px; margin-bottom: 25px;">Авторизация... Готов к списанию.</div>
+                <div id="casino-status-text" style="color: #6a7999; font-size: 13px; min-height: 20px; margin-bottom: 25px; font-weight: bold;">Ядро стабильно. Готов к запуску.</div>
 
-                <div style="color: #fff; font-size: 11px; margin-bottom: 10px; text-align: left; padding-left: 10px; text-transform: uppercase;">Ставка: <span id="casino-bet-display" style="color:#00e5ff; font-weight:bold;">10</span> Q</div>
-                <div style="display: flex; gap: 8px; margin-bottom: 30px;">
-                    <button onclick="setCasinoBet(10)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.3); color: #00e5ff; padding: 10px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.1)'" onmouseout="this.style.background='transparent'">10</button>
-                    <button onclick="setCasinoBet(50)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.3); color: #00e5ff; padding: 10px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.1)'" onmouseout="this.style.background='transparent'">50</button>
-                    <button onclick="setCasinoBet(100)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.3); color: #00e5ff; padding: 10px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.1)'" onmouseout="this.style.background='transparent'">100</button>
-                    <button onclick="setCasinoBet('max')" style="flex: 1; background: transparent; border: 1px solid rgba(255,170,0,0.3); color: #ffaa00; padding: 10px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,170,0,0.1)'" onmouseout="this.style.background='transparent'">MAX</button>
+                <div style="color: #8fa0c2; font-size: 11px; margin-bottom: 10px; text-align: left; padding-left: 5px; text-transform: uppercase; letter-spacing: 1px;">Заряд ядра: <span id="casino-bet-display" style="color:#00e5ff; font-weight:bold;">10</span> Q</div>
+                <div style="display: flex; gap: 6px; margin-bottom: 25px;">
+                    <button onclick="setCasinoBet(10)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.25); color: #00e5ff; padding: 10px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.08)'" onmouseout="this.style.background='transparent'">10</button>
+                    <button onclick="setCasinoBet(50)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.25); color: #00e5ff; padding: 10px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.08)'" onmouseout="this.style.background='transparent'">50</button>
+                    <button onclick="setCasinoBet(100)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.25); color: #00e5ff; padding: 10px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.08)'" onmouseout="this.style.background='transparent'">100</button>
+                    <button onclick="setCasinoBet('max')" style="flex: 1; background: transparent; border: 1px solid rgba(255,170,0,0.25); color: #ffaa00; padding: 10px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(255,170,0,0.08)'" onmouseout="this.style.background='transparent'">MAX</button>
                 </div>
 
-                <button id="casino-spin-btn" onclick="spinCasinoSlots()" style="width: 100%; background: linear-gradient(180deg, #00e5ff 0%, #00aaff 100%); border: none; color: #000; padding: 16px 0; border-radius: 12px; font-weight: 900; font-size: 16px; text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer; box-shadow: 0 5px 0 #0088cc, 0 8px 20px rgba(0,229,255,0.4); position: relative; top: 0; transition: all 0.1s;" onmousedown="this.style.top='3px'; this.style.boxShadow='0 2px 0 #0088cc, 0 5px 10px rgba(0,229,255,0.2)'" onmouseup="this.style.top='0px'; this.style.boxShadow='0 5px 0 #0088cc, 0 8px 20px rgba(0,229,255,0.4)'">Запустить Ядро</button>
+                <button id="casino-spin-btn" onclick="spinCasinoSlots()" style="width: 100%; background: linear-gradient(180deg, #00e5ff 0%, #00aaff 100%); border: none; color: #000; padding: 16px 0; border-radius: 14px; font-weight: 900; font-size: 15px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; box-shadow: 0 5px 0 #0088cc, 0 8px 25px rgba(0,229,255,0.35); position: relative; top: 0; transition: all 0.1s;" onmousedown="this.style.top='3px'; this.style.boxShadow='0 2px 0 #0088cc, 0 4px 10px rgba(0,229,255,0.15)'" onmouseup="this.style.top='0px'; this.style.boxShadow='0 5px 0 #0088cc, 0 8px 25px rgba(0,229,255,0.35)'">Инициализировать Сингулярность</button>
             </div>
         `;
         document.body.appendChild(overlay);
@@ -3760,19 +3820,19 @@ function setCasinoBet(amount) {
 function spinCasinoSlots() {
     if (isCasinoSpinning) return;
     if (!playerData || (playerData.quant || 0) < currentCasinoBet) {
-        document.getElementById('casino-status-text').innerHTML = "<span style='color: #ff4b2b;'>ОШИБКА: Кредиты не найдены.</span>";
+        document.getElementById('casino-status-text').innerHTML = "<span style='color: #ff4b2b;'>ОШИБКА: Сингулярность требует квантов.</span>";
         return;
     }
 
     isCasinoSpinning = true;
     
     const btn = document.getElementById('casino-spin-btn');
-    btn.style.background = '#222';
-    btn.style.color = '#555';
+    btn.style.background = '#151a26';
+    btn.style.color = '#435273';
     btn.style.boxShadow = 'none';
     btn.style.top = '3px';
-    btn.innerText = 'Сдвиг...';
-    document.getElementById('casino-status-text').innerText = "Генерация энтропии...";
+    btn.innerText = 'Гиперпространство...';
+    document.getElementById('casino-status-text').innerText = "Разгон кинетических накопителей...";
 
     playerData.quant -= currentCasinoBet;
     if (typeof updateUI === 'function') updateUI();
@@ -3784,91 +3844,98 @@ function spinCasinoSlots() {
         document.getElementById('slot-reel-3')
     ];
 
-    // Применяем 3D анимацию вращения
-    reels.forEach(reel => reel.style.animation = 'reelSpin 0.15s infinite linear');
+    // Генерируем ХАРДКОРНЫЙ финальный результат ЗАРАНЕЕ
+    const finalSymbols = [getRandomSlotSymbol(), getRandomSlotSymbol(), getRandomSlotSymbol()];
 
-    // Быстрая смена символов
-    let interval = setInterval(() => {
-        reels.forEach(reel => reel.innerText = CASINO_SYMBOLS[Math.floor(Math.random() * CASINO_SYMBOLS.length)].char);
-    }, 50);
+    // Рассчитываем, на каких индексах находятся выпавшие символы
+    const targetIndexes = finalSymbols.map(sym => 
+        CASINO_SYMBOLS.findIndex(s => s.char === sym.char)
+    );
 
-    setTimeout(() => {
-        clearInterval(interval);
+    // Запускаем каскадное 3D вращение с разным временем для каждого барабана
+    reels.forEach((reel, i) => {
+        // Добавляем эффект размытия во время старта кручения
+        reel.style.filter = 'blur(3px)';
         
-        // Отключаем анимацию
-        reels.forEach(reel => reel.style.animation = 'none');
+        // Каждому барабану задаем случайное количество полных оборотов (от 4 до 7) + доворот на нужный угол
+        // Один шаг — это 60 градусов (360 градусов / 6 символов)
+        const fullSpins = 4 + i * 2 + Math.floor(Math.random() * 2);
+        const degrees = (fullSpins * 360) - (targetIndexes[i] * 60);
+        
+        // Поворачиваем цилиндр физически по оси X
+        reel.style.transform = `rotateX(${degrees}deg)`;
+        
+        // Убираем блюр ровно в момент мягкой остановки индивидуального барабана
+        setTimeout(() => {
+            reel.style.filter = 'none';
+        }, 1500 + i * 400);
+    });
 
-        // Генерируем ХАРДКОРНЫЙ результат
-        const res1 = getRandomSlotSymbol();
-        const res2 = getRandomSlotSymbol();
-        const res3 = getRandomSlotSymbol();
-
-        reels[0].innerText = res1.char;
-        reels[1].innerText = res2.char;
-        reels[2].innerText = res3.char;
+    // Ожидаем завершения анимации последнего барабана (2.5 секунды)
+    setTimeout(() => {
+        const res1 = finalSymbols[0];
+        const res2 = finalSymbols[1];
+        const res3 = finalSymbols[2];
 
         let winAmount = 0;
         let statusHtml = "";
         let haptic = 'warning';
 
-        // 🎰 1. СТРОГАЯ ПРОВЕРКА: 3 в ряд (Игрок побеждает и уходит в плюс)
+        // 🎰 1. СТРОГАЯ ПРОВЕРКА: 3 в ряд
         if (res1.char === res2.char && res2.char === res3.char && res1.mult > 0) {
             winAmount = Math.floor(currentCasinoBet * res1.mult);
-            statusHtml = `<span style="color: #fff; animation: winPulse 0.6s infinite alternate; text-transform: uppercase; font-weight: bold;">>>> +${winAmount.toLocaleString()} QUANT <<<</span>`;
+            statusHtml = `<span style="color: #fff; animation: winPulse 0.5s infinite alternate; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">>>> +${winAmount.toLocaleString()} QUANT <<<</span>`;
             haptic = 'success';
         } 
-        // 🛡️ 2. СИСТЕМА КЭШБЭКА: Совпали любые 2 барабана (Игрок теряет, но не всё)
+        // 🛡️ 2. СИСТЕМА КЭШБЭКА: Совпали любые 2 барабана
         else if (res1.char === res2.char || res2.char === res3.char || res1.char === res3.char) {
-            // Вычисляем, какой именно символ повторился
             let matchedSymbol = (res1.char === res2.char || res1.char === res3.char) ? res1 : res2;
             
             if (matchedSymbol.char === '🗑️') {
-                // Две корзины мусора — возвращаем всего 20% ставки
                 winAmount = Math.floor(currentCasinoBet * 0.2);
-                statusHtml = "<span style='color: #6a7999;'>Сбор утиля: вернулось 20% ставки</span>";
+                statusHtml = "<span style='color: #6a7999;'>Сбор утиля: восстановлено 20% энергии ядра</span>";
                 haptic = 'light';
             } else {
-                // Две хорошие космо-картинки — возвращаем 70% ставки
                 winAmount = Math.floor(currentCasinoBet * 0.7);
-                statusHtml = "<span style='color: #ffaa00;'>Частичный резонанс: вернулось 70% ставки</span>";
+                statusHtml = "<span style='color: #ffaa00;'>Частичный резонанс: восстановлено 70% энергии ядра</span>";
                 haptic = 'light';
             }
         }
-        // 💀 3. ПОЛНЫЙ ПРОИГРЫШ: Все 3 символа абсолютно разные
+        // 💀 3. ПОЛНЫЙ ПРОИГРЫШ
         else {
             winAmount = 0;
-            statusHtml = "<span style='color: #4b5e80;'>Энтропия стабильна. Потеря квантов.</span>";
+            statusHtml = "<span style='color: #4b5e80;'>Резонанс не достигнут. Энергия рассеяна.</span>";
             haptic = 'error';
         }
 
-        // Если выиграли или сработал кэшбэк — начисляем на счет игрока и в базу
+        // Выдача выигрыша
         if (winAmount > 0) {
             playerData.quant += winAmount;
             if (typeof updateUI === 'function') updateUI();
             if (typeof userRef !== 'undefined') userRef.update({ quant: playerData.quant });
         }
 
-        // Taptic feedback в зависимости от результата
+        // Taptic Feedback в Telegram
         if (window.Telegram && Telegram.WebApp.HapticFeedback) {
             if (haptic === 'success') {
                 Telegram.WebApp.HapticFeedback.notificationOccurred('success');
             } else if (haptic === 'light') {
-                Telegram.WebApp.HapticFeedback.impactOccurred('light'); // Мягкий тук при кэшбэке
+                Telegram.WebApp.HapticFeedback.impactOccurred('medium');
             } else {
                 Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
             }
         }
 
+        // Возвращаем кнопку в рабочее состояние
         document.getElementById('casino-status-text').innerHTML = statusHtml;
-
         isCasinoSpinning = false;
         btn.style.background = 'linear-gradient(180deg, #00e5ff 0%, #00aaff 100%)';
         btn.style.color = '#000';
-        btn.style.boxShadow = '0 5px 0 #0088cc, 0 8px 20px rgba(0,229,255,0.4)';
+        btn.style.boxShadow = '0 5px 0 #0088cc, 0 8px 25px rgba(0,229,255,0.35)';
         btn.style.top = '0px';
         btn.innerText = 'Запустить Ядро';
 
-    }, 2000);
+    }, 2500); // 2.5 секунды — полное время кручения кинетического барабана
 }
 
 // ==========================================================
