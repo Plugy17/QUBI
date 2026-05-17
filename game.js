@@ -4788,6 +4788,17 @@ function closeCryptoExchange() {
     }
 }
 
+// Функция-пробойник для вывода стандартных алертов на самый передний план
+function bringAlertToFront() {
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('[id*="alert"], [class*="alert"], [id*="notification"], [class*="notification"], .custom-alert');
+        alerts.forEach(alert => {
+            alert.style.zIndex = "999999";
+            alert.style.position = "fixed"; 
+        });
+    }, 50);
+}
+
 // ==========================================================
 // СИСТЕМА ПРЕДЗАГРУЗКИ КЬЮБИ И СИНХРОНИЗАЦИИ СЕТИ (HD-FIX)
 // ==========================================================
