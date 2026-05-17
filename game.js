@@ -4788,15 +4788,34 @@ function closeCryptoExchange() {
     }
 }
 
-// Функция-пробойник для вывода стандартных алертов на самый передний план
-function bringAlertToFront() {
+// Кастомное уведомление прямо внутри Терминала Биржи
+function showExchangeAlert(message) {
+    // Проверяем, есть ли уже плашка уведомления, чтобы не плодить копии
+    let alertBox = document.getElementById('exch-custom-alert');
+    if (!alertBox) {
+        alertBox = document.createElement('div');
+        alertBox.id = 'exch-custom-alert';
+        alertBox.style = `
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(2, 3, 8, 0.95); border: 1px solid #00e5ff; color: #fff;
+            padding: 12px 20px; border-radius: 12px; font-size: 12px; font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0,229,255,0.2); z-index: 99999;
+            width: 80%; text-align: center; pointer-events: none;
+            transition: opacity 0.3s ease; opacity: 0;
+            font-family: 'Courier New', monospace;
+        `;
+        // Пихаем алерт внутрь черного окошка биржи
+        const exchangeContainer = document.getElementById('crypto-exchange-overlay').firstElementChild;
+        if (exchangeContainer) exchangeContainer.appendChild(alertBox);
+    }
+
+    alertBox.innerText = message;
+    alertBox.style.opacity = '1';
+
+    // Прячем через 3 секунды
     setTimeout(() => {
-        const alerts = document.querySelectorAll('[id*="alert"], [class*="alert"], [id*="notification"], [class*="notification"], .custom-alert');
-        alerts.forEach(alert => {
-            alert.style.zIndex = "999999";
-            alert.style.position = "fixed"; 
-        });
-    }, 50);
+        alertBox.style.opacity = '0';
+    }, 3000);
 }
 
 // ==========================================================
