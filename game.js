@@ -5128,52 +5128,62 @@ function injectCubeStyles() {
 // ============================================================================
 
 function attemptClaim(cubeId) {
+    console.log(`📡 [QUBI DEBUGER] Клик по кубу #${cubeId}`);
+    
     const pass = playerData.qubiPass;
-    if (!pass) return;
+    if (!pass) {
+        console.error("❌ Критическая ошибка: playerData.qubiPass не существует!");
+        return;
+    }
 
+    console.log(`📊 Статус пасса: Куплен=${pass.purchased}, ТекущийКуб=${pass.currentCube}, УжеСобраны=[${pass.claimedCubes.join(', ')}]`);
+
+    // 1. Проверяем куплен ли премиум-пасс
     if (!pass.purchased) {
+        console.warn("⚠️ Клик отклонен: У игрока не куплен PREMIUM пасс.");
         if (typeof showInGameAlert === 'function') {
             showInGameAlert("🔒 Требуется активация PREMIUM за 2 TON!");
-        } else {
-            alert("🔒 Требуется активация PREMIUM за 2 TON!");
         }
         return;
     }
 
+    // 2. Проверяем, дорос ли уровень игрока до этого куба
     if (cubeId >= pass.currentCube) {
+        console.warn(`⚠️ Клик отклонен: Куб #${cubeId} еще заблокирован. Текущий доступный куб: #${pass.currentCube - 1}`);
         if (typeof showInGameAlert === 'function') {
             showInGameAlert("🔒 Этот куб заблокирован. Зарабатывайте XP!");
         }
         return;
     }
 
+    // 3. Проверяем, не забирали ли награду ранее
     if (pass.claimedCubes.includes(cubeId)) {
+        console.warn(`⚠️ Клик отклонен: Награда с куба #${cubeId} уже была собрана ранее.`);
         if (typeof showInGameAlert === 'function') {
             showInGameAlert("👀 Награда с этого куба уже получена!");
         }
         return;
     }
 
+    console.log("✅ Все проверки пройдены! Запускаем анимацию взрыва и начисление...");
+
     const reward = qubiPassRewardsList[cubeId];
     if (reward) {
-        // НАХОДИМ СТРОГО НАШ КУБ ПО УНИКАЛЬНОМУ СЕЛЕКТОРУ DATA-ID
         const targetCard = document.querySelector(`#cubes-container [data-id="${cubeId}"]`);
         if (targetCard) {
             const targetCube = targetCard.querySelector('.cube');
             const targetShadow = targetCard.querySelector('.cube-shadow');
             
-            // Навешиваем классы CSS взрыва вручную
             if (targetCube) targetCube.classList.add('cube-open');
             if (targetShadow) targetShadow.classList.add('shadow-hide');
         }
 
-        // Ждем 450мс пока проиграет 3D-анимация, затем обновляем данные
         setTimeout(() => {
             reward.claim(); 
             pass.claimedCubes.push(cubeId); 
             
             if (typeof showInGameAlert === 'function') {
-                showInGameAlert(`🎁 Открыт Куб #${cubeId}! Получено: ${reward.title} ${reward.count > 1 ? 'x' + reward.count : ''}`);
+                showInGameAlert(`🎁 Открыт Куб #${cubeId}! Получено: ${reward.title}`);
             }
             
             if (typeof updateUI === 'function') updateUI();
@@ -5188,10 +5198,11 @@ function attemptClaim(cubeId) {
                 }).catch(err => console.error("Ошибка сохранения пасса в Firebase:", err));
             }
             
-            // Перерисовываем интерфейс только после полного исчезновения куба
             renderPassCubes();
             updatePassUI();
         }, 450);
+    } else {
+        console.error(`❌ Ошибка: Награда для куба #${cubeId} не найдена в списке qubiPassRewardsList!`);
     }
 }
 
