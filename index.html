@@ -660,6 +660,40 @@
             </div>
         </div>
 
+     <div id="qubi-pass-overlay">
+    <div style="padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; background: rgba(6, 11, 25, 0.7); backdrop-filter: blur(20px); border-bottom: 2px solid rgba(0, 229, 255, 0.15); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);">
+        <div>
+            <h2 style="margin: 0; color: #00e5ff; font-size: 26px; font-weight: 900; letter-spacing: 3px; text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);">QUBI PASS</h2>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                <span id="pass-status-indicator" style="width: 6px; height: 6px; background: #ff3366; border-radius: 50%; box-shadow: 0 0 8px #ff3366;"></span>
+                <p id="pass-status-text" style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #7e9bbd;">FREE MODE (LOCKED)</p>
+            </div>
+        </div>
+        <button onclick="closeQubiPassMenu()" style="background: rgba(255, 75, 43, 0.1); border: 1px solid #ff4b2b; color: #ff4b2b; padding: 8px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 12px; letter-spacing: 1px; transition: all 0.3s; box-shadow: inset 0 0 10px rgba(255,75,43,0.2);" onmouseover="this.style.background='#ff4b2b'; this.style.color='#fff'" onmouseout="this.style.background='rgba(255,75,43,0.1)'; this.style.color='#ff4b2b'">
+            ЗАКРЫТЬ
+        </button>
+    </div>
+
+    <div style="padding: 25px; background: rgba(0, 229, 255, 0.02); border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
+            <span style="color: #fff;">Текущий уровень: <span id="pass-level-display" style="color: #00e5ff; font-size: 16px;">#1</span></span>
+            <span id="pass-xp-display" style="color: #00ff66; text-shadow: 0 0 10px rgba(0,255,102,0.3);">0 / 1000 XP</span>
+        </div>
+        <div style="width: 100%; height: 12px; background: rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; border: 1px solid rgba(0, 229, 255, 0.2); padding: 2px; box-sizing: border-box;">
+            <div id="pass-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00e5ff 0%, #00ff66 100%); border-radius: 20px; box-shadow: 0 0 15px #00e5ff; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+        </div>
+    </div>
+
+    <div id="cubes-container" style="flex: 1; overflow-y: auto; padding: 25px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; align-content: start; background: linear-gradient(180deg, rgba(2,6,18,0) 0%, rgba(1,3,10,0.6) 100%);"></div>
+
+    <div id="buy-pass-footer" style="padding: 25px; background: rgba(4, 8, 20, 0.9); border-top: 1px solid rgba(0, 229, 255, 0.15); box-shadow: 0 -10px 30px rgba(0,0,0,0.7);">
+        <button onclick="processPassPayment()" style="width: 100%; padding: 18px; background: linear-gradient(135deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%); border: none; border-radius: 16px; color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 2px; cursor: pointer; box-shadow: 0 6px 25px rgba(67, 100, 247, 0.45); transition: all 0.3s; text-shadow: 0 2px 4px rgba(0,0,0,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(67, 100, 247, 0.6)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 25px rgba(67, 100, 247, 0.45)'">
+            АКТИВИРОВАТЬ PREMIUM ЗА 2 TON
+        </button>
+    </div>
+</div>
+
+
         <div id="earth-screen" class="earth-screen">
             <div class="colony-header" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 85px 20px 20px 20px;">
                 
@@ -736,39 +770,6 @@
             <button onclick="restartGame()" class="restart-btn primary">ПОПРОБОВАТЬ СНОВА</button>
             <button onclick="goToMenu()" class="restart-btn secondary">В МЕНЮ</button>
         </div>
-    </div>
-</div>
-
-    <div id="qubi-pass-overlay">
-    <div style="padding: 20px 25px; display: flex; justify-content: space-between; align-items: center; background: rgba(6, 11, 25, 0.7); backdrop-filter: blur(20px); border-bottom: 2px solid rgba(0, 229, 255, 0.15); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);">
-        <div>
-            <h2 style="margin: 0; color: #00e5ff; font-size: 26px; font-weight: 900; letter-spacing: 3px; text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);">QUBI PASS</h2>
-            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                <span id="pass-status-indicator" style="width: 6px; height: 6px; background: #ff3366; border-radius: 50%; box-shadow: 0 0 8px #ff3366;"></span>
-                <p id="pass-status-text" style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #7e9bbd;">FREE MODE (LOCKED)</p>
-            </div>
-        </div>
-        <button onclick="closeQubiPassMenu()" style="background: rgba(255, 75, 43, 0.1); border: 1px solid #ff4b2b; color: #ff4b2b; padding: 8px 20px; border-radius: 12px; cursor: pointer; font-weight: 800; font-size: 12px; letter-spacing: 1px; transition: all 0.3s; box-shadow: inset 0 0 10px rgba(255,75,43,0.2);" onmouseover="this.style.background='#ff4b2b'; this.style.color='#fff'" onmouseout="this.style.background='rgba(255,75,43,0.1)'; this.style.color='#ff4b2b'">
-            ЗАКРЫТЬ
-        </button>
-    </div>
-
-    <div style="padding: 25px; background: rgba(0, 229, 255, 0.02); border-bottom: 1px solid rgba(255,255,255,0.05);">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">
-            <span style="color: #fff;">Текущий уровень: <span id="pass-level-display" style="color: #00e5ff; font-size: 16px;">#1</span></span>
-            <span id="pass-xp-display" style="color: #00ff66; text-shadow: 0 0 10px rgba(0,255,102,0.3);">0 / 1000 XP</span>
-        </div>
-        <div style="width: 100%; height: 12px; background: rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; border: 1px solid rgba(0, 229, 255, 0.2); padding: 2px; box-sizing: border-box;">
-            <div id="pass-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #00e5ff 0%, #00ff66 100%); border-radius: 20px; box-shadow: 0 0 15px #00e5ff; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-        </div>
-    </div>
-
-    <div id="cubes-container" style="flex: 1; overflow-y: auto; padding: 25px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; align-content: start; background: linear-gradient(180deg, rgba(2,6,18,0) 0%, rgba(1,3,10,0.6) 100%);"></div>
-
-    <div id="buy-pass-footer" style="padding: 25px; background: rgba(4, 8, 20, 0.9); border-top: 1px solid rgba(0, 229, 255, 0.15); box-shadow: 0 -10px 30px rgba(0,0,0,0.7);">
-        <button onclick="processPassPayment()" style="width: 100%; padding: 18px; background: linear-gradient(135deg, #0052d4 0%, #4364f7 50%, #6fb1fc 100%); border: none; border-radius: 16px; color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 2px; cursor: pointer; box-shadow: 0 6px 25px rgba(67, 100, 247, 0.45); transition: all 0.3s; text-shadow: 0 2px 4px rgba(0,0,0,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px rgba(67, 100, 247, 0.6)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 25px rgba(67, 100, 247, 0.45)'">
-            АКТИВИРОВАТЬ PREMIUM ЗА 2 TON
-        </button>
     </div>
 </div>
 
