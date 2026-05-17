@@ -25,8 +25,9 @@ canvas {
     display: block;
     position: fixed;
     top: 0; left: 0;
-    z-index: 1;
+    z-index: 2; /* Поднимаем планеты ЧУТЬ ВЫШЕ падающих кубиков, но ОСТАВЛЯЕМ ПОД кнопками */
     filter: none !important;
+    pointer-events: auto !important; /* Намертво заставляем планеты реагировать на клики и тапы */
 }
 
 #ui-layer {
