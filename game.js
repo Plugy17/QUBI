@@ -4532,6 +4532,7 @@ function updatePositionProfit() {
     if (pnlPct <= -1.0) {
         if (typeof showInGameAlert === 'function') {
             showInGameAlert(`⚠️ ЛИКВИДАЦИЯ: Позиция ${activePosition.type} ${activePosition.leverage}x принудительно закрыта.`);
+            bringAlertToFront(); // 🔥 Выталкиваем алерт на передний план
         }
 
         activePosition = null;
@@ -4563,6 +4564,7 @@ function openTradingPosition(type) {
     if (activePosition) {
         if (typeof showInGameAlert === 'function') {
             showInGameAlert("У вас уже есть открытый контракт!");
+            bringAlertToFront(); // 🔥 Выталкиваем алерт на передний план
         }
         document.getElementById('exch-status-msg').innerText = "Ошибка: Сначала закройте текущую позицию!";
         return;
@@ -4570,6 +4572,7 @@ function openTradingPosition(type) {
     if (!playerData || (playerData.quant || 0) < currentExchangeBet) {
         if (typeof showInGameAlert === 'function') {
             showInGameAlert("Недостаточно QUANT для обеспечения маржи!");
+            bringAlertToFront(); // 🔥 Выталкиваем алерт на передний план
         }
         document.getElementById('exch-status-msg').innerText = "Недостаточно QUANT для обеспечения маржи.";
         return;
@@ -4591,6 +4594,7 @@ function openTradingPosition(type) {
 
     if (typeof showInGameAlert === 'function') {
         showInGameAlert(`🚀 Открыт контракт: ${type} c плечом ${currentLeverage}x!`);
+        bringAlertToFront(); // 🔥 Выталкиваем алерт на передний план
     }
 
     document.getElementById('exch-status-msg').innerHTML = `Позиция <span style="color:${type==='LONG'?'#00ffcc':'#ff4b2b'}">${type} ${currentLeverage}x</span> успешно открыта!`;
@@ -4626,6 +4630,7 @@ function closeTradingPosition() {
         } else {
             showInGameAlert(`📉 Позиция закрыта в минус: ${Math.floor(pnlAmount)} Q`);
         }
+        bringAlertToFront(); // 🔥 Выталкиваем алерт на передний план
     }
 
     if (window.Telegram && Telegram.WebApp.HapticFeedback) {
@@ -4680,90 +4685,96 @@ function UI_applySavedPosition() {
     updatePositionProfit();
 }
 
-// Открытие интерфейса биржи
+// Открытие интерфейса биржи (С глубокой изоляцией и защитой от пробития кликов)
 function openCryptoExchange() {
-    let overlay = document.getElementById('crypto-exchange-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'crypto-exchange-overlay';
-        overlay.style = `
-            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at center, rgba(6,10,24,0.95) 0%, rgba(2,3,8,1) 100%);
-            z-index: 999; flex-direction: column; align-items: center; justify-content: center;
-            box-sizing: border-box; padding: 10px; font-family: 'Courier New', monospace; backdrop-filter: blur(6px);
-        `; 
-        
-        overlay.innerHTML = `
-            <div style="background: linear-gradient(145deg, #090e1a 0%, #03050c 100%); border: 2px solid rgba(0,229,255,0.3); border-radius: 24px; padding: 20px 16px; width: 94%; max-width: 365px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); text-align: center; position: relative;">
-                
-                <button onclick="closeCryptoExchange()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #8fa0c2; font-size: 14px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index:11;">✕</button>
-                
-                <div style="color: rgba(0,229,255,0.6); font-size: 9px; letter-spacing: 4px; font-weight: bold; margin-bottom: 5px;">[ ДЕЦЕНТРАЛИЗОВАННЫЙ ФЬЮЧЕРС-МОДУЛЬ ]</div>
-                <div style="color: #fff; font-size: 20px; font-weight: 900; margin-bottom: 15px; letter-spacing: 1px;">QUBI TERMINAL</div>
-                
-                <div style="background: #020307; border: 1px solid #121929; border-radius: 14px; padding: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <div style="text-align: left;">
-                        <div style="color: #6a7999; font-size: 10px; text-transform: uppercase;">Пара торговли</div>
-                        <div style="color: #fff; font-weight: bold; font-size: 15px;">QUBI / USDT</div>
-                    </div>
-                    <div style="text-align: right; display: flex; align-items: center; gap: 6px;">
-                        <span id="exch-price-arrow" style="font-size: 14px;">▲</span>
-                        <span id="exch-price-val" style="color: #00e5ff; font-weight: 900; font-size: 18px; font-family: monospace;">1.0000 USDT</span>
-                    </div>
+    // Чистим старый инстанс, если он завис в дереве элементов
+    const oldOverlay = document.getElementById('crypto-exchange-overlay');
+    if (oldOverlay) oldOverlay.remove();
+
+    let overlay = document.createElement('div');
+    overlay.id = 'crypto-exchange-overlay';
+    overlay.style = `
+        display: flex; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: radial-gradient(circle at center, rgba(6,10,24,0.96) 0%, rgba(2,3,8,1) 100%);
+        z-index: 35000; flex-direction: column; align-items: center; justify-content: center;
+        box-sizing: border-box; padding: 10px; font-family: 'Courier New', monospace; backdrop-filter: blur(8px);
+    `; 
+    
+    // 🔥 ГЛАВНЫЙ ФИКС: Запрещаем кликам пролетать сквозь интерфейс биржи на фоновые кнопки игры
+    overlay.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    
+    overlay.innerHTML = `
+        <div style="background: linear-gradient(145deg, #090e1a 0%, #03050c 100%); border: 2px solid rgba(0,229,255,0.3); border-radius: 24px; padding: 20px 16px; width: 94%; max-width: 365px; box-shadow: 0 20px 50px rgba(0,0,0,1); text-align: center; position: relative;">
+            
+            <button onclick="closeCryptoExchange()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #8fa0c2; font-size: 14px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index:12;">✕</button>
+            
+            <div style="color: rgba(0,229,255,0.6); font-size: 9px; letter-spacing: 4px; font-weight: bold; margin-bottom: 5px;">[ ДЕЦЕНТРАЛИЗОВАННЫЙ ФЬЮЧЕРС-МОДУЛЬ ]</div>
+            <div style="color: #fff; font-size: 20px; font-weight: 900; margin-bottom: 15px; letter-spacing: 1px;">QUBI TERMINAL</div>
+            
+            <div style="background: #020307; border: 1px solid #121929; border-radius: 14px; padding: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="text-align: left;">
+                    <div style="color: #6a7999; font-size: 10px; text-transform: uppercase;">Пара торговли</div>
+                    <div style="color: #fff; font-weight: bold; font-size: 15px;">QUBI / USDT</div>
                 </div>
-
-                <div style="background: #010205; border: 1px solid #000; border-radius: 16px; padding: 5px; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,1); position: relative;">
-                    <canvas id="exchange-canvas" width="325" height="130" style="display: block; width: 100%; height: 130px;"></canvas>
-                </div>
-
-                <div style="color: #8fa0c2; font-size: 10px; text-transform: uppercase; margin-bottom: 6px; text-align: left; padding-left: 4px;">Кредитное плечо (Margin multiplier):</div>
-                <div style="display: flex; gap: 6px; margin-bottom: 15px;">
-                    <button id="lev-btn-1" onclick="setExchangeLeverage(1)" class="lev-btn active">1x</button>
-                    <button id="lev-btn-5" onclick="setExchangeLeverage(5)" class="lev-btn">5x</button>
-                    <button id="lev-btn-10" onclick="setExchangeLeverage(10)" class="lev-btn">10x</button>
-                    <button id="lev-btn-20" onclick="setExchangeLeverage(20)" class="lev-btn">20x</button>
-                </div>
-
-                <div id="active-pos-widget" style="display: none; background: rgba(0,229,255,0.04); border: 1px solid rgba(0,229,255,0.25); border-radius: 14px; padding: 12px; margin-bottom: 15px; text-align: left;">
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                        <span style="color: #6a7999;">Позиция: <b id="pos-type-display" style="color:#fff;">-</b></span>
-                        <span style="color: #6a7999;">Вход: <b id="pos-entry-display" style="color:#fff;">-</b></span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="color: #6a7999; font-size: 10px; text-transform: uppercase;">Нереализованный PnL</div>
-                            <div id="pos-pnl-val" style="font-size: 16px; font-weight: 900; color: #00ffcc;">0.00 Q (0%)</div>
-                        </div>
-                        <button onclick="closeTradingPosition()" style="background: #ffaa00; border: none; color: #000; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Market Close</button>
-                    </div>
-                    <div id="pos-liq-warning" style="display: none; color: #ff4b2b; font-size: 9px; font-weight: bold; margin-top: 6px; text-transform: uppercase; text-align: center;"></div>
-                </div>
-
-                <div id="exch-status-msg" style="color: #6a7999; font-size: 11px; min-height: 16px; margin-bottom: 15px; font-weight: bold;">Терминал синхронизирован. Ордеров нет.</div>
-
-                <div style="color: #8fa0c2; font-size: 11px; margin-bottom: 10px; text-align: left; padding-left: 4px; text-transform: uppercase;">Обеспечение (Маржа): <span id="exch-bet-display" style="color:#00e5ff; font-weight:bold;">10</span> Q</div>
-                <div style="display: flex; gap: 5px; margin-bottom: 20px;">
-                    <button onclick="setExchangeBet(10)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">10</button>
-                    <button onclick="setExchangeBet(50)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">50</button>
-                    <button onclick="setExchangeBet(100)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">100</button>
-                    <button onclick="setExchangeBet(250)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">250</button>
-                </div>
-
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="openTradingPosition('LONG')" class="trade-btn" style="background: linear-gradient(180deg, #00ffcc 0%, #00aa88 100%); color: #000; box-shadow: 0 4px 15px rgba(0,255,204,0.3);">Long (Вверх)</button>
-                    <button onclick="openTradingPosition('SHORT')" class="trade-btn" style="background: linear-gradient(180deg, #ff4b2b 0%, #cc1100 100%); color: #fff; box-shadow: 0 4px 15px rgba(255,75,43,0.3);">Short (Вниз)</button>
+                <div style="text-align: right; display: flex; align-items: center; gap: 6px;">
+                    <span id="exch-price-arrow" style="font-size: 14px;">▲</span>
+                    <span id="exch-price-val" style="color: #00e5ff; font-weight: 900; font-size: 18px; font-family: monospace;">1.0000 USDT</span>
                 </div>
             </div>
-        `;
-        document.body.appendChild(overlay);
-    }
+
+            <div style="background: #010205; border: 1px solid #000; border-radius: 16px; padding: 5px; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,1); position: relative;">
+                <canvas id="exchange-canvas" width="325" height="130" style="display: block; width: 100%; height: 130px;"></canvas>
+            </div>
+
+            <div style="color: #8fa0c2; font-size: 10px; text-transform: uppercase; margin-bottom: 6px; text-align: left; padding-left: 4px;">Кредитное плечо (Margin multiplier):</div>
+            <div style="display: flex; gap: 6px; margin-bottom: 15px;">
+                <button id="lev-btn-1" onclick="setExchangeLeverage(1)" class="lev-btn active">1x</button>
+                <button id="lev-btn-5" onclick="setExchangeLeverage(5)" class="lev-btn">5x</button>
+                <button id="lev-btn-10" onclick="setExchangeLeverage(10)" class="lev-btn">10x</button>
+                <button id="lev-btn-20" onclick="setExchangeLeverage(20)" class="lev-btn">20x</button>
+            </div>
+
+            <div id="active-pos-widget" style="display: none; background: rgba(0,229,255,0.04); border: 1px solid rgba(0,229,255,0.25); border-radius: 14px; padding: 12px; margin-bottom: 15px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                    <span style="color: #6a7999;">Позиция: <b id="pos-type-display" style="color:#fff;">-</b></span>
+                    <span style="color: #6a7999;">Вход: <b id="pos-entry-display" style="color:#fff;">-</b></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="color: #6a7999; font-size: 10px; text-transform: uppercase;">Нереализованный PnL</div>
+                        <div id="pos-pnl-val" style="font-size: 16px; font-weight: 900; color: #00ffcc;">0.00 Q (0%)</div>
+                    </div>
+                    <button onclick="closeTradingPosition()" style="background: #ffaa00; border: none; color: #000; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Market Close</button>
+                </div>
+                <div id="pos-liq-warning" style="display: none; color: #ff4b2b; font-size: 9px; font-weight: bold; margin-top: 6px; text-transform: uppercase; text-align: center;"></div>
+            </div>
+
+            <div id="exch-status-msg" style="color: #6a7999; font-size: 11px; min-height: 16px; margin-bottom: 15px; font-weight: bold;">Терминал синхронизирован. Ордеров нет.</div>
+
+            <div style="color: #8fa0c2; font-size: 11px; margin-bottom: 10px; text-align: left; padding-left: 4px; text-transform: uppercase;">Обеспечение (Маржа): <span id="exch-bet-display" style="color:#00e5ff; font-weight:bold;">10</span> Q</div>
+            <div style="display: flex; gap: 5px; margin-bottom: 20px;">
+                <button onclick="setExchangeBet(10)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">10</button>
+                <button onclick="setExchangeBet(50)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">50</button>
+                <button onclick="setExchangeBet(100)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">100</button>
+                <button onclick="setExchangeBet(250)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">250</button>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="openTradingPosition('LONG')" class="trade-btn" style="background: linear-gradient(180deg, #00ffcc 0%, #00aa88 100%); color: #000; box-shadow: 0 4px 15px rgba(0,255,204,0.3);">Long (Вверх)</button>
+                <button onclick="openTradingPosition('SHORT')" class="trade-btn" style="background: linear-gradient(180deg, #ff4b2b 0%, #cc1100 100%); color: #fff; box-shadow: 0 4px 15px rgba(255,75,43,0.3);">Short (Вниз)</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
     overlay.style.display = 'flex';
     
     if (!exchangeInterval) {
         exchangeInterval = setInterval(tickExchangeMarket, 1000);
     }
 
-    // 🔥 Теперь это вызывается безопасно: только когда весь HTML уже 100% создан
     UI_applySavedPosition();
 }
 
@@ -4777,15 +4788,12 @@ function closeCryptoExchange() {
     }
 }
 
+// Функция-пробойник для вывода стандартных алертов на самый передний план
 function bringAlertToFront() {
-    // Ждем 50 миллисекунд, чтобы функция игры успела создать HTML-элемент алерта
     setTimeout(() => {
-        // Ищем любые стандартные контейнеры уведомлений (попробуем найти по типичным признакам)
         const alerts = document.querySelectorAll('[id*="alert"], [class*="alert"], [id*="notification"], [class*="notification"], .custom-alert');
-        
         alerts.forEach(alert => {
-            // Если этот элемент виден, задираем его z-index в космос
-            alert.style.zIndex = "9999999";
+            alert.style.zIndex = "999999";
             alert.style.position = "fixed"; 
         });
     }, 50);
