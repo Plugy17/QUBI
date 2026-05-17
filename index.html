@@ -293,7 +293,7 @@
     </div>
 </div>
 
-    <div id="market-window" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 20%, #0c152b 0%, #030712 100%); z-index: 9999; color: #fff; font-family: 'Courier New', Courier, monospace; overflow-y: auto;">
+   <div id="market-window" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 20%, #0c152b 0%, #030712 100%); z-index: 9999; color: #fff; font-family: 'Courier New', Courier, monospace; overflow-y: auto;">
     
     <div style="position: absolute; top: 0; left: 25%; width: 50%; height: 2px; background: linear-gradient(90deg, transparent, #00e5ff, transparent); filter: drop-shadow(0 0 8px #00e5ff);"></div>
 
@@ -309,69 +309,59 @@
         style="background: rgba(255, 75, 43, 0.1); border: 1px solid #ff4b2b; color: #ff4b2b; padding: 4px 10px; margin-top: 24px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 10px; letter-spacing: 1px; transition: all 0.3s; box-shadow: inset 0 0 10px rgba(255,75,43,0.2);" 
         onmouseover="this.style.background='#ff4b2b'; this.style.color='#000';" 
         onmouseout="this.style.background='rgba(255, 75, 43, 0.1)'; this.style.color='#ff4b2b';">
-    DISCONNECT
-</button>
+            DISCONNECT
+        </button>
     </div>
 
-    <div style="display: flex; background: rgba(0,0,0,0.4); padding: 6px; margin: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-        <button id="market-tab-buy" onclick="switchMarketTab('buy')" style="flex: 1; padding: 12px; background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0,229,255,0.3); color: #00e5ff; font-weight: bold; cursor: pointer; font-size: 12px; border-radius: 6px; transition: all 0.3s; font-family: sans-serif; letter-spacing: 0.5px;">
-            ✦ КУПИТЬ РЕСУРСЫ
+    <div style="display: flex; gap: 6px; background: rgba(0,0,0,0.4); padding: 6px; margin: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+        <button id="market-tab-buy" onclick="switchMarketTab('buy')" style="flex: 1; padding: 10px 4px; background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0,229,255,0.3); color: #00e5ff; font-weight: bold; cursor: pointer; font-size: 11px; border-radius: 6px; transition: all 0.3s; font-family: sans-serif; letter-spacing: 0.5px;">
+            ✦ КУПИТЬ
         </button>
-        <button id="market-tab-sell" onclick="switchMarketTab('sell')" style="flex: 1; padding: 12px; background: none; border: 1px solid transparent; color: #64748b; font-weight: bold; cursor: pointer; font-size: 12px; border-radius: 6px; transition: all 0.3s; font-family: sans-serif; letter-spacing: 0.5px;">
-            ✕ МОЙ СКЛАД / ТОРГИ
+        <button id="market-tab-sell" onclick="switchMarketTab('sell')" style="flex: 1; padding: 10px 4px; background: none; border: 1px solid transparent; color: #64748b; font-weight: bold; cursor: pointer; font-size: 11px; border-radius: 6px; transition: all 0.3s; font-family: sans-serif; letter-spacing: 0.5px;">
+            ✕ ТОРГИ
+        </button>
+        <button onclick="openCryptoExchange()" style="flex: 12px; padding: 10px 4px; background: rgba(0,255,204,0.05); border: 1px solid rgba(0,255,204,0.2); color: #00ffcc; font-weight: bold; cursor: pointer; font-size: 11px; border-radius: 6px; transition: all 0.3s; font-family: sans-serif; letter-spacing: 0.5px; box-shadow: inset 0 0 8px rgba(0,255,204,0.05);"
+        onmouseover="this.style.background='rgba(0,255,204,0.15)'; this.style.borderColor='#00ffcc';" 
+        onmouseout="this.style.background='rgba(0,255,204,0.05)'; this.style.borderColor='rgba(0,255,204,0.2)';">
+            📈 БИРЖА
         </button>
     </div>
 
     <div id="market-page-buy" style="padding: 0 15px 20px 15px; display: block;">
-        <div id="market-lots-container" style="display: flex; flex-direction: column; gap: 14px;">
-            </div>
+        <div id="market-lots-container" style="display: flex; flex-direction: column; gap: 14px;"></div>
     </div>
 
     <div id="market-page-sell" style="padding: 0 15px 20px 15px; display: none;">
         <div style="background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); padding: 20px; border-radius: 12px; border: 1px solid rgba(255, 129, 0, 0.2); backdrop-filter: blur(5px); margin-bottom: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
-    <h3 style="margin-top: 0; color: #ff8100; font-size: 14px; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,129,0,0.4); margin-bottom: 18px;">[ВЫХОД НА ОРБИТУ ПРОДАЖ]</h3>
-    
-    <div style="margin-bottom: 15px;">
-        <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: bold;">МАТЕРИАЛ ДЛЯ МЕЖПЛАНЕТНОГО ЭКСПОРТА:</label>
-        <select id="market-item-select" style="width: 100%; padding: 12px; background: #070c18; border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; font-weight: bold; font-family: monospace; font-size: 13px; outline: none;"></select>
-    </div>
+            <h3 style="margin-top: 0; color: #ff8100; font-size: 14px; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,129,0,0.4); margin-bottom: 18px;">[ВЫХОД НА ОРБИТУ ПРОДАЖ]</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: bold;">МАТЕРИАЛ ДЛЯ МЕЖПЛАНЕТНОГО ЭКСПОРТА:</label>
+                <select id="market-item-select" style="width: 100%; padding: 12px; background: #070c18; border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 8px; font-weight: bold; font-family: monospace; font-size: 13px; outline: none;"></select>
+            </div>
 
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <div style="flex: 0.8;">
-            <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: bold;">КОЛ-ВО:</label>
-            <input type="number" id="market-amount-input" value="1" min="1" style="width: 100%; padding: 12px; background: #070c18; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-weight: bold; font-family: monospace; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none;">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <div style="flex: 0.8;">
+                    <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: bold;">КОЛ-ВО:</label>
+                    <input type="number" id="market-amount-input" value="1" min="1" style="width: 100%; padding: 12px; background: #070c18; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-weight: bold; font-family: monospace; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none;">
+                </div>
+                <div style="flex: 1.2;">
+                    <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: bold;">ЦЕНА ЗА ШТУКУ:</label>
+                    <input type="number" id="market-price-input" placeholder="0.00" style="width: 100%; padding: 12px; background: #070c18; border: 1px solid rgba(255,255,255,0.1); color: #ff8100; font-weight: bold; font-family: monospace; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: bold;">ВАЛЮТА:</label>
+                    <select id="market-currency-select" style="width: 100%; padding: 12px; background: #070c18; border: 1px solid rgba(255,255,255,0.1); color: #00e5ff; border-radius: 8px; font-weight: bold; font-family: monospace; font-size: 13px; outline: none;">
+                        <option value="quant">QUANT</option>
+                        <option value="qubi">QUBI</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="createMarketLotAction()" style="width: 100%; background: linear-gradient(90deg, #ff8100, #ff5500); border: none; color: #fff; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; letter-spacing: 1px; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); box-shadow: 0 4px 15px rgba(255,85,0,0.3); font-family: sans-serif; transition: transform 0.2s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+                ЗАПУСТИТЬ ТОРГОВЫЙ ОРДЕР ◢
+            </button>
         </div>
-        <div style="flex: 1.2;">
-            <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: bold;">ЦЕНА ЗА ШТУКУ:</label>
-            <input type="number" id="market-price-input" placeholder="0.00" style="width: 100%; padding: 12px; background: #070c18; border: 1px solid rgba(255,255,255,0.1); color: #ff8100; font-weight: bold; font-family: monospace; border-radius: 8px; box-sizing: border-box; font-size: 14px; outline: none;">
-        </div>
-        <div style="flex: 1;">
-            <label style="display: block; font-size: 10px; color: #64748b; margin-bottom: 6px; font-weight: bold;">ВАЛЮТА:</label>
-            <select id="market-currency-select" style="width: 100%; padding: 12px; background: #070c18; border: 1px solid rgba(255,255,255,0.1); color: #00e5ff; border-radius: 8px; font-weight: bold; font-family: monospace; font-size: 13px; outline: none;">
-                <option value="quant">QUANT</option>
-                <option value="qubi">QUBI</option>
-            </select>
-        </div>
-    </div>
-
-            <div style="background: #090e1a; border: 1px solid rgba(0,229,255,0.2); padding: 15px; border-radius: 16px;">
-    
-    <div style="color: #fff; font-size: 18px; font-weight: bold; margin-bottom: 12px;">P2P МАРКЕТ ОРДЕРОВ</div>
-
-    <button onclick="openCryptoExchange()" style="width: 100%; background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff; padding: 10px; border-radius: 10px; font-weight: bold; font-family: inherit; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; margin-bottom: 15px; box-shadow: 0 0 10px rgba(0,229,255,0.2);" 
-            onmouseover="this.style.background='rgba(0,229,255,0.2)'" 
-            onmouseout="this.style.background='rgba(0,229,255,0.1)'">
-        📈 ОТКРЫТЬ ФЬЮЧЕРСНЫЙ ТЕРМИНАЛ (LONG/SHORT)
-    </button>
-
-    <div id="p2p-orders-list">
-        </div>
-</div>
-
-    <button onclick="createMarketLotAction()" style="width: 100%; background: linear-gradient(90deg, #ff8100, #ff5500); border: none; color: #fff; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; letter-spacing: 1px; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); box-shadow: 0 4px 15px rgba(255,85,0,0.3); font-family: sans-serif; transition: transform 0.2s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
-        ЗАПУСТИТЬ ТОРГОВЫЙ ОРДЕР ◢
-    </button>
-</div>
 
         <h3 style="color: #5f759e; font-size: 12px; margin: 0 0 15px 5px; letter-spacing: 1px;">СПИСОК ВАШИХ ТОРГОВЫХ КОНТРАКТОВ:</h3>
         <div id="market-my-lots-container" style="display: flex; flex-direction: column; gap: 12px;"></div>
