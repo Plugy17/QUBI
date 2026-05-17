@@ -25,7 +25,7 @@ canvas {
     display: block;
     position: fixed;
     top: 0; left: 0;
-    z-index: 1; /* Возвращаем планеты на слой 1 */
+    z-index: 2; /* Возвращаем планеты на слой 1 */
     filter: none !important;
     pointer-events: auto !important;
 }
@@ -37,7 +37,7 @@ canvas {
     width: 100%; 
     height: 100%;
     z-index: 10; /* Интерфейс на слое 10 */
-    pointer-events: auto; /* ВАЖНО: возвращаем обычные клики! */
+    pointer-events: none; /* ВАЖНО: возвращаем обычные клики! */
     box-sizing: border-box;
 }
 
