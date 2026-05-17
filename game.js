@@ -4426,7 +4426,7 @@ function tickExchangeMarket() {
     }
 }
 
-// Отрисовка графика на HTML5 Canvas
+// Отрисовка графика на HTML5 Canvas (С исправленным занижением линии входа)
 function renderExchangeChart() {
     const canvas = document.getElementById('exchange-canvas');
     if (!canvas) return;
@@ -4436,6 +4436,7 @@ function renderExchangeChart() {
     
     ctx.clearRect(0, 0, w, h);
     
+    // Отрисовка фоновой сетки
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
     for(let i = 0; i < w; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke(); }
@@ -4452,6 +4453,7 @@ function renderExchangeChart() {
     gradient.addColorStop(0, 'rgba(0, 229, 255, 0.15)');
     gradient.addColorStop(1, 'rgba(0, 229, 255, 0.0)');
 
+    // Отрисовка основной линии цены
     for (let i = 0; i < priceHistory.length; i++) {
         const x = (i / (MAX_HISTORY - 1)) * w;
         const y = h - 15 - ((priceHistory[i] - minP) / range) * (h - 30);
@@ -4470,16 +4472,26 @@ function renderExchangeChart() {
     ctx.fillStyle = gradient;
     ctx.fill();
 
+    // 🔥 ИСПРАВЛЕНО: Теперь линия открытого контракта (LONG/SHORT) не уходит вверх, 
+    // а рассчитывается точно по тем же отступам, что и сам график.
     if (activePosition) {
         const entryY = h - 15 - ((activePosition.entryPrice - minP) / range) * (h - 30);
+        
+        // Рисуем пунктир только если он попадает в видимую область графика
         if (entryY >= 0 && entryY <= h) {
             ctx.beginPath();
-            ctx.setLineDash([4, 4]);
-            ctx.strokeStyle = activePosition.type === 'LONG' ? 'rgba(0, 255, 204, 0.4)' : 'rgba(255, 75, 43, 0.4)';
+            ctx.setLineDash([4, 4]); // Делаем аккуратный пунктир
+            
+            // Зеленый цвет для лонга, красный для шорта
+            ctx.strokeStyle = activePosition.type === 'LONG' ? 'rgba(0, 255, 204, 0.6)' : 'rgba(255, 75, 43, 0.6)';
+            ctx.lineWidth = 1.5;
+            
             ctx.moveTo(0, entryY);
             ctx.lineTo(w, entryY);
             ctx.stroke();
-            ctx.setLineDash([]); 
+            
+            ctx.setLineDash([]); // Сбрасываем пунктир, чтобы не портить другие элементы
+            ctx.lineWidth = 1;
         }
     }
 }
