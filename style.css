@@ -1505,3 +1505,50 @@ canvas {
     color: #00ffcc;
     font-weight: bold;
 }
+
+/* ==========================================================================
+   ФОНОВЫЕ ПАДАЮЩИЕ 3D-КУБИКИ (ГЛАВНОЕ МЕНЮ)
+   ========================================================================== */
+
+/* Контейнер для каждого падающего кубика */
+.menu-bg-cube-container {
+    position: absolute;
+    top: -40px;
+    pointer-events: none; /* Чтобы не мешали нажимать на кнопки меню */
+    z-index: 1;           /* Ложатся СЗАДИ элементов UI */
+    perspective: 250px;
+    animation: menuFallLinear linear infinite;
+}
+
+/* Сам маленький вращающийся 3D кубик */
+.menu-bg-cube {
+    width: 10px;
+    height: 10px;
+    position: relative;
+    transform-style: preserve-3d;
+    animation: menuSpinCube 7s linear infinite;
+}
+
+/* Полупрозрачные грани, чтобы не рябило в глазах */
+.menu-bg-cube div {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(0, 229, 255, 0.02);
+    border: 0.6px solid rgba(0, 229, 255, 0.2);
+    box-shadow: inset 0 0 2px rgba(0, 229, 255, 0.15);
+}
+
+/* Вращение куба по осям */
+@keyframes menuSpinCube {
+    0% { transform: rotateX(0deg) rotateY(0deg); }
+    100% { transform: rotateX(360deg) rotateY(360deg); }
+}
+
+/* Плавное падение сверху вниз */
+@keyframes menuFallLinear {
+    0% { transform: translateY(0); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(105vh); opacity: 0; }
+}
