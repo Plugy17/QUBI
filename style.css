@@ -1506,3 +1506,142 @@ canvas {
     color: #00ffcc;
     font-weight: bold;
 }
+
+/* ============================================================================
+   СТИЛИ ДЛЯ МОДУЛЯ QUBI PASS
+   ============================================================================ */
+
+/* Оверлей меню */
+#qubi-pass-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 50% 10%, #0d1a30 0%, #020612 100%);
+    z-index: 100000;
+    display: none; /* Управляется через JS (flex / none) */
+    flex-direction: column;
+    font-family: 'Urbanist', system-ui, -apple-system, sans-serif;
+    color: #fff;
+    overflow: hidden;
+    pointer-events: none; /* По умолчанию прозрачен для кликов, чтобы не блокировать планеты */
+}
+
+#qubi-pass-overlay.active {
+    display: flex;
+    pointer-events: auto; /* Включаем клики, когда активен */
+}
+
+/* 3D Моделирование сцены куба */
+.cube-scene { 
+    width: 70px; 
+    height: 70px; 
+    perspective: 350px; 
+    margin: 0 auto; 
+    position: relative;
+    cursor: pointer;
+}
+
+/* Базовая структура 3D Куба */
+.cube { 
+    width: 100%; 
+    height: 100%; 
+    position: relative; 
+    transform-style: preserve-3d; 
+    transform: rotateX(-25deg) rotateY(45deg); 
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s ease; 
+}
+
+/* Грани куба */
+.cube-face { 
+    position: absolute; 
+    width: 70px; 
+    height: 70px; 
+    background: rgba(10, 25, 50, 0.85); 
+    border: 1.5px solid rgba(0, 229, 255, 0.4); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    box-sizing: border-box;
+    box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.3);
+    transition: all 0.4s;
+}
+
+.cube-face span { 
+    font-size: 26px; 
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); 
+}
+
+/* Позиционирование 6 граней в пространстве */
+.front  { transform: rotateY(0deg) translateZ(35px); }
+.back   { transform: rotateY(180deg) translateZ(35px); }
+.right  { transform: rotateY(90deg) translateZ(35px); }
+.left   { transform: rotateY(-90deg) translateZ(35px); }
+.top    { transform: rotateX(90deg) translateZ(35px); }
+.bottom { transform: rotateX(-90deg) translateZ(35px); }
+
+/* Состояние: Заблокирован */
+.cube-locked .cube-face {
+    background: rgba(20, 25, 35, 0.9);
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: none;
+}
+
+/* Состояние: Текущий уровень (Синее вращение) */
+.cube-current { animation: cubeSpin 6s infinite linear; }
+.cube-current .cube-face {
+    border-color: #00e5ff;
+    box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.5), 0 0 10px rgba(0, 229, 255, 0.2);
+}
+
+/* Состояние: Готов к открытию (Зеленое парение) */
+.cube-ready { animation: cubeFloat 2.5s infinite ease-in-out; }
+.cube-ready .cube-face {
+    background: rgba(10, 45, 30, 0.85);
+    border-color: #00ff66;
+    box-shadow: inset 0 0 20px rgba(0, 255, 102, 0.6), 0 0 15px rgba(0, 255, 102, 0.3);
+}
+
+/* Эффект взрыва куба при сборе */
+.cube.cube-open { 
+    transform: scale(0) rotateX(180deg) rotateY(360deg) !important; 
+    opacity: 0 !important; 
+    pointer-events: none !important;
+}
+
+/* 3D Динамическая Тень */
+.cube-shadow {
+    position: absolute; 
+    bottom: -15px; 
+    left: 10px; 
+    width: 50px; 
+    height: 8px;
+    background: rgba(0, 0, 0, 0.6); 
+    border-radius: 50%; 
+    filter: blur(4px);
+    transform: rotateX(90deg); 
+    z-index: -1; 
+    transition: transform 0.45s, opacity 0.45s;
+}
+
+.cube-ready + .cube-shadow { animation: shadowPulse 2.5s infinite ease-in-out; }
+
+.cube-shadow.shadow-hide { 
+    opacity: 0 !important; 
+    transform: scale(0) rotateX(90deg) !important; 
+}
+
+/* Анимации (Keyframes) */
+@keyframes cubeSpin {
+    from { transform: rotateX(-25deg) rotateY(0deg); }
+    to { transform: rotateX(-25deg) rotateY(360deg); }
+}
+@keyframes cubeFloat {
+    0%, 100% { transform: translateY(0) rotateX(-25deg) rotateY(45deg); }
+    50% { transform: translateY(-12px) rotateX(20deg) rotateY(225deg); }
+}
+@keyframes shadowPulse {
+    0%, 100% { transform: scale(1) rotateX(90deg); opacity: 0.6; filter: blur(4px); }
+    50% { transform: scale(0.6) rotateX(90deg); opacity: 0.2; filter: blur(7px); }
+}
