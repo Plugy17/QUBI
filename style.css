@@ -1508,19 +1508,19 @@ canvas {
 }
 
 /* ==========================================================================
-   ФОНОВЫЕ ПАДАЮЩИЕ 3D-КУБИКИ (БЕЗОПАСНАЯ ВЕРСИЯ)
+   ФОНОВЫЕ ПАДАЮЩИЕ 3D-КУБИКИ (БЕЗОПАСНАЯ ОПТИМИЗИРОВАННАЯ ВЕРСИЯ)
    ========================================================================== */
 
 /* Контейнер для каждого падающего кубика */
 .menu-bg-cube-container {
-    position: fixed;                 /* Фиксируем в координатах экрана */
+    position: fixed;                 /* Фиксируем в окне */
     top: -40px;
-    left: 0;
-    width: 0;                        /* Схлопываем размеры в 0, чтобы контейнер физически не перекрывал экран */
+    width: 0;                        /* Убираем физический размер, чтобы не перекрывать canvas */
     height: 0;
-    pointer-events: none !important; /* Намертво запрещаем перехват тапов */
-    z-index: 1 !important;           /* Уводим на самый задний план, ПОД canvas */
+    pointer-events: none !important; /* Полностью отключаем любые клики и тапы */
+    z-index: 1 !important;           /* Уводим под canvas */
     perspective: 250px;
+    will-change: transform;          /* Оптимизация для мобильных телефонов */
     animation: menuFallLinear linear infinite;
 }
 
@@ -1534,14 +1534,14 @@ canvas {
     animation: menuSpinCube 7s linear infinite;
 }
 
-/* Полупрозрачные грани */
+/* Полупрозрачные грани, чтобы не рябило в глазах */
 .menu-bg-cube div {
     position: absolute;
     width: 10px;
     height: 10px;
-    background: rgba(0, 229, 255, 0.02);
-    border: 0.6px solid rgba(0, 229, 255, 0.2);
-    box-shadow: inset 0 0 2px rgba(0, 229, 255, 0.15);
+    background: rgba(0, 229, 255, 0.03);     /* Чуть-чуть увеличили видимость */
+    border: 0.6px solid rgba(0, 229, 255, 0.25);
+    box-shadow: inset 0 0 2px rgba(0, 229, 255, 0.2);
     pointer-events: none !important;
 }
 
@@ -1554,7 +1554,7 @@ canvas {
 /* Плавное падение сверху вниз */
 @keyframes menuFallLinear {
     0% { transform: translateY(0); opacity: 0; }
-    10% { opacity: 0.5; }
-    90% { opacity: 0.5; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
     100% { transform: translateY(105vh); opacity: 0; }
 }
