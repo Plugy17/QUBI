@@ -4132,58 +4132,6 @@ function claimOrderMission() {
     }
 }
 
-// ==========================================================================
-// ГЕНЕРАЦИЯ КУБИКОВ НА ЗАДНЕМ ПЛАНЕ ГЛАВНОГО МЕНЮ (ТЕСТОВАЯ)
-// ==========================================================================
-(function() {
-    function createMainMenuBgCube() {
-        const loaderWindow = document.getElementById('cyber-loader');
-
-        // Проверяем ТОЛЬКО загрузчик. Если он визуально скрыт (opacity 0 или display none), то спавним кубы!
-        if (loaderWindow) {
-            const computedStyle = window.getComputedStyle(loaderWindow);
-            if (computedStyle.display !== 'none' && computedStyle.opacity !== '0' && computedStyle.visibility !== 'hidden') {
-                return; // Если загрузка всё еще на экране — ждем
-            }
-        }
-
-        const container = document.createElement('div');
-        container.className = 'menu-bg-cube-container';
-        
-        // Рандомная горизонтальная точка спавна (0% - 96%)
-        container.style.left = Math.random() * 96 + '%';
-        
-        // Разная скорость падения (от 6 до 11 секунд)
-        const duration = Math.random() * 5 + 6;
-        container.style.animationDuration = duration + 's';
-
-        // Создаем миниатюрные 3D грани
-        container.innerHTML = `
-            <div class="menu-bg-cube">
-                <div style="transform: rotateY(0deg) translateZ(5px);"></div>
-                <div style="transform: rotateY(180deg) translateZ(5px);"></div>
-                <div style="transform: rotateY(90deg) translateZ(5px);"></div>
-                <div style="transform: rotateY(-90deg) translateZ(5px);"></div>
-                <div style="transform: rotateX(90deg) translateZ(5px);"></div>
-                <div style="transform: rotateX(-90deg) translateZ(5px);"></div>
-            </div>
-        `;
-
-        // Добавляем строго в body
-        document.body.appendChild(container);
-
-        // Очищаем DOM дерево
-        setTimeout(() => {
-            if (container && container.parentNode) {
-                container.remove();
-            }
-        }, duration * 1000);
-    }
-
-    // Каждые 800мс мягко добавляем новый кубик
-    setInterval(createMainMenuBgCube, 800);
-})();
-
 // ==========================================================
 // СИСТЕМА ПРЕДЗАГРУЗКИ КЬЮБИ И СИНХРОНИЗАЦИИ СЕТИ (HD-FIX)
 // ==========================================================
