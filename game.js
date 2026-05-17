@@ -4133,7 +4133,7 @@ function claimOrderMission() {
 }
 
 // ==========================================================================
-// ГЕНЕРАЦИЯ КУБИКОВ НА ЗАДНЕМ ПЛАНЕ ГЛАВНОГО МЕНЮ
+// ГЕНЕРАЦИЯ КУБИКОВ НА ЗАДНЕМ ПЛАНЕ ГЛАВНОГО МЕНЮ (ИСПРАВЛЕННАЯ)
 // ==========================================================================
 (function() {
     function createMainMenuBgCube() {
@@ -4142,11 +4142,18 @@ function claimOrderMission() {
         const pvpWindow = document.getElementById('pvp-window');
         const loaderWindow = document.getElementById('cyber-loader');
 
-        // ПРОВЕРКА: Если открыт экран колонии Земли, раннер, PvP или загрузчик — кубы на фон меню НЕ спавним!
+        // ПРОВЕРКА: Если открыты другие экраны — не спавним
         if (earthScreen && earthScreen.style.display === 'block') return;
         if (runnerWindow && runnerWindow.style.display === 'block') return;
         if (pvpWindow && pvpWindow.style.display === 'block') return;
-        if (loaderWindow && loaderWindow.style.display !== 'none') return;
+        
+        // УЛУЧШЕННАЯ ПРОВЕРКА ЗАГРУЗЧИКА: Проверяем реальную видимость элемента на экране
+        if (loaderWindow) {
+            const computedStyle = window.getComputedStyle(loaderWindow);
+            if (computedStyle.display !== 'none' && computedStyle.opacity !== '0' && computedStyle.visibility !== 'hidden') {
+                return; // Если загрузчик хоть как-то виден — выходим
+            }
+        }
 
         const container = document.createElement('div');
         container.className = 'menu-bg-cube-container';
@@ -4170,11 +4177,14 @@ function claimOrderMission() {
             </div>
         `;
 
+        // Добавляем строго в body
         document.body.appendChild(container);
 
-        // Очищаем DOM дерево, чтобы игра не лагала на телефонах
+        // Очищаем DOM дерево вовремя
         setTimeout(() => {
-            container.remove();
+            if (container && container.parentNode) {
+                container.remove();
+            }
         }, duration * 1000);
     }
 
