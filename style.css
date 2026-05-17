@@ -1513,14 +1513,14 @@ canvas {
 
 /* Контейнер для каждого падающего кубика */
 .menu-bg-cube-container {
-    position: fixed;                 /* Фиксируем в окне */
+    position: fixed;                 /* Абсолютное позиционирование относительно окна */
     top: -40px;
-    width: 0;                        /* Убираем физический размер, чтобы не перекрывать canvas */
-    height: 0;
-    pointer-events: none !important; /* Полностью отключаем любые клики и тапы */
-    z-index: 1 !important;           /* Уводим под canvas */
+    width: 0;                        /* Ширина 0, чтобы физически не было "прозрачной стены" */
+    height: 0;                       /* Высота 0 */
+    pointer-events: none !important; /* Намертво отключаем реакцию на тапы */
+    z-index: 1 !important;           /* Уводим под canvas с планетами */
     perspective: 250px;
-    will-change: transform;          /* Оптимизация для мобильных телефонов */
+    will-change: transform;          /* Оптимизация для мобильных */
     animation: menuFallLinear linear infinite;
 }
 
@@ -1534,13 +1534,13 @@ canvas {
     animation: menuSpinCube 7s linear infinite;
 }
 
-/* Полупрозрачные грани, чтобы не рябило в глазах */
+/* Полупрозрачные грани */
 .menu-bg-cube div {
     position: absolute;
     width: 10px;
     height: 10px;
-    background: rgba(0, 229, 255, 0.03);     /* Чуть-чуть увеличили видимость */
-    border: 0.6px solid rgba(0, 229, 255, 0.25);
+    background: rgba(0, 229, 255, 0.04);     /* Сделали чуть ярче, чтобы точно заметить */
+    border: 0.6px solid rgba(0, 229, 255, 0.3);
     box-shadow: inset 0 0 2px rgba(0, 229, 255, 0.2);
     pointer-events: none !important;
 }
