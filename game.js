@@ -4652,21 +4652,33 @@ function setExchangeBet(amount) {
 }
 
 // Функция автоматического восстановления позиции из локальной памяти
+// Функция автоматического восстановления позиции из локальной памяти
 function restoreSavedPosition() {
     const saved = localStorage.getItem('qubi_active_position');
     if (saved) {
         try {
             activePosition = JSON.parse(saved);
+            console.log("📡 [Qubi Exchange]: Позиция успешно восстановлена:", activePosition);
             
-            const posType = document.getElementById('pos-type-display');
-            const posEntry = document.getElementById('pos-entry-display');
-            
-            if (posType && posEntry) {
-                posType.innerText = `${activePosition.type} ${activePosition.leverage}x`;
-                posEntry.innerText = activePosition.entryPrice.toFixed(4);
-                document.getElementById('exch-status-msg').innerHTML = `Восстановлен контракт: <span style="color:${activePosition.type==='LONG'?'#00ffcc':'#ff4b2b'}">${activePosition.type}</span>`;
-            }
-            updatePositionProfit();
+            // Ждем 500мс, чтобы HTML-элементы точно успели отрендериться на экране
+            setTimeout(() => {
+                const posType = document.getElementById('pos-type-display');
+                const posEntry = document.getElementById('pos-entry-display');
+                const statusMsg = document.getElementById('exch-status-msg');
+                
+                if (posType && posEntry) {
+                    posType.innerText = `${activePosition.type} ${activePosition.leverage}x`;
+                    posEntry.innerText = activePosition.entryPrice.toFixed(4);
+                }
+                
+                if (statusMsg) {
+                    statusMsg.innerHTML = `Восстановлен контракт: <span style="color:${activePosition.type==='LONG'?'#00ffcc':'#ff4b2b'}">${activePosition.type}</span>`;
+                }
+                
+                // Обновляем виджет и PnL, но без вызова алертов на этапе загрузки
+                updatePositionProfit();
+            }, 500);
+
         } catch (e) {
             console.error("Ошибка восстановления позиции Qubi:", e);
             localStorage.removeItem('qubi_active_position');
