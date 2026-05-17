@@ -4903,7 +4903,7 @@ function bringAlertToFront() {
 }
 
 // ============================================================================
-//               ОБНОВЛЕННЫЙ ИНТЕРФЕЙС QUBI PASS: КИБЕР-ДИЗАЙН И 3D
+//               ОБНОВЛЕННЫЙ ИНТЕРФЕЙС QUBI PASS: КИБЕР-ДИЗАЙН И 3D
 // ============================================================================
 
 function openQubiPassMenu() {
@@ -4973,7 +4973,6 @@ function renderPassCubes() {
         const isClaimed = playerData.qubiPass.claimedCubes.includes(i);
         const reward = qubiPassRewardsList[i];
 
-        // Определяем стили карточки в зависимости от статуса (Стеклянный эффект)
         let borderStyle = 'rgba(255, 255, 255, 0.08)';
         let bgStyle = 'rgba(255, 255, 255, 0.02)';
         if (isCurrent) {
@@ -4985,44 +4984,44 @@ function renderPassCubes() {
         }
 
         const cubeCard = document.createElement('div');
+        cubeCard.setAttribute('data-id', i); // Жестко привязываем уникальный ID к карточке в DOM
         cubeCard.style = `
             background: ${bgStyle}; border-radius: 24px; padding: 25px 15px;
             border: 1px solid ${borderStyle}; backdrop-filter: blur(10px);
             text-align: center; position: relative; display: flex; flex-direction: column; align-items: center;
             opacity: ${isUnlocked || isCurrent ? '1' : '0.4'};
-            filter: ${isUnlocked || isCurrent ? 'none' : 'grayscale(0.8)'};
+            filter: ${isUnlocked || i <= playerData.qubiPass.currentCube ? 'none' : 'grayscale(0.8)'};
             transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
             box-shadow: ${isCurrent ? '0 10px 30px rgba(0,229,255,0.1)' : 'none'};
         `;
 
-        // Класс состояния куба
         let cubeClass = 'cube-locked';
         if (isClaimed) cubeClass = 'cube-open';
         else if (isUnlocked) cubeClass = 'cube-ready';
         else if (isCurrent) cubeClass = 'cube-current';
 
         cubeCard.innerHTML = `
-            <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: ${isCurrent ? '#00e5ff' : '#5f759e'}; margin-bottom: 25px;">
+            <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: ${isCurrent ? '#00e5ff' : '#5f759eworkflow'}; margin-bottom: 25px;">
                 КУБ УРОВНЯ ${i}
             </div>
             
             <div class="cube-scene" onclick="attemptClaim(${i})">
                 <div class="cube ${cubeClass}">
-                    <div class="cube-face front"><span>${reward.icon}</span></div>
-                    <div class="cube-face back"><span>${reward.icon}</span></div>
-                    <div class="cube-face right"><span>${reward.icon}</span></div>
-                    <div class="cube-face left"><span>${reward.icon}</span></div>
-                    <div class="cube-face top"><span>${reward.icon}</span></div>
-                    <div class="cube-face bottom"><span>${reward.icon}</span></div>
+                    <div class="cube-face front"><span>${reward?.icon || '🪙'}</span></div>
+                    <div class="cube-face back"><span>${reward?.icon || '🪙'}</span></div>
+                    <div class="cube-face right"><span>${reward?.icon || '🪙'}</span></div>
+                    <div class="cube-face left"><span>${reward?.icon || '🪙'}</span></div>
+                    <div class="cube-face top"><span>${reward?.icon || '🪙'}</span></div>
+                    <div class="cube-face bottom"><span>${reward?.icon || '🪙'}</span></div>
                 </div>
                 <div class="cube-shadow ${isClaimed ? 'shadow-hide' : ''}"></div>
             </div>
 
             <div style="font-size: 14px; font-weight: 800; margin-top: 25px; letter-spacing: 0.5px; color: ${isClaimed ? '#5f759e' : '#fff'}; transition: color 0.3s;">
-                ${isClaimed ? 'НАГРАДА СОБРАНА' : reward.title}
+                ${isClaimed ? 'НАГРАДА СОБРАНА' : (reward?.title || 'Награда')}
             </div>
             <div style="font-size: 12px; font-weight: 700; color: #00e5ff; margin-top: 4px; min-height: 14px;">
-                ${reward.count > 1 && !isClaimed ? 'Количество: ' + reward.count : ''}
+                ${reward?.count > 1 && !isClaimed ? 'Количество: ' + reward.count : ''}
             </div>
         `;
         container.appendChild(cubeCard);
@@ -5034,7 +5033,6 @@ function injectCubeStyles() {
     const styles = document.createElement('style');
     styles.id = 'cube-3d-styles';
     styles.innerHTML = `
-        /* Настройки 3D Пространства (моделирование сцены) */
         .cube-scene { 
             width: 70px; height: 70px; 
             perspective: 350px; 
@@ -5043,16 +5041,14 @@ function injectCubeStyles() {
             cursor: pointer;
         }
         
-        /* Базовая структура 3D Куба */
         .cube { 
             width: 100%; height: 100%; 
             position: relative; 
             transform-style: preserve-3d; 
             transform: rotateX(-25deg) rotateY(45deg); 
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease; 
+            transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s ease; 
         }
         
-        /* Стилизация граней модели куба */
         .cube-face { 
             position: absolute; 
             width: 70px; height: 70px; 
@@ -5065,7 +5061,6 @@ function injectCubeStyles() {
         }
         .cube-face span { font-size: 26px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
 
-        /* Позиционирование 6 граней в 3D пространстве */
         .front  { transform: rotateY(0deg) translateZ(35px); }
         .back   { transform: rotateY(180deg) translateZ(35px); }
         .right  { transform: rotateY(90deg) translateZ(35px); }
@@ -5073,21 +5068,18 @@ function injectCubeStyles() {
         .top    { transform: rotateX(90deg) translateZ(35px); }
         .bottom { transform: rotateX(-90deg) translateZ(35px); }
 
-        /* 1. Анимация заблокированного куба (Просто статичный красивый наклон) */
         .cube-locked .cube-face {
             background: rgba(20, 25, 35, 0.9);
             border-color: rgba(255,255,255,0.1);
             box-shadow: none;
         }
 
-        /* 2. Анимация куба текущего уровня (Вращается и мягко светится синим) */
         .cube-current { animation: cubeSpin 6s infinite linear; }
         .cube-current .cube-face {
             border-color: #00e5ff;
             box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.5), 0 0 10px rgba(0, 229, 255, 0.2);
         }
 
-        /* 3. Анимация готового к открытию куба (Парит, бешено крутится и светится зеленым) */
         .cube-ready { animation: cubeFloat 2.5s infinite ease-in-out; }
         .cube-ready .cube-face {
             background: rgba(10, 45, 30, 0.85);
@@ -5095,23 +5087,26 @@ function injectCubeStyles() {
             box-shadow: inset 0 0 20px rgba(0, 255, 102, 0.6), 0 0 15px rgba(0, 255, 102, 0.3);
         }
 
-        /* 4. Взрывной эффект сбора награды (Куб улетает в глубь экрана и исчезает) */
-        .cube-open { 
+        /* Жесткий оверрайд стилей для красивого взрыва */
+        .cube.cube-open { 
             transform: scale(0) rotateX(180deg) rotateY(360deg) !important; 
-            opacity: 0; 
-            pointer-events: none;
+            opacity: 0 !important; 
+            pointer-events: none !important;
         }
 
-        /* 3D Динамическая Тень */
         .cube-shadow {
             position: absolute; bottom: -15px; left: 10px; width: 50px; height: 8px;
             background: rgba(0, 0, 0, 0.6); border-radius: 50%; filter: blur(4px);
-            transform: rotateX(90deg); z-index: -1; transition: all 0.5s ease;
+            transform: rotateX(90deg); z-index: -1; 
+            transition: transform 0.45s, opacity 0.45s;
         }
         .cube-ready + .cube-shadow { animation: shadowPulse 2.5s infinite ease-in-out; }
-        .shadow-hide { opacity: 0; transform: scale(0); }
+        
+        .cube-shadow.shadow-hide { 
+            opacity: 0 !important; 
+            transform: scale(0) rotateX(90deg) !important; 
+        }
 
-        /* ТРАЕКТОРНИИ ДЛЯ ХОДОДНОГО И ДИНАМИЧЕСКОГО МОДЕЛИРОВАНИЯ (Keyframes) */
         @keyframes cubeSpin {
             from { transform: rotateX(-25deg) rotateY(0deg); }
             to { transform: rotateX(-25deg) rotateY(360deg); }
@@ -5129,18 +5124,13 @@ function injectCubeStyles() {
 }
 
 // ============================================================================
-//         ОСТАЛЬНЫЕ ФУНКЦИИ МОДУЛЯ QUBI PASS (ЛОГИКА, КЛИКИ, НАГРАДЫ)
+//         ОСТАЛЬНЫЕ ФУНКЦИИ МОДУЛЯ QUBI PASS (ЛОГИКА, КЛИКИ, НАГРАДЫ)
 // ============================================================================
 
-/**
- * Попытка забрать награду из куба конкретного уровня
- * @param {number} cubeId - Номер куба (1-50)
- */
 function attemptClaim(cubeId) {
     const pass = playerData.qubiPass;
     if (!pass) return;
 
-    // 1. Проверяем куплен ли премиум-пасс
     if (!pass.purchased) {
         if (typeof showInGameAlert === 'function') {
             showInGameAlert("🔒 Требуется активация PREMIUM за 2 TON!");
@@ -5150,7 +5140,6 @@ function attemptClaim(cubeId) {
         return;
     }
 
-    // 2. Проверяем, дорос ли уровень игрока до этого куба
     if (cubeId >= pass.currentCube) {
         if (typeof showInGameAlert === 'function') {
             showInGameAlert("🔒 Этот куб заблокирован. Зарабатывайте XP!");
@@ -5158,7 +5147,6 @@ function attemptClaim(cubeId) {
         return;
     }
 
-    // 3. Проверяем, не забирали ли награду ранее
     if (pass.claimedCubes.includes(cubeId)) {
         if (typeof showInGameAlert === 'function') {
             showInGameAlert("👀 Награда с этого куба уже получена!");
@@ -5166,56 +5154,48 @@ function attemptClaim(cubeId) {
         return;
     }
 
-    // 4. Если всё ок — получаем объект награды
     const reward = qubiPassRewardsList[cubeId];
     if (reward) {
-        // Запускаем эффект взрыва куба на UI
-        const container = document.getElementById('cubes-container');
-        if (container) {
-            // Находим нужный куб по счету (индекс cubeId - 1) и вешаем класс исчезновения
-            const targetCube = container.children[cubeId - 1]?.querySelector('.cube');
-            const targetShadow = container.children[cubeId - 1]?.querySelector('.cube-shadow');
+        // НАХОДИМ СТРОГО НАШ КУБ ПО УНИКАЛЬНОМУ СЕЛЕКТОРУ DATA-ID
+        const targetCard = document.querySelector(`#cubes-container [data-id="${cubeId}"]`);
+        if (targetCard) {
+            const targetCube = targetCard.querySelector('.cube');
+            const targetShadow = targetCard.querySelector('.cube-shadow');
+            
+            // Навешиваем классы CSS взрыва вручную
             if (targetCube) targetCube.classList.add('cube-open');
             if (targetShadow) targetShadow.classList.add('shadow-hide');
         }
 
-        // Выдаем награду в playerData
-        reward.claim(); 
-        
-        // Записываем куб в массив собранных
-        pass.claimedCubes.push(cubeId); 
-        
-        // Выводим сочное игровое уведомление
-        if (typeof showInGameAlert === 'function') {
-            showInGameAlert(`🎁 Открыт Куб #${cubeId}! Получено: ${reward.title} ${reward.count > 1 ? 'x' + reward.count : ''}`);
-        }
-        
-        // Обновляем верхний интерфейс игры (балансы), если такая функция есть
-        if (typeof updateUI === 'function') updateUI();
-        
-        // Синхронизируем обновленные данные с Firebase
-        if (typeof userRef !== 'undefined') {
-            userRef.update({ 
-                qubiPass: pass, 
-                inventory: playerData.inventory || [], 
-                qubi: playerData.qubi || 0, 
-                modules: playerData.modules || [] 
-            }).catch(err => console.error("Ошибка сохранения пасса в Firebase:", err));
-        }
-        
-        // Перерисовываем сетку кубов через небольшую задержку, чтобы игрок успел увидеть анимацию 3D-взрыва
+        // Ждем 450мс пока проиграет 3D-анимация, затем обновляем данные
         setTimeout(() => {
+            reward.claim(); 
+            pass.claimedCubes.push(cubeId); 
+            
+            if (typeof showInGameAlert === 'function') {
+                showInGameAlert(`🎁 Открыт Куб #${cubeId}! Получено: ${reward.title} ${reward.count > 1 ? 'x' + reward.count : ''}`);
+            }
+            
+            if (typeof updateUI === 'function') updateUI();
+            
+            if (typeof userRef !== 'undefined') {
+                userRef.update({ 
+                    qubiPass: pass, 
+                    inventory: playerData.inventory || [], 
+                    qubi: playerData.qubi || 0, 
+                    quant: playerData.quant || 0,
+                    modules: playerData.modules || [] 
+                }).catch(err => console.error("Ошибка сохранения пасса в Firebase:", err));
+            }
+            
+            // Перерисовываем интерфейс только после полного исчезновения куба
             renderPassCubes();
             updatePassUI();
-        }, 500);
+        }, 450);
     }
 }
 
-/**
- * Реальная функция обработки оплаты пасса за 2 TON
- */
 async function processPassPayment() {
-    // Находим кнопку, чтобы отключить её на время транзакции и показать лоадер
     const buyButton = document.querySelector('#buy-pass-footer button');
     const originalText = buyButton ? buyButton.innerText : "АКТИВИРОВАТЬ PREMIUM ЗА 2 TON";
 
@@ -5227,11 +5207,10 @@ async function processPassPayment() {
     }
 
     try {
-        // Вызываем твою функцию оплаты (2 TON, itemId: 'qubi_pass_premium')
+        // Вызов твоей функции интеграции с TON_CONNECT_UI
         const isPaid = await payWithTON(2, 'qubi_pass_premium');
 
         if (isPaid) {
-            // Если транзакция подтверждена пользователем — активируем премиум
             activatePremiumData();
         } else {
             if (typeof showInGameAlert === 'function') {
@@ -5244,7 +5223,6 @@ async function processPassPayment() {
             showInGameAlert("💥 Ошибка сети TON. Попробуйте еще раз.");
         }
     } finally {
-        // Возвращаем кнопку в исходное состояние, если покупка сорвалась (если пасс купили, футер сам закроется)
         if (buyButton && playerData.qubiPass && !playerData.qubiPass.purchased) {
             buyButton.disabled = false;
             buyButton.innerText = originalText;
@@ -5254,19 +5232,14 @@ async function processPassPayment() {
     }
 }
 
-/**
- * Внутренняя функция переключения пасса в Premium-режим
- */
 function activatePremiumData() {
     if (!playerData.qubiPass) return;
     
     playerData.qubiPass.purchased = true;
     
-    // Скрываем нижнюю плашку покупки
     const footer = document.getElementById('buy-pass-footer');
     if (footer) footer.style.display = 'none';
     
-    // Обновляем текст статуса в хедере пасса
     const statusText = document.getElementById('pass-status-text');
     if (statusText) {
         statusText.innerText = 'PREMIUM ACCESS';
@@ -5277,21 +5250,13 @@ function activatePremiumData() {
         showInGameAlert("🔥 PREMIUM QUBI PASS УСПЕШНО АКТИВИРОВАН!");
     }
     
-    // Перерисовываем карточки (они станут яркими, активными)
     renderPassCubes();
     
-    // Сохраняем статус в базу данных
     if (typeof userRef !== 'undefined') {
         userRef.update({ qubiPass: playerData.qubiPass });
     }
 }
 
-/**
- * Функция отслеживания сбора ресурсов (клики, майнинг, раннер)
- * Начисляет XP в QUBI PASS и автоматически повышает уровни кубов!
- * @param {string} type - Тип ресурса ('QUBI' или 'QUANT')
- * @param {number} amount - Сколько собрал игрок
- */
 function trackResourceCollection(type, amount) {
     if (typeof playerData === 'undefined' || !playerData || !playerData.qubiPass) return;
     
@@ -5299,45 +5264,36 @@ function trackResourceCollection(type, amount) {
     
     if (type === 'QUBI') {
         playerData.qubiPass.dailyQubiCollected = (playerData.qubiPass.dailyQubiCollected || 0) + amount;
-        xpGained = amount * 1; // 1 коин = 1 XP
+        xpGained = amount * 1;
     } else if (type === 'QUANT') {
         playerData.qubiPass.dailyQuantCollected = (playerData.qubiPass.dailyQuantCollected || 0) + amount;
-        xpGained = amount * 5; // 1 квант = 5 XP (дороже)
+        xpGained = amount * 5;
     }
     
-    // Прибавляем опыт
     playerData.qubiPass.currentXP += xpGained;
     
-    // Проверяем цикл повышения уровней (Level Up куба)
     while (playerData.qubiPass.currentXP >= playerData.qubiPass.xpToNextCube) {
         if (playerData.qubiPass.currentCube < QUBI_PASS_MAX_CUBES) {
             playerData.qubiPass.currentXP -= playerData.qubiPass.xpToNextCube;
             playerData.qubiPass.currentCube++;
-            // С каждым уровнем нужно на 200 XP больше (плавное усложнение)
             playerData.qubiPass.xpToNextCube += 200; 
             
             if (typeof showInGameAlert === 'function') {
                 showInGameAlert(`📦 КУБ РАЗБЛОКИРОВАН: Награда уровня #${playerData.qubiPass.currentCube - 1} готова к сбору!`);
             }
         } else {
-            // Кап на 50 уровне куба — опыт фиксируется на максимуме
             playerData.qubiPass.currentXP = playerData.qubiPass.xpToNextCube;
             break;
         }
     }
     
-    // Обновляем визуальный прогресс-бар, если меню открыто в данный момент
     updatePassUI();
     
-    // Молниеносно отправляем новый опыт и куб в Firebase
     if (typeof userRef !== 'undefined') {
         userRef.update({ qubiPass: playerData.qubiPass });
     }
 }
 
-/**
- * Быстрое обновление только полоски прогресса и текста XP (без полной перерисовки кубов)
- */
 function updatePassUI() {
     const fill = document.getElementById('pass-progress-fill');
     const xpText = document.getElementById('pass-xp-display');
@@ -5352,9 +5308,6 @@ function updatePassUI() {
     }
 }
 
-/**
- * Функция закрытия меню
- */
 function closeQubiPassMenu() {
     const overlay = document.getElementById('qubi-pass-overlay');
     if (overlay) overlay.style.display = 'none';
