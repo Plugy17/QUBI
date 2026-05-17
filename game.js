@@ -4142,16 +4142,17 @@ function claimOrderMission() {
         const pvpWindow = document.getElementById('pvp-window');
         const loaderWindow = document.getElementById('cyber-loader');
 
-        // ПРОВЕРКА: Если открыты другие экраны — не спавним
+        // ПРОВЕРКА 1: Если открыты игровые экраны — кубы не спавним
         if (earthScreen && earthScreen.style.display === 'block') return;
         if (runnerWindow && runnerWindow.style.display === 'block') return;
         if (pvpWindow && pvpWindow.style.display === 'block') return;
         
-        // УЛУЧШЕННАЯ ПРОВЕРКА ЗАГРУЗЧИКА: Проверяем реальную видимость элемента на экране
+        // ПРОВЕРКА 2 (УМНАЯ): Проверяем, скрыт ли загрузчик полностью
         if (loaderWindow) {
             const computedStyle = window.getComputedStyle(loaderWindow);
+            // Если у loader display НЕ none ИЛИ он прозрачный/скрытый — значит загрузка ЕЩЕ ИДЕТ, выходим
             if (computedStyle.display !== 'none' && computedStyle.opacity !== '0' && computedStyle.visibility !== 'hidden') {
-                return; // Если загрузчик хоть как-то виден — выходим
+                return; 
             }
         }
 
@@ -4177,10 +4178,10 @@ function claimOrderMission() {
             </div>
         `;
 
-        // Добавляем строго в body
+        // Добавляем строго в body, чтобы не зависеть от слоев UI
         document.body.appendChild(container);
 
-        // Очищаем DOM дерево вовремя
+        // Безопасное удаление из DOM, чтобы игра не лагала
         setTimeout(() => {
             if (container && container.parentNode) {
                 container.remove();
