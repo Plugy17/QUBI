@@ -4133,26 +4133,17 @@ function claimOrderMission() {
 }
 
 // ==========================================================================
-// ГЕНЕРАЦИЯ КУБИКОВ НА ЗАДНЕМ ПЛАНЕ ГЛАВНОГО МЕНЮ (ИСПРАВЛЕННАЯ)
+// ГЕНЕРАЦИЯ КУБИКОВ НА ЗАДНЕМ ПЛАНЕ ГЛАВНОГО МЕНЮ (ТЕСТОВАЯ)
 // ==========================================================================
 (function() {
     function createMainMenuBgCube() {
-        const earthScreen = document.getElementById('earth-screen');
-        const runnerWindow = document.getElementById('runner-window');
-        const pvpWindow = document.getElementById('pvp-window');
         const loaderWindow = document.getElementById('cyber-loader');
 
-        // ПРОВЕРКА 1: Если открыты игровые экраны — кубы не спавним
-        if (earthScreen && earthScreen.style.display === 'block') return;
-        if (runnerWindow && runnerWindow.style.display === 'block') return;
-        if (pvpWindow && pvpWindow.style.display === 'block') return;
-        
-        // ПРОВЕРКА 2 (УМНАЯ): Проверяем, скрыт ли загрузчик полностью
+        // Проверяем ТОЛЬКО загрузчик. Если он визуально скрыт (opacity 0 или display none), то спавним кубы!
         if (loaderWindow) {
             const computedStyle = window.getComputedStyle(loaderWindow);
-            // Если у loader display НЕ none ИЛИ он прозрачный/скрытый — значит загрузка ЕЩЕ ИДЕТ, выходим
             if (computedStyle.display !== 'none' && computedStyle.opacity !== '0' && computedStyle.visibility !== 'hidden') {
-                return; 
+                return; // Если загрузка всё еще на экране — ждем
             }
         }
 
@@ -4162,11 +4153,11 @@ function claimOrderMission() {
         // Рандомная горизонтальная точка спавна (0% - 96%)
         container.style.left = Math.random() * 96 + '%';
         
-        // Разная скорость падения для эффекта глубины космоса (от 6 до 11 секунд)
+        // Разная скорость падения (от 6 до 11 секунд)
         const duration = Math.random() * 5 + 6;
         container.style.animationDuration = duration + 's';
 
-        // Создаем миниатюрные 3D грани (размер 10px, сдвиг на 5px)
+        // Создаем миниатюрные 3D грани
         container.innerHTML = `
             <div class="menu-bg-cube">
                 <div style="transform: rotateY(0deg) translateZ(5px);"></div>
@@ -4178,10 +4169,10 @@ function claimOrderMission() {
             </div>
         `;
 
-        // Добавляем строго в body, чтобы не зависеть от слоев UI
+        // Добавляем строго в body
         document.body.appendChild(container);
 
-        // Безопасное удаление из DOM, чтобы игра не лагала
+        // Очищаем DOM дерево
         setTimeout(() => {
             if (container && container.parentNode) {
                 container.remove();
