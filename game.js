@@ -1,5 +1,3 @@
-console.log("ГЕЙМ-СКРИПТ ЗАПУЩЕН");
-
 let playerData = { 
     quant: 0, 
     qubi: 0, 
