@@ -4777,6 +4777,20 @@ function closeCryptoExchange() {
     }
 }
 
+function bringAlertToFront() {
+    // Ждем 50 миллисекунд, чтобы функция игры успела создать HTML-элемент алерта
+    setTimeout(() => {
+        // Ищем любые стандартные контейнеры уведомлений (попробуем найти по типичным признакам)
+        const alerts = document.querySelectorAll('[id*="alert"], [class*="alert"], [id*="notification"], [class*="notification"], .custom-alert');
+        
+        alerts.forEach(alert => {
+            // Если этот элемент виден, задираем его z-index в космос
+            alert.style.zIndex = "9999999";
+            alert.style.position = "fixed"; 
+        });
+    }, 50);
+}
+
 // ==========================================================
 // СИСТЕМА ПРЕДЗАГРУЗКИ КЬЮБИ И СИНХРОНИЗАЦИИ СЕТИ (HD-FIX)
 // ==========================================================
