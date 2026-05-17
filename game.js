@@ -4472,8 +4472,7 @@ function renderExchangeChart() {
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // 🔥 ИСПРАВЛЕНО: Теперь линия открытого контракта (LONG/SHORT) не уходит вверх, 
-    // а рассчитывается точно по тем же отступам, что и сам график.
+    // 🔥 ИСПРАВЛЕНО: Линия входа теперь идеально совпадает с отступами основного графика цены
     if (activePosition) {
         const entryY = h - 15 - ((activePosition.entryPrice - minP) / range) * (h - 30);
         
@@ -4490,7 +4489,7 @@ function renderExchangeChart() {
             ctx.lineTo(w, entryY);
             ctx.stroke();
             
-            ctx.setLineDash([]); // Сбрасываем пунктир, чтобы не портить другие элементы
+            ctx.setLineDash([]); // Сбрасываем пунктир
             ctx.lineWidth = 1;
         }
     }
@@ -4523,12 +4522,13 @@ function updatePositionProfit() {
 
     // ⚠️ МЕХАНИКА АВТО-ЛИКВИДАЦИИ (Убыток достиг 100% маржи)
     if (pnlPct <= -1.0) {
-        // Вызов твоего красивого внутриигрового алерта
         if (typeof showInGameAlert === 'function') {
             showInGameAlert(`⚠️ ЛИКВИДАЦИЯ: Позиция ${activePosition.type} ${activePosition.leverage}x принудительно закрыта.`);
         }
 
         activePosition = null;
+        localStorage.removeItem('qubi_active_position'); // 🔥 Очищаем память при ликвидации
+
         if (window.Telegram && Telegram.WebApp.HapticFeedback) {
             Telegram.WebApp.HapticFeedback.notificationOccurred('error');
         }
@@ -4575,7 +4575,9 @@ function openTradingPosition(type) {
         leverage: currentLeverage
     };
 
-    // Уведомление об успешном входе на рынок через твой алерт
+    // 🔥 Сохраняем активную позицию в память устройства
+    localStorage.setItem('qubi_active_position', JSON.stringify(activePosition));
+
     if (typeof showInGameAlert === 'function') {
         showInGameAlert(`🚀 Открыт контракт: ${type} c плечом ${currentLeverage}x!`);
     }
@@ -4607,7 +4609,6 @@ function closeTradingPosition() {
         if (typeof userRef !== 'undefined') userRef.update({ quant: playerData.quant });
     }
 
-    // 🔔 ВЫЗОВ ВСПЛЫВАЮЩЕГО УВЕДОМЛЕНИЯ СВЕХРУ ЧЕРЕЗ ТВОЙ АЛЕРТ
     if (typeof showInGameAlert === 'function') {
         if (pnlAmount >= 0) {
             showInGameAlert(`📈 Позиция закрыта! Профит: +${Math.floor(pnlAmount)} Q`);
@@ -4623,6 +4624,8 @@ function closeTradingPosition() {
     document.getElementById('exch-status-msg').innerHTML = `Позиция closed. Результат: <span style="color:${pnlAmount>=0?'#00ffcc':'#ff4b2b'}">${pnlAmount >= 0 ? '+' : ''}${pnlAmount.toFixed(1)} Q</span>`;
     
     activePosition = null;
+    localStorage.removeItem('qubi_active_position'); // 🔥 Удаляем позицию из памяти после успешного закрытия
+    
     updatePositionProfit();
 }
 
@@ -4646,6 +4649,29 @@ function setExchangeBet(amount) {
     currentExchangeBet = amount;
     const display = document.getElementById('exch-bet-display');
     if (display) display.innerText = currentExchangeBet;
+}
+
+// Функция автоматического восстановления позиции из локальной памяти
+function restoreSavedPosition() {
+    const saved = localStorage.getItem('qubi_active_position');
+    if (saved) {
+        try {
+            activePosition = JSON.parse(saved);
+            
+            const posType = document.getElementById('pos-type-display');
+            const posEntry = document.getElementById('pos-entry-display');
+            
+            if (posType && posEntry) {
+                posType.innerText = `${activePosition.type} ${activePosition.leverage}x`;
+                posEntry.innerText = activePosition.entryPrice.toFixed(4);
+                document.getElementById('exch-status-msg').innerHTML = `Восстановлен контракт: <span style="color:${activePosition.type==='LONG'?'#00ffcc':'#ff4b2b'}">${activePosition.type}</span>`;
+            }
+            updatePositionProfit();
+        } catch (e) {
+            console.error("Ошибка восстановления позиции Qubi:", e);
+            localStorage.removeItem('qubi_active_position');
+        }
+    }
 }
 
 // Открытие интерфейса биржи
@@ -4730,6 +4756,9 @@ function openCryptoExchange() {
     if (!exchangeInterval) {
         exchangeInterval = setInterval(tickExchangeMarket, 1000);
     }
+
+    // 🔥 Проверяем и восстанавливаем сохраненную позицию при открытии биржи
+    restoreSavedPosition();
 }
 
 // Закрытие интерфейса биржи
