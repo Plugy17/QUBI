@@ -8,10 +8,20 @@ let playerData = {
     inventory: [], 
     missions: {},
     equipped: [],  
-    lastEnergyUpdate: 0, // Инициализируем нулем, значение придет из Firebase
+    lastEnergyUpdate: 0, 
     factoryLimit: {
         date: new Date().toLocaleDateString(),
         processedToday: 0
+    },
+    // ОБЯЗАТЕЛЬНО ДОБАВЛЯЕМ ЭТОТ БЛОК:
+    qubiPass: {
+        purchased: false,          // По умолчанию премиум заблокирован
+        currentCube: 1,            // Старт с 1-го уровня (Куб #1)
+        currentXP: 0,              // 0 очков опыта
+        xpToNextCube: 1000,        // Нужно 1000 XP для первого левелапа
+        claimedCubes: [],          // Массив ID кубов, с которых уже забрали награду
+        dailyQubiCollected: 0,     // Статистика для трекера (если нужна)
+        dailyQuantCollected: 0     // Статистика для трекера (если нужна)
     }
 };
 
