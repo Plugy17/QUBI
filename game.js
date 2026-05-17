@@ -4358,6 +4358,373 @@ function claimOrderMission() {
     }
 }
 
+// ==========================================================================
+//   КВАНТОВАЯ БИРЖА «QUBI FLIP» — ТОРГОВЛЯ LONG / SHORT С ПЛЕЧОМ ДО 20Х
+// ==========================================================================
+
+let currentExchangeBet = 10;
+let currentLeverage = 1;
+let activePosition = null; // Хранит текущую сделку: { type: 'LONG'|'SHORT', entryPrice: X, margin: Y, leverage: Z }
+let exchangeInterval = null;
+
+// Настройки симулятора цены QUBI
+let currentQubiPrice = 1.0000;
+let priceHistory = []; // Массив для отрисовки графика (последние 30 точек)
+const MAX_HISTORY = 30;
+
+// Инициализация истории цен при запуске
+for (let i = 0; i < MAX_HISTORY; i++) {
+    currentQubiPrice += (Math.random() - 0.5) * 0.01;
+    priceHistory.push(currentQubiPrice);
+}
+
+// Инжектируем стили для биржи
+(function injectExchangeStyles() {
+    if (document.getElementById('casino-exchange-styles')) return;
+    const styles = document.createElement('style');
+    styles.id = 'casino-exchange-styles';
+    styles.innerHTML = `
+        .lev-btn {
+            flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(0,229,255,0.2);
+            color: #8fa0c2; font-size: 11px; padding: 6px 0; border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
+        .lev-btn.active {
+            background: rgba(0,229,255,0.2) !important; color: #00e5ff !important; border-color: #00e5ff !important;
+        }
+        .trade-btn {
+            flex: 1; border: none; padding: 14px 0; border-radius: 12px; font-weight: 900; font-size: 14px;
+            text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.1s;
+        }
+    `;
+    document.head.appendChild(styles);
+})();
+
+// Логика ежесекундного изменения цены и обновления экрана
+function tickExchangeMarket() {
+    // Искусственный тренд: случайное блуждание с легким возвратом к среднему
+    const changePercent = (Math.random() - 0.5) * 0.006; // До +-0.6% в секунду
+    const oldPrice = currentQubiPrice;
+    currentQubiPrice *= (1 + changePercent);
+    
+    // Ограничиваем цену, чтобы не ушла в ноль
+    if (currentQubiPrice < 0.01) currentQubiPrice = 0.01;
+
+    priceHistory.push(currentQubiPrice);
+    if (priceHistory.length > MAX_HISTORY) priceHistory.shift();
+
+    // Перерисовываем график и UI
+    renderExchangeChart();
+    updatePositionProfit();
+    
+    // Обновляем главный дисплей цены
+    const priceDisplay = document.getElementById('exch-price-val');
+    if (priceDisplay) {
+        priceDisplay.innerText = currentQubiPrice.toFixed(4) + ' USDT';
+        priceDisplay.style.color = currentQubiPrice >= oldPrice ? '#00e5ff' : '#ff4b2b';
+        
+        // Стрелочка направления движения цены
+        const arrow = document.getElementById('exch-price-arrow');
+        if (arrow) {
+            arrow.innerText = currentQubiPrice >= oldPrice ? '▲' : '▼';
+            arrow.style.color = currentQubiPrice >= oldPrice ? '#00e5ff' : '#ff4b2b';
+        }
+    }
+}
+
+// Отрисовка графика на HTML5 Canvas
+function renderExchangeChart() {
+    const canvas = document.getElementById('exchange-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    
+    ctx.clearRect(0, 0, w, h);
+    
+    // Сетка
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.lineWidth = 1;
+    for(let i = 0; i < w; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, h); ctx.stroke(); }
+    for(let i = 0; i < h; i += 25) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(w, i); ctx.stroke(); }
+
+    const minP = Math.min(...priceHistory);
+    const maxP = Math.max(...priceHistory);
+    const range = maxP - minP || 0.01;
+
+    // Отрисовка неоновой линии графика
+    ctx.beginPath();
+    ctx.lineWidth = 2.5;
+    
+    // Градиент под графиком
+    const gradient = ctx.createLinearGradient(0, 0, 0, h);
+    gradient.addColorStop(0, 'rgba(0, 229, 255, 0.15)');
+    gradient.addColorStop(1, 'rgba(0, 229, 255, 0.0)');
+
+    for (let i = 0; i < priceHistory.length; i++) {
+        const x = (i / (MAX_HISTORY - 1)) * w;
+        // Переворачиваем ось Y, закладываем отступы в 15px
+        const y = h - 15 - ((priceHistory[i] - minP) / range) * (h - 30);
+        
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    
+    // Эффект свечения линии
+    ctx.strokeStyle = '#00e5ff';
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#00e5ff';
+    ctx.stroke();
+    ctx.shadowBlur = 0; // Сбрасываем тень для других элементов
+
+    // Замыкаем контур для градиента заливки
+    ctx.lineTo((priceHistory.length - 1) / (MAX_HISTORY - 1) * w, h);
+    ctx.lineTo(0, h);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Линия точки входа (Entry Price), если открыта позиция
+    if (activePosition) {
+        const entryY = h - 15 - ((activePosition.entryPrice - minP) / range) * (h - 30);
+        if (entryY >= 0 && entryY <= h) {
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = activePosition.type === 'LONG' ? 'rgba(0, 255, 204, 0.4)' : 'rgba(255, 75, 43, 0.4)';
+            ctx.moveTo(0, entryY);
+            ctx.lineTo(w, entryY);
+            ctx.stroke();
+            ctx.setLineDash([]); // Сброс пунктира
+        }
+    }
+}
+
+// Расчет прибыли/убытка и проверка ликвидации
+function updatePositionProfit() {
+    const posWidget = document.getElementById('active-pos-widget');
+    if (!activePosition) {
+        if (posWidget) posWidget.style.display = 'none';
+        return;
+    }
+    if (posWidget) posWidget.style.display = 'block';
+
+    // Считаем изменение цены в процентах
+    const priceChangePct = (currentQubiPrice - activePosition.entryPrice) / activePosition.entryPrice;
+    
+    // PnL с учетом плеча
+    let pnlPct = priceChangePct * activePosition.leverage;
+    if (activePosition.type === 'SHORT') pnlPct = -pnlPct;
+
+    const pnlAmount = activePosition.margin * pnlPct;
+    
+    const pnlText = document.getElementById('pos-pnl-val');
+    const liqText = document.getElementById('pos-liq-warning');
+
+    if (pnlText) {
+        const prefix = pnlAmount >= 0 ? '+' : '';
+        pnlText.innerText = `${prefix}${pnlAmount.toFixed(2)} Q (${(pnlPct * 100).toFixed(1)}%)`;
+        pnlText.style.color = pnlAmount >= 0 ? '#00ffcc' : '#ff4b2b';
+    }
+
+    // ⚠️ Механика ЛИКВИДАЦИИ (Если убыток достиг 100% от маржи)
+    if (pnlPct <= -1.0) {
+        // Позиция ликвидирована!
+        activePosition = null;
+        if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+            Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+        }
+        document.getElementById('exch-status-msg').innerHTML = "<span style='color:#ff4b2b; animation: glitch 0.2s infinite;'>⚠️ ПОЗИЦИЯ ЛИКВИДИРОВАНА (Margin Call)</span>";
+        if (posWidget) posWidget.style.display = 'none';
+        return;
+    }
+
+    // Предупреждение о близкой ликвидации (убыток > 75%)
+    if (liqText) {
+        if (pnlPct <= -0.75) {
+            liqText.style.display = 'block';
+            liqText.innerText = `БЛИЗКАЯ ЛИКВИДАЦИЯ! Оценка риска 95%`;
+        } else {
+            liqText.style.display = 'none';
+        }
+    }
+}
+
+// Открытие позиции (LONG или SHORT)
+function openTradingPosition(type) {
+    if (activePosition) {
+        document.getElementById('exch-status-msg').innerText = "Ошибка: Сначала закройте текущую позицию!";
+        return;
+    }
+    if (!playerData || (playerData.quant || 0) < currentExchangeBet) {
+        document.getElementById('exch-status-msg').innerText = "Недостаточно QUANT для обеспечения маржи.";
+        return;
+    }
+
+    // Списываем маржу со счета
+    playerData.quant -= currentExchangeBet;
+    if (typeof updateUI === 'function') updateUI();
+    if (typeof userRef !== 'undefined') userRef.update({ quant: playerData.quant });
+
+    // Фиксируем сделку
+    activePosition = {
+        type: type,
+        entryPrice: currentQubiPrice,
+        margin: currentExchangeBet,
+        leverage: currentLeverage
+    };
+
+    document.getElementById('exch-status-msg').innerHTML = `Позиция <span style="color:${type==='LONG'?'#00ffcc':'#ff4b2b'}">${type} ${currentLeverage}x</span> успешно открыта!`;
+    
+    document.getElementById('pos-type-display').innerText = `${activePosition.type} ${activePosition.leverage}x`;
+    document.getElementById('pos-entry-display').innerText = activePosition.entryPrice.toFixed(4);
+
+    if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
+    updatePositionProfit();
+}
+
+// Ручное закрытие позиции (фиксация профита или убытка)
+function closeTradingPosition() {
+    if (!activePosition) return;
+
+    const priceChangePct = (currentQubiPrice - activePosition.entryPrice) / activePosition.entryPrice;
+    let pnlPct = priceChangePct * activePosition.leverage;
+    if (activePosition.type === 'SHORT') pnlPct = -pnlPct;
+
+    const pnlAmount = activePosition.margin * pnlPct;
+    // Возвращаем маржу + чистый результат сделки
+    const finalReturn = activePosition.margin + pnlAmount;
+
+    if (finalReturn > 0) {
+        playerData.quant += Math.floor(finalReturn);
+        if (typeof updateUI === 'function') updateUI();
+        if (typeof userRef !== 'undefined') userRef.update({ quant: playerData.quant });
+    }
+
+    if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.notificationOccurred(pnlAmount >= 0 ? 'success' : 'warning');
+    }
+
+    document.getElementById('exch-status-msg').innerHTML = `Позиция закрыта. Результат: <span style="color:${pnlAmount>=0?'#00ffcc':'#ff4b2b'}">${pnlAmount >= 0 ? '+' : ''}${pnlAmount.toFixed(1)} Q</span>`;
+    
+    activePosition = null;
+    updatePositionProfit();
+}
+
+// Настройка плеча и ставки
+function setExchangeLeverage(lev) {
+    if (activePosition) return;
+    currentLeverage = lev;
+    const levs = [1, 5, 10, 20];
+    levs.forEach(l => {
+        const btn = document.getElementById(`lev-btn-${l}`);
+        if (btn) {
+            if (l === lev) btn.classList.add('active');
+            else btn.classList.remove('active');
+        }
+    });
+}
+
+function setExchangeBet(amount) {
+    if (activePosition) return;
+    currentExchangeBet = amount;
+    const display = document.getElementById('exch-bet-display');
+    if (display) display.innerText = currentExchangeBet;
+}
+
+function openCryptoExchange() {
+    let overlay = document.getElementById('crypto-exchange-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'crypto-exchange-overlay';
+        overlay.style = `
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, rgba(6,10,24,0.95) 0%, rgba(2,3,8,1) 100%);
+            z-index: 25000; flex-direction: column; align-items: center; justify-content: center;
+            box-sizing: border-box; padding: 10px; font-family: 'Courier New', monospace; backdrop-filter: blur(6px);
+        `;
+        
+        overlay.innerHTML = `
+            <div style="background: linear-gradient(145deg, #090e1a 0%, #03050c 100%); border: 2px solid rgba(0,229,255,0.3); border-radius: 24px; padding: 20px 16px; width: 94%; max-width: 365px; box-shadow: 0 20px 50px rgba(0,0,0,0.9); text-align: center; position: relative;">
+                
+                <button onclick="closeCryptoExchange()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); color: #8fa0c2; font-size: 14px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index:11;">✕</button>
+                
+                <div style="color: rgba(0,229,255,0.6); font-size: 9px; letter-spacing: 4px; font-weight: bold; margin-bottom: 5px;">[ ДЕЦЕНТРАЛИЗОВАННЫЙ ФЬЮЧЕРС-МОДУЛЬ ]</div>
+                <div style="color: #fff; font-size: 20px; font-weight: 900; margin-bottom: 15px; letter-spacing: 1px;">QUBI TERMINAL</div>
+                
+                <div style="background: #020307; border: 1px solid #121929; border-radius: 14px; padding: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="text-align: left;">
+                        <div style="color: #6a7999; font-size: 10px; text-transform: uppercase;">Пара торговли</div>
+                        <div style="color: #fff; font-weight: bold; font-size: 15px;">QUBI / USDT</div>
+                    </div>
+                    <div style="text-align: right; display: flex; align-items: center; gap: 6px;">
+                        <span id="exch-price-arrow" style="font-size: 14px;">▲</span>
+                        <span id="exch-price-val" style="color: #00e5ff; font-weight: 900; font-size: 18px; font-family: monospace;">1.0000 USDT</span>
+                    </div>
+                </div>
+
+                <div style="background: #010205; border: 1px solid #000; border-radius: 16px; padding: 5px; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,1); position: relative;">
+                    <canvas id="exchange-canvas" width="325" height="130" style="display: block; width: 100%; height: 130px;"></canvas>
+                </div>
+
+                <div style="color: #8fa0c2; font-size: 10px; text-transform: uppercase; margin-bottom: 6px; text-align: left; padding-left: 4px;">Кредитное плечо (Margin multiplier):</div>
+                <div style="display: flex; gap: 6px; margin-bottom: 15px;">
+                    <button id="lev-btn-1" onclick="setExchangeLeverage(1)" class="lev-btn active">1x</button>
+                    <button id="lev-btn-5" onclick="setExchangeLeverage(5)" class="lev-btn">5x</button>
+                    <button id="lev-btn-10" onclick="setExchangeLeverage(10)" class="lev-btn">10x</button>
+                    <button id="lev-btn-20" onclick="setExchangeLeverage(20)" class="lev-btn">20x</button>
+                </div>
+
+                <div id="active-pos-widget" style="display: none; background: rgba(0,229,255,0.04); border: 1px solid rgba(0,229,255,0.25); border-radius: 14px; padding: 12px; margin-bottom: 15px; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                        <span style="color: #6a7999;">Позиция: <b id="pos-type-display" style="color:#fff;">-</b></span>
+                        <span style="color: #6a7999;">Вход: <b id="pos-entry-display" style="color:#fff;">-</b></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="color: #6a7999; font-size: 10px; text-transform: uppercase;">Нереализованный PnL</div>
+                            <div id="pos-pnl-val" style="font-size: 16px; font-weight: 900; color: #00ffcc;">0.00 Q (0%)</div>
+                        </div>
+                        <button onclick="closeTradingPosition()" style="background: #ffaa00; border: none; color: #000; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;">Market Close</button>
+                    </div>
+                    <div id="pos-liq-warning" style="display: none; color: #ff4b2b; font-size: 9px; font-weight: bold; margin-top: 6px; text-transform: uppercase; text-align: center;"></div>
+                </div>
+
+                <div id="exch-status-msg" style="color: #6a7999; font-size: 11px; min-height: 16px; margin-bottom: 15px; font-weight: bold;">Терминал синхронизирован. Ордеров нет.</div>
+
+                <div style="color: #8fa0c2; font-size: 11px; margin-bottom: 10px; text-align: left; padding-left: 4px; text-transform: uppercase;">Обеспечение (Маржа): <span id="exch-bet-display" style="color:#00e5ff; font-weight:bold;">10</span> Q</div>
+                <div style="display: flex; gap: 5px; margin-bottom: 20px;">
+                    <button onclick="setExchangeBet(10)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">10</button>
+                    <button onclick="setExchangeBet(50)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">50</button>
+                    <button onclick="setExchangeBet(100)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">100</button>
+                    <button onclick="setExchangeBet(250)" style="flex: 1; background: transparent; border: 1px solid rgba(0,229,255,0.2); color: #00e5ff; padding: 8px 0; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">250</button>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="openTradingPosition('LONG')" class="trade-btn" style="background: linear-gradient(180deg, #00ffcc 0%, #00aa88 100%); color: #000; box-shadow: 0 4px 15px rgba(0,255,204,0.3);">Long (Вверх)</button>
+                    <button onclick="openTradingPosition('SHORT')" class="trade-btn" style="background: linear-gradient(180deg, #ff4b2b 0%, #cc1100 100%); color: #fff; box-shadow: 0 4px 15px rgba(255,75,43,0.3);">Short (Вниз)</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+    
+    // Запускаем ежесекундный рыночный тик
+    if (!exchangeInterval) {
+        exchangeInterval = setInterval(tickExchangeMarket, 1000);
+    }
+}
+
+function closeCryptoExchange() {
+    const overlay = document.getElementById('crypto-exchange-overlay');
+    if (overlay) overlay.style.display = 'none';
+    // Выключаем тик при закрытии окна для экономии процессора смартфона
+    if (exchangeInterval) {
+        clearInterval(exchangeInterval);
+        exchangeInterval = null;
+    }
+}
+
 // ==========================================================
 // СИСТЕМА ПРЕДЗАГРУЗКИ КЬЮБИ И СИНХРОНИЗАЦИИ СЕТИ (HD-FIX)
 // ==========================================================
