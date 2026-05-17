@@ -301,7 +301,7 @@ const planets = [
         y: window.innerHeight * 0.75,
         size: 110,                    // Заметная, красивая планета
         rotation: 0,
-        speed: 0.001,                 // Пусть плавно вращается в космосе
+        speed: 0,                 // Пусть плавно вращается в космосе
         img: new Image(),
         action: () => openQubiPassMenu() // Открывает наше готовое меню пасса при тапе!
     }
@@ -676,7 +676,7 @@ function draw() {
                         smokeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');          // Растворение в космосе
 
                         ctx.beginPath();
-                        ctx.arc(cloudX, cloudY, cloudRadius, 0, Math.PI * 2);
+                        ctx.arc(cloudX, cloudY, cloudRadius, 0, Math.PI * 1);
                         ctx.fillStyle = smokeGrad;
                         ctx.fill();
                     }
