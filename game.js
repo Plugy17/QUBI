@@ -4378,6 +4378,20 @@ for (let i = 0; i < MAX_HISTORY; i++) {
     priceHistory.push(currentQubiPrice);
 }
 
+// 🔥 СРАЗУ ПРИ ЗАПУСКЕ СКРИПТА: Тихо восстанавливаем данные из памяти без трогания HTML
+(function initSavedPosition() {
+    const saved = localStorage.getItem('qubi_active_position');
+    if (saved) {
+        try {
+            activePosition = JSON.parse(saved);
+            console.log("📡 [Qubi Exchange]: Данные позиции загружены из памяти:", activePosition);
+        } catch (e) {
+            console.error("Ошибка чтения позиции из localStorage:", e);
+            localStorage.removeItem('qubi_active_position');
+        }
+    }
+})();
+
 // Инжектируем стили для биржи
 (function injectExchangeStyles() {
     if (document.getElementById('casino-exchange-styles')) return;
@@ -4426,7 +4440,7 @@ function tickExchangeMarket() {
     }
 }
 
-// Отрисовка графика на HTML5 Canvas (С исправленным занижением линии входа)
+// Отрисовка графика на HTML5 Canvas
 function renderExchangeChart() {
     const canvas = document.getElementById('exchange-canvas');
     if (!canvas) return;
@@ -4472,24 +4486,18 @@ function renderExchangeChart() {
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // 🔥 ИСПРАВЛЕНО: Линия входа теперь идеально совпадает с отступами основного графика цены
+    // Линия открытого контракта
     if (activePosition) {
         const entryY = h - 15 - ((activePosition.entryPrice - minP) / range) * (h - 30);
-        
-        // Рисуем пунктир только если он попадает в видимую область графика
         if (entryY >= 0 && entryY <= h) {
             ctx.beginPath();
-            ctx.setLineDash([4, 4]); // Делаем аккуратный пунктир
-            
-            // Зеленый цвет для лонга, красный для шорта
+            ctx.setLineDash([4, 4]);
             ctx.strokeStyle = activePosition.type === 'LONG' ? 'rgba(0, 255, 204, 0.6)' : 'rgba(255, 75, 43, 0.6)';
             ctx.lineWidth = 1.5;
-            
             ctx.moveTo(0, entryY);
             ctx.lineTo(w, entryY);
             ctx.stroke();
-            
-            ctx.setLineDash([]); // Сбрасываем пунктир
+            ctx.setLineDash([]);
             ctx.lineWidth = 1;
         }
     }
@@ -4520,19 +4528,22 @@ function updatePositionProfit() {
         pnlText.style.color = pnlAmount >= 0 ? '#00ffcc' : '#ff4b2b';
     }
 
-    // ⚠️ МЕХАНИКА АВТО-ЛИКВИДАЦИИ (Убыток достиг 100% маржи)
+    // ⚠️ МЕХАНИКА АВТО-ЛИКВИДАЦИИ
     if (pnlPct <= -1.0) {
         if (typeof showInGameAlert === 'function') {
             showInGameAlert(`⚠️ ЛИКВИДАЦИЯ: Позиция ${activePosition.type} ${activePosition.leverage}x принудительно закрыта.`);
         }
 
         activePosition = null;
-        localStorage.removeItem('qubi_active_position'); // 🔥 Очищаем память при ликвидации
+        localStorage.removeItem('qubi_active_position'); 
 
         if (window.Telegram && Telegram.WebApp.HapticFeedback) {
             Telegram.WebApp.HapticFeedback.notificationOccurred('error');
         }
-        document.getElementById('exch-status-msg').innerHTML = "<span style='color:#ff4b2b; animation: glitch 0.2s infinite;'>⚠️ ПОЗИЦИЯ ЛИКВИДИРОВАНА (Margin Call)</span>";
+        const statusMsg = document.getElementById('exch-status-msg');
+        if (statusMsg) {
+            statusMsg.innerHTML = "<span style='color:#ff4b2b; animation: glitch 0.2s infinite;'>⚠️ ПОЗИЦИЯ ЛИКВИДИРОВАНА (Margin Call)</span>";
+        }
         if (posWidget) posWidget.style.display = 'none';
         return;
     }
@@ -4575,7 +4586,7 @@ function openTradingPosition(type) {
         leverage: currentLeverage
     };
 
-    // 🔥 Сохраняем активную позицию в память устройства
+    // Сохраняем в память устройства
     localStorage.setItem('qubi_active_position', JSON.stringify(activePosition));
 
     if (typeof showInGameAlert === 'function') {
@@ -4592,7 +4603,7 @@ function openTradingPosition(type) {
     updatePositionProfit();
 }
 
-// Ручное закрытие позиции (Market Close с уведомлением)
+// Ручное закрытие позиции
 function closeTradingPosition() {
     if (!activePosition) return;
 
@@ -4624,7 +4635,7 @@ function closeTradingPosition() {
     document.getElementById('exch-status-msg').innerHTML = `Позиция closed. Результат: <span style="color:${pnlAmount>=0?'#00ffcc':'#ff4b2b'}">${pnlAmount >= 0 ? '+' : ''}${pnlAmount.toFixed(1)} Q</span>`;
     
     activePosition = null;
-    localStorage.removeItem('qubi_active_position'); // 🔥 Удаляем позицию из памяти после успешного закрытия
+    localStorage.removeItem('qubi_active_position'); 
     
     updatePositionProfit();
 }
@@ -4651,39 +4662,22 @@ function setExchangeBet(amount) {
     if (display) display.innerText = currentExchangeBet;
 }
 
-// Функция автоматического восстановления позиции из локальной памяти
-// Функция автоматического восстановления позиции из локальной памяти
-function restoreSavedPosition() {
-    const saved = localStorage.getItem('qubi_active_position');
-    if (saved) {
-        try {
-            activePosition = JSON.parse(saved);
-            console.log("📡 [Qubi Exchange]: Позиция успешно восстановлена:", activePosition);
-            
-            // Ждем 500мс, чтобы HTML-элементы точно успели отрендериться на экране
-            setTimeout(() => {
-                const posType = document.getElementById('pos-type-display');
-                const posEntry = document.getElementById('pos-entry-display');
-                const statusMsg = document.getElementById('exch-status-msg');
-                
-                if (posType && posEntry) {
-                    posType.innerText = `${activePosition.type} ${activePosition.leverage}x`;
-                    posEntry.innerText = activePosition.entryPrice.toFixed(4);
-                }
-                
-                if (statusMsg) {
-                    statusMsg.innerHTML = `Восстановлен контракт: <span style="color:${activePosition.type==='LONG'?'#00ffcc':'#ff4b2b'}">${activePosition.type}</span>`;
-                }
-                
-                // Обновляем виджет и PnL, но без вызова алертов на этапе загрузки
-                updatePositionProfit();
-            }, 500);
-
-        } catch (e) {
-            console.error("Ошибка восстановления позиции Qubi:", e);
-            localStorage.removeItem('qubi_active_position');
-        }
+// 🔥 БЕЗОПАСНОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ПРИ ОТКРЫТИИ ОКНА БИРЖИ
+function UI_applySavedPosition() {
+    if (!activePosition) return;
+    
+    const posType = document.getElementById('pos-type-display');
+    const posEntry = document.getElementById('pos-entry-display');
+    const statusMsg = document.getElementById('exch-status-msg');
+    
+    if (posType && posEntry) {
+        posType.innerText = `${activePosition.type} ${activePosition.leverage}x`;
+        posEntry.innerText = activePosition.entryPrice.toFixed(4);
     }
+    if (statusMsg) {
+        statusMsg.innerHTML = `Восстановлен контракт: <span style="color:${activePosition.type==='LONG'?'#00ffcc':'#ff4b2b'}">${activePosition.type}</span>`;
+    }
+    updatePositionProfit();
 }
 
 // Открытие интерфейса биржи
@@ -4769,8 +4763,8 @@ function openCryptoExchange() {
         exchangeInterval = setInterval(tickExchangeMarket, 1000);
     }
 
-    // 🔥 Проверяем и восстанавливаем сохраненную позицию при открытии биржи
-    restoreSavedPosition();
+    // 🔥 Теперь это вызывается безопасно: только когда весь HTML уже 100% создан
+    UI_applySavedPosition();
 }
 
 // Закрытие интерфейса биржи
