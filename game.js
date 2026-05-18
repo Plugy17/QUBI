@@ -1652,11 +1652,15 @@ let currentStorageTab = 'modules'; // По умолчанию открыты 'mo
 
 function openStation() {
     const modal = document.getElementById('station-modal');
-    if (modal) modal.style.display = 'flex'; // Полноэкранный блок разворачивается на весь экран
+    if (modal) modal.style.display = 'flex'; 
 
-    const current = calculateCurrentStats();
+    // Защита: если calculateCurrentStats еще не загрузилась, создаем пустышку
+    let current = { hp: 100, maxEnergy: 100, regenBonusMs: 0 };
+    if (typeof calculateCurrentStats === 'function') {
+        current = calculateCurrentStats();
+    }
 
-    // 1. Счётчики ресурсов в тикер-баре
+    // 1. Ресурсы
     if (typeof playerData !== 'undefined') {
         const tickQubi = document.getElementById('ticker-qubi');
         const tickQuant = document.getElementById('ticker-quant');
@@ -1667,19 +1671,16 @@ function openStation() {
         if (tickNft) tickNft.innerText = playerData.nfts ? playerData.nfts.length : 0;
     }
 
-    // 2. Живые прогресс-бары статов
-    const maxPossibleHp = 1000;
-    const maxPossibleEnergy = 1000;
-
+    // 2. Прогресс-бары (ИСПРАВЛЕНО дублирование .style)
     const hpEl = document.getElementById('stat-hp');
     const hpFill = document.getElementById('bar-hp-fill');
     if (hpEl) hpEl.innerText = current.hp;
-    if (hpFill) hpFill.style.style.width = `${Math.min((current.hp / maxPossibleHp) * 100, 100)}%`;
+    if (hpFill) hpFill.style.width = `${Math.min((current.hp / 1000) * 100, 100)}%`;
 
     const enEl = document.getElementById('stat-energy');
     const enFill = document.getElementById('bar-energy-fill');
     if (enEl) enEl.innerText = current.maxEnergy;
-    if (enFill) enFill.style.width = `${Math.min((current.maxEnergy / maxPossibleEnergy) * 100, 100)}%`;
+    if (enFill) enFill.style.width = `${Math.min((current.maxEnergy / 1000) * 100, 100)}%`;
     
     const regEl = document.getElementById('stat-income-quant');
     const regFill = document.getElementById('bar-regen-fill');
@@ -1687,28 +1688,28 @@ function openStation() {
     if (regEl) regEl.innerText = "-" + regenBonusMin + " мин регена";
     if (regFill) regFill.style.width = `${Math.min((regenBonusMin / 3.0) * 100, 100)}%`;
 
-    // 3. Активные слоты модулей (Верхний ряд)
+    // 3. Активные слоты
     const activeContainer = document.getElementById('active-slots-container');
     if (activeContainer) {
         activeContainer.innerHTML = '';
         for (let i = 0; i < 5; i++) {
             const slot = document.createElement('div');
-            const equippedId = (playerData.equipped && playerData.equipped[i]) ? playerData.equipped[i] : null;
+            const equippedId = (playerData && playerData.equipped && playerData.equipped[i]) ? playerData.equipped[i] : null;
             
-            if (equippedId) {
+            if (equippedId && playerData.inventory) {
                 const mod = playerData.inventory.find(m => m.id === equippedId);
                 slot.className = 'scifi-slot-mini filled';
                 const imgName = (mod && mod.img) ? mod.img : 'module_01.png';
                 slot.innerHTML = `<img src="assets/shop/${imgName}">`;
             } else {
                 slot.className = 'scifi-slot-mini empty';
-                slot.innerHTML = `<span style="font-size:12px; color:rgba(0,229,255,0.15);">EMPTY</span>`;
+                slot.innerHTML = `<span style="font-size:10px; color:rgba(0,229,255,0.15);">EMPTY</span>`;
             }
             activeContainer.appendChild(slot);
         }
     }
 
-    // 4. Отрисовка Хранилища в зависимости от выбранного таба
+    // 4. Отрисовка предметов
     renderStorageContent();
 }
 
