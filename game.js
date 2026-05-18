@@ -1650,9 +1650,18 @@ function grantModule(itemData) {
 // Глобальная переменная для отслеживания активного раздела в ангаре
 let currentStorageTab = 'modules'; // По умолчанию открыты 'modules', второй вариант 'nfts'
 
+// 🔥 ИСПРАВЛЕННАЯ ЕДИНАЯ ФУНКЦИЯ ОТКРЫТИЯ АНГАРА (Без дубликатов)
 function openStation() {
     const modal = document.getElementById('station-modal');
-    if (modal) modal.style.display = 'flex'; 
+    if (modal) {
+        modal.style.display = 'flex'; 
+        
+        /* ⚡️ ГЛАВНЫЙ СМАРТФОННЫЙ ФИКС: Разрешаем body скроллиться, 
+           чтобы жесты тача на мобилках ожили внутри ангара */
+        document.body.style.position = 'relative';
+        document.body.style.overflow = 'auto';
+        document.body.style.touchAction = 'auto';
+    }
 
     // Защита: если calculateCurrentStats еще не загрузилась, создаем пустышку
     let current = { hp: 100, maxEnergy: 100, regenBonusMs: 0 };
@@ -1660,7 +1669,7 @@ function openStation() {
         current = calculateCurrentStats();
     }
 
-    // 1. Ресурсы
+    // 1. Обновление ресурсов в шапке ангара
     if (typeof playerData !== 'undefined') {
         const tickQubi = document.getElementById('ticker-qubi');
         const tickQuant = document.getElementById('ticker-quant');
@@ -1671,7 +1680,7 @@ function openStation() {
         if (tickNft) tickNft.innerText = playerData.nfts ? playerData.nfts.length : 0;
     }
 
-    // 2. Прогресс-бары (ИСПРАВЛЕНО дублирование .style)
+    // 2. Обновление Sci-Fi прогресс-баров (HP, Энергия, Регенерация)
     const hpEl = document.getElementById('stat-hp');
     const hpFill = document.getElementById('bar-hp-fill');
     if (hpEl) hpEl.innerText = current.hp;
@@ -1688,7 +1697,7 @@ function openStation() {
     if (regEl) regEl.innerText = "-" + regenBonusMin + " мин регена";
     if (regFill) regFill.style.width = `${Math.min((regenBonusMin / 3.0) * 100, 100)}%`;
 
-    // 3. Активные слоты
+    // 3. Обновление 5 активных слотов оборудования в рабочем режиме
     const activeContainer = document.getElementById('active-slots-container');
     if (activeContainer) {
         activeContainer.innerHTML = '';
@@ -1709,11 +1718,11 @@ function openStation() {
         }
     }
 
-    // 4. Отрисовка предметов
+    // 4. Отрисовка предметов (вызов нижней функции)
     renderStorageContent();
 }
 
-// Новая функция раздельного рендеринга контента
+// Функция раздельного рендеринга контента (Модули / NFT)
 function renderStorageContent() {
     const scrollList = document.getElementById('inventory-scroll-list');
     if (!scrollList) return;
@@ -1721,7 +1730,7 @@ function renderStorageContent() {
 
     if (currentStorageTab === 'modules') {
         // РЕНДЕР МОДУЛЕЙ СИСТЕМЫ
-        if (playerData.inventory && playerData.inventory.length > 0) {
+        if (playerData && playerData.inventory && playerData.inventory.length > 0) {
             playerData.inventory.forEach(item => {
                 const isEquipped = playerData.equipped && playerData.equipped.includes(item.id);
                 const card = document.createElement('div');
@@ -1744,10 +1753,9 @@ function renderStorageContent() {
         }
     } else {
         // РЕНДЕР NFT-КОЛЛЕКЦИИ
-        if (playerData.nfts && playerData.nfts.length > 0) {
+        if (playerData && playerData.nfts && playerData.nfts.length > 0) {
             playerData.nfts.forEach(nft => {
                 const card = document.createElement('div');
-                // Задаем NFT фиолетово-розовую рамку редкости
                 card.className = `scifi-item-card legendary`; 
                 
                 card.innerHTML = `
@@ -1757,7 +1765,6 @@ function renderStorageContent() {
                         <small style="color: #ffea00;">💰 МУЛЬТИПЛИКАТОР: x${nft.multiplier || '1.5'}</small>
                     </div>
                 `;
-                // Сюда можно повесить функцию просмотра или продажи NFT
                 card.onclick = () => alert(`Просмотр NFT: ${nft.name}`); 
                 scrollList.appendChild(card);
             });
@@ -1767,56 +1774,34 @@ function renderStorageContent() {
     }
 }
 
-// 🔥 МОДИФИЦИРОВАННАЯ ФУНКЦИЯ ОТКРЫТИЯ АНГАРА
-function openStation() {
-    const modal = document.getElementById('station-modal');
-    if (modal) {
-        modal.style.display = 'flex'; 
-        
-        /* ⚡️ ГЛАВНЫЙ СМАРТФОННЫЙ ФИКС: Временно разрешаем body скроллиться, 
-           чтобы жесты тача на мобилках ожили внутри ангара! */
-        document.body.style.position = 'relative';
-        document.body.style.overflow = 'auto';
-        document.body.style.touchAction = 'auto';
-    }
-
-    // Твой старый код обработки ресурсов и баров...
-    let current = { hp: 100, maxEnergy: 100, regenBonusMs: 0 };
-    if (typeof calculateCurrentStats === 'function') { current = calculateCurrentStats(); }
-    if (typeof playerData !== 'undefined') {
-        const tickQubi = document.getElementById('ticker-qubi');
-        if (tickQubi) tickQubi.innerText = Math.floor(playerData.qubi || 0);
-        // ... и так далее до конца функции ...
-    }
-    renderStorageContent();
-}
-
-// 🔥 МОДИФИЦИРОВАННАЯ ФУНКЦИЯ ЗАКРЫТИЯ АНГАРА (Кнопка "Назад" / "Вернуться в космос")
+// 🔥 ФУНКЦИЯ ЗАКРЫТИЯ АНГАРА
 function closeStation() {
     const modal = document.getElementById('station-modal');
     if (modal) {
         modal.style.display = 'none';
         
-        /* ⚡️ ВОЗВРАЩАЕМ ВСЁ НА МЕСТА: Когда игрок выходит в космос, 
-           снова намертво зажимаем экран, как у тебя было в body изначально */
+        /* ⚡️ ВОЗВРАЩАЕМ ВСЁ НА МЕСТА: При выходе в космос блокируем скролл обратно */
         document.body.style.position = 'fixed';
         document.body.style.overflow = 'hidden';
         document.body.style.touchAction = 'none';
     }
 }
 
-// Функция переключения вкладок
+// Функция переключения вкладок (Модули / NFT)
 function switchStorageTab(tabName) {
     currentStorageTab = tabName;
     
     // Переключаем активные классы на кнопках
-    document.getElementById('tab-modules-btn').classList.toggle('active', tabName === 'modules');
-    document.getElementById('tab-nfts-btn').classList.toggle('active', tabName === 'nfts');
+    const modBtn = document.getElementById('tab-modules-btn');
+    const nftBtn = document.getElementById('tab-nfts-btn');
+    if (modBtn) modBtn.classList.toggle('active', tabName === 'modules');
+    if (nftBtn) nftBtn.classList.toggle('active', tabName === 'nfts');
     
     // Перерисовываем список
     renderStorageContent();
 }
 
+// Переключение экипировки модуля (Вкл / Выкл)
 function toggleModule(modId) {
     if (!playerData.equipped) playerData.equipped = [];
     const index = playerData.equipped.indexOf(modId);
@@ -1826,12 +1811,6 @@ function toggleModule(modId) {
         playerData.equipped.push(modId);
     }
     userRef.update({ equipped: playerData.equipped }).then(() => openStation());
-}
-
-function closeStation() {
-    const modal = document.getElementById('station-modal');
-    if (modal) modal.style.display = 'none';
-    if (typeof updateUI === "function") updateUI();
 }
 
 function openEarth() {
