@@ -4968,6 +4968,50 @@ function bringAlertToFront() {
 }
 
 // ============================================================================
+//   ГЛОБАЛЬНЫЙ СПИСОК НАГРАД QUBI PASS (НА 50 УРОВНЕЙ)
+// ============================================================================
+const qubiPassRewardsList = {};
+
+// Генерируем награды для всех 50 кубов автоматически
+for (let i = 1; i <= 50; i++) {
+    if (i % 3 === 1) {
+        qubiPassRewardsList[i] = {
+            title: `${i * 150} QUBI Ресурсов`,
+            icon: "🪙",
+            count: i * 150,
+            claim: function() {
+                if (typeof playerData !== 'undefined') {
+                    playerData.qubi = (playerData.qubi || 0) + (i * 150);
+                }
+            }
+        };
+    } else if (i % 3 === 2) {
+        qubiPassRewardsList[i] = {
+            title: `Кристалл Энергии`,
+            icon: "💎",
+            count: 1,
+            claim: function() {
+                if (typeof playerData !== 'undefined') {
+                    playerData.quant = (playerData.quant || 0) + 1;
+                }
+            }
+        };
+    } else {
+        qubiPassRewardsList[i] = {
+            title: `${Math.ceil(i / 3)} Квант-Модуль`,
+            icon: "⚡",
+            count: Math.ceil(i / 3),
+            claim: function() {
+                if (typeof playerData !== 'undefined') {
+                    if (!playerData.inventory) playerData.inventory = [];
+                    playerData.inventory.push({ id: "quant_booster", type: "module" });
+                }
+            }
+        };
+    }
+}
+
+// ============================================================================
 //   ОПТИМИЗИРОВАННЫЙ МОДУЛЬ QUBI PASS: ЧИСТАЯ ЛОГИКА И СБОР НАГРАД
 // ============================================================================
 
@@ -5017,27 +5061,30 @@ function closeQubiPassMenu() {
 }
 
 /**
- * Генерирует 50 кубов на основе текущего прогресса игрока без инлайн-стилей верстки
+ * Генерирует 50 кубов на основе текущего прогресса игрока с поддержкой CSS 3D пространства
  */
 function renderPassCubes() {
     const container = document.getElementById('cubes-container');
     if (!container) return;
     container.innerHTML = '';
 
+    // Защитная проверка существования глобального списка наград
+    const rewardsList = typeof qubiPassRewardsList !== 'undefined' ? qubiPassRewardsList : {};
+
     for (let i = 1; i <= 50; i++) {
         const isUnlocked = i < playerData.qubiPass.currentCube;
         const isCurrent = i === playerData.qubiPass.currentCube;
-        const isClaimed = playerData.qubiPass.claimedCubes.includes(i);
-        const reward = qubiPassRewardsList[i];
+        const isClaimed = playerData.qubiPass.claimedCubes && playerData.qubiPass.claimedCubes.includes(i);
+        const reward = rewardsList[i];
 
-        // 🛡️ ИСПРАВЛЕНО: Назначаем правильные классы анимаций куба
+        // Назначаем правильные классы анимаций куба
         let cubeClass = 'cube-locked';
         if (isClaimed) {
-            cubeClass = 'cube-collected'; // Новый класс для красивого отображения УЖЕ собранного куба
+            cubeClass = 'cube-collected'; // Награда собрана, куб становится полупрозрачным каркасом
         } else if (isUnlocked) {
-            cubeClass = 'cube-ready';      // Зеленый, парит (готов к сбору)
+            cubeClass = 'cube-ready';      // Куб готов к открытию (зеленый, парит)
         } else if (isCurrent) {
-            cubeClass = 'cube-current';    // Синий, крутится (текущий уровень)
+            cubeClass = 'cube-current';    // Текущий активный куб (синий, вращается)
         }
 
         // Рассчитываем динамический цвет границ и фона карточки на лету
@@ -5052,7 +5099,7 @@ function renderPassCubes() {
             bgStyle = 'rgba(0, 255, 102, 0.03)';
         } else if (isClaimed) {
             borderStyle = 'rgba(255, 255, 255, 0.03)';
-            bgStyle = 'rgba(0, 0, 0, 0.2)'; // Карточка собранного уровня темнеет
+            bgStyle = 'rgba(0, 0, 0, 0.2)';
         }
 
         const cubeCard = document.createElement('div');
@@ -5078,6 +5125,11 @@ function renderPassCubes() {
             filter: ${isUnlocked || isCurrent ? 'none' : 'grayscale(0.9)'};
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: ${isCurrent ? '0 10px 30px rgba(0,229,255,0.15)' : 'none'};
+            
+            /* Включение аппаратного 3D рендеринга CSS на смартфонах */
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            min-height: 200px;
         `;
 
         // Определяем, какую иконку показывать внутри куба
@@ -5123,13 +5175,16 @@ function attemptClaim(cubeId) {
         return;
     }
 
+    // Безопасная инициализация массива собранных кубов, если его нет
+    if (!pass.claimedCubes) pass.claimedCubes = [];
+
     console.log(`📊 Статус пасса: Куплен=${pass.purchased}, ТекущийКуб=${pass.currentCube}, УжеСобраны=[${pass.claimedCubes.join(', ')}]`);
 
     // 1. Проверяем куплен ли премиум-пасс
     if (!pass.purchased) {
         console.warn("⚠️ Клик отклонен: У игрока не куплен PREMIUM пасс.");
         if (typeof showInGameAlert === 'function') {
-            showInGameAlert("🔒 Требуется активация PREMIUM за 2 TON!");
+            showInGameAlert("🔒 Требуется активация PREMIUM за 1 TON!");
         }
         return;
     }
@@ -5154,14 +5209,16 @@ function attemptClaim(cubeId) {
 
     console.log("✅ Все проверки пройдены! Запускаем анимацию взрыва и начисление...");
 
-    const reward = qubiPassRewardsList[cubeId];
+    const rewardsList = typeof qubiPassRewardsList !== 'undefined' ? qubiPassRewardsList : {};
+    const reward = rewardsList[cubeId];
+    
     if (reward) {
         // Запуск вибрации Telegram (если запущено внутри Telegram)
         if (window.Telegram && Telegram.WebApp && Telegram.WebApp.isVersionAtLeast('6.1')) {
             try { Telegram.WebApp.HapticFeedback.impactOccurred('medium'); } catch (e) {}
         }
 
-        // Добавляем классы взрыва модели куба из твоего CSS
+        // Добавляем классы мгновенного взрыва модели куба из CSS
         const targetCard = document.querySelector(`#cubes-container [data-id="${cubeId}"]`);
         if (targetCard) {
             const targetCube = targetCard.querySelector('.cube');
@@ -5172,7 +5229,9 @@ function attemptClaim(cubeId) {
 
         // Ждем завершения 3D анимации сворачивания куба (450мс)
         setTimeout(() => {
-            reward.claim(); 
+            if (typeof reward.claim === 'function') {
+                reward.claim();
+            } 
             pass.claimedCubes.push(cubeId); 
             
             if (typeof showInGameAlert === 'function') {
@@ -5195,7 +5254,7 @@ function attemptClaim(cubeId) {
             updatePassUI();
         }, 450);
     } else {
-        console.error(`❌ Ошибка: Награда для куба #${cubeId} не найдена в списке qubiPassRewardsList!`);
+        console.error(`❌ Ошибка: Награда для куба #${cubeId} не найдена в списке наград!`);
     }
 }
 
@@ -5204,7 +5263,6 @@ function attemptClaim(cubeId) {
  */
 async function processPassPayment() {
     const buyButton = document.querySelector('#buy-pass-footer button');
-    // ИСПРАВЛЕНО: Меняем текст в заглушке на 1 TON
     const originalText = buyButton ? buyButton.innerText : "АКТИВИРОВАТЬ PREMIUM ЗА 1 TON";
 
     if (buyButton) {
@@ -5215,7 +5273,6 @@ async function processPassPayment() {
     }
 
     try {
-        // ИСПРАВЛЕНО: Меняем первый параметр с 2 на 1 (теперь спишет 1 TON)
         const isPaid = await payWithTON(1, 'qubi_pass_premium');
 
         if (isPaid) {
