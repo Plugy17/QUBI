@@ -5183,7 +5183,8 @@ function attemptClaim(cubeId) {
  */
 async function processPassPayment() {
     const buyButton = document.querySelector('#buy-pass-footer button');
-    const originalText = buyButton ? buyButton.innerText : "АКТИВИРОВАТЬ PREMIUM ЗА 2 TON";
+    // ИСПРАВЛЕНО: Меняем текст в заглушке на 1 TON
+    const originalText = buyButton ? buyButton.innerText : "АКТИВИРОВАТЬ PREMIUM ЗА 1 TON";
 
     if (buyButton) {
         buyButton.disabled = true;
@@ -5193,8 +5194,8 @@ async function processPassPayment() {
     }
 
     try {
-        // Твоя функция интеграции транзакций с TON_CONNECT_UI
-        const isPaid = await payWithTON(2, 'qubi_pass_premium');
+        // ИСПРАВЛЕНО: Меняем первый параметр с 2 на 1 (теперь спишет 1 TON)
+        const isPaid = await payWithTON(1, 'qubi_pass_premium');
 
         if (isPaid) {
             activatePremiumData();
