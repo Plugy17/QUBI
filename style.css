@@ -1645,3 +1645,17 @@ canvas {
     0%, 100% { transform: scale(1) rotateX(90deg); opacity: 0.6; filter: blur(4px); }
     50% { transform: scale(0.6) rotateX(90deg); opacity: 0.2; filter: blur(7px); }
 }
+
+/* Состояние: Награда собрана (Куб остается, но становится полупрозрачным каркасом) */
+.cube-collected {
+    transform: rotateX(-25deg) rotateY(135deg) scale(0.85);
+    opacity: 0.2;
+}
+.cube-collected .cube-face {
+    background: rgba(255, 255, 255, 0.01);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+}
+.cube-collected .cube-face span {
+    filter: grayscale(1) opacity(0.3); /* Приглушаем эмодзи внутри собранного куба */
+}
