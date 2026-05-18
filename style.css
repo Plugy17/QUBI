@@ -1833,22 +1833,36 @@ canvas {
     box-shadow: 0 0 10px rgba(0, 229, 255, 0.05);
 }
 
-/* Скролл-зона хранилища */
+/* Скролл-зона хранилища с принудительным включением жестов */
 .fullscreen-inventory-wrapper {
     flex-grow: 1;
     min-height: 200px;
-    overflow-y: auto;
+    
+    /* 🔥 КЛЮЧЕВОЙ ФИКС: Включаем вертикальный скролл */
+    overflow-y: scroll !important; 
+    
+    /* 🔥 КЛЮЧЕВОЙ ФИКС 2: Возвращаем реакцию на пальцы/тачпад вопреки блокировке в body */
+    touch-action: pan-y !important; 
+    -webkit-overflow-scrolling: touch !important; /* Плавный инерционный скролл на iOS Apple */
+    
     border: 1px solid rgba(255, 255, 255, 0.03);
     background: rgba(0, 0, 0, 0.2);
     border-radius: 10px;
     padding: 10px;
 }
+
+/* Тонкий неоновый скроллбар, чтобы видеть, где мы находимся при пролистывании */
 .fullscreen-inventory-wrapper::-webkit-scrollbar {
-    width: 4px;
+    width: 6px !important;
+}
+.fullscreen-inventory-wrapper::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-radius: 4px;
 }
 .fullscreen-inventory-wrapper::-webkit-scrollbar-thumb {
-    background: #00e5ff;
+    background: #00e5ff !important;
     border-radius: 4px;
+    box-shadow: 0 0 8px #00e5ff;
 }
 
 /* Адаптивная инвентарная сетка */
