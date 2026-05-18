@@ -500,152 +500,6 @@ canvas {
     50% { transform: translateY(-8px); }
 }
 
-/* --- МОДАЛЬНОЕ ОКНО АНГАР СТАНЦИИ --- */
-/* КАРТОЧКА АНГАРA */
-.station-card {
-    background: rgba(10, 15, 25, 0.95) !important;
-    border: 2px solid #00e5ff !important;
-    box-shadow: 0 0 25px rgba(0, 229, 255, 0.3) !important;
-    width: 90%;
-    max-width: 380px; /* Немного расширил для удобства */
-}
-
-.station-body {
-    padding: 15px;
-    text-align: center;
-}
-
-/* НОВАЯ СЕТКА ХАРАКТЕРИСТИК (Жизнь, Барьер, Доход) */
-.ship-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 12px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    border: 1px solid rgba(0, 229, 255, 0.1);
-}
-
-.stat-box {
-    font-size: 11px;
-    color: #aaa;
-    text-align: left;
-    display: flex;
-    justify-content: space-between;
-    padding: 2px 5px;
-}
-
-.stat-box b {
-    color: #00e5ff;
-    text-shadow: 0 0 5px rgba(0, 229, 255, 0.3);
-}
-
-/* ЗАГОЛОВКИ СЕКЦИЙ */
-.section-label {
-    font-size: 10px;
-    color: rgba(0, 229, 255, 0.6);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 15px 0 8px 5px;
-    text-align: left;
-}
-
-/* АКТИВНЫЕ СЛОТЫ (5 В РЯД) */
-.active-slots-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 5px;
-    margin-bottom: 20px;
-}
-
-.slot-mini {
-    flex: 1;
-    aspect-ratio: 1 / 1;
-    background: rgba(0, 229, 255, 0.05);
-    border: 1px dashed rgba(0, 229, 255, 0.3);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-.slot-mini.filled {
-    border: 1px solid #00e5ff;
-    background: rgba(0, 229, 255, 0.15);
-    box-shadow: inset 0 0 8px rgba(0, 229, 255, 0.2);
-}
-
-/* ИНВЕНТАРЬ (ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ) */
-.inventory-scroll-wrapper {
-    width: 100%;
-    overflow-x: auto; /* Включает прокрутку */
-    padding: 10px 0;
-    scrollbar-width: none; /* Скрываем скроллбар для Firefox */
-}
-
-.inventory-scroll-wrapper::-webkit-scrollbar {
-    display: none; /* Скрываем скроллбар для Chrome/Safari */
-}
-
-.inventory-scroll {
-    display: flex;
-    gap: 12px;
-    padding-left: 5px;
-}
-
-.module-card {
-    min-width: 85px;
-    height: 100px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    flex-shrink: 0;
-}
-
-.module-card img {
-    width: 35px;
-    height: 35px;
-    margin-bottom: 8px;
-    filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.4));
-}
-
-.module-card span {
-    font-size: 9px;
-    color: #fff;
-    text-transform: uppercase;
-}
-
-.module-card.equipped {
-    border-color: #00ff00;
-    background: rgba(0, 255, 0, 0.05);
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
-}
-
-.no-modules {
-    font-size: 11px;
-    color: #555;
-    width: 100%;
-    text-align: center;
-    padding: 20px;
-}
-
-/* АНИМАЦИЯ ПАРЕНИЯ */
-@keyframes station-float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
-
-.modal-overlay {
-    pointer-events: auto !important;
-}
-
 /* Новая секция кнопки внутри хедера */
 /* Убираем все лишние фоны и рамки */
 .wallet-connect-wrapper {
@@ -1658,4 +1512,267 @@ canvas {
 }
 .cube-collected .cube-face span {
     filter: grayscale(1) opacity(0.3); /* Приглушаем эмодзи внутри собранного куба */
+}
+
+/* Киберпанк Стеклянная Карточка Ангара */
+.scifi-station-card {
+    position: relative;
+    width: 92%;
+    max-width: 420px;
+    background: rgba(8, 16, 28, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    border-radius: 16px;
+    padding: 20px;
+    color: #fff;
+    box-shadow: 0 0 30px rgba(0, 229, 255, 0.15), inset 0 0 15px rgba(0, 229, 255, 0.05);
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    transform: perspective(1000px) rotateX(1deg); /* Легкий 3D-наклон */
+}
+
+/* Переключатель закрытия */
+.scifi-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: #00e5ff;
+    font-size: 28px;
+    cursor: pointer;
+    text-shadow: 0 0 8px #00e5ff;
+}
+
+/* Шапка */
+.scifi-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+.scifi-logo-wrapper img {
+    width: 45px;
+    height: 45px;
+    filter: drop-shadow(0 0 8px #00e5ff);
+}
+.scifi-title-block h2 {
+    margin: 0;
+    font-size: 18px;
+    letter-spacing: 1px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+.glitch-text {
+    color: #00e5ff;
+    font-size: 10px;
+    letter-spacing: 2px;
+}
+
+/* Лента Ресурсов (Счетчик всего) */
+.scifi-resource-ticker {
+    display: flex;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 20px;
+    font-size: 11px;
+    font-weight: bold;
+}
+.neon-qubi { text-shadow: 0 0 6px #ffea00; color: #ffea00; }
+.neon-quant { text-shadow: 0 0 6px #00f0ff; color: #00f0ff; }
+.neon-nft { text-shadow: 0 0 6px #ff007f; color: #ff007f; }
+
+/* 📊 Объемные Силовые Прогресс-Бары */
+.scifi-progress-wrapper {
+    margin-bottom: 12px;
+}
+.bar-label {
+    font-size: 9px;
+    color: #88a0c0;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+}
+.scifi-bar-outer {
+    position: relative;
+    width: 100%;
+    height: 18px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+/* Свечение рамок шкал */
+.border-hp { border: 1px solid rgba(255, 51, 0, 0.4); }
+.border-energy { border: 1px solid rgba(0, 229, 255, 0.4); }
+.border-regen { border: 1px solid rgba(157, 0, 255, 0.4); }
+
+.scifi-bar-fill {
+    height: 100%;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background-size: 30px 30px;
+    /* Эффект живой бегущей полоски */
+    background-image: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
+    animation: barStripes 1.5s linear infinite;
+}
+@keyframes barStripes {
+    0% { background-position: 0 0; }
+    100% { background-position: 30px 0; }
+}
+
+.fill-hp { background-color: #ff3300; box-shadow: 0 0 10px #ff3300; }
+.fill-energy { background-color: #00e5ff; box-shadow: 0 0 10px #00e5ff; }
+.fill-regen { background-color: #9d00ff; box-shadow: 0 0 10px #9d00ff; }
+
+.bar-digits {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000;
+    pointer-events: none;
+}
+
+/* Метки секций */
+.scifi-section-label {
+    font-size: 11px;
+    font-weight: bold;
+    color: #00e5ff;
+    margin: 18px 0 8px 0;
+    letter-spacing: 1px;
+}
+.scifi-section-label span { color: #fff; }
+
+/* Слоты экипировки */
+.scifi-slots-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+.scifi-slot-mini {
+    width: 18%;
+    aspect-ratio: 1/1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px dashed rgba(0, 229, 255, 0.3);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.scifi-slot-mini.filled {
+    border: 1px solid #00e5ff;
+    background: rgba(0, 229, 255, 0.1);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+.scifi-slot-mini img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+}
+
+/* Сетка инвентаря */
+.scifi-inventory-wrapper {
+    height: 160px;
+    overflow-y: auto;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 8px;
+}
+.scifi-inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+/* Неоновые карточки предметов */
+.scifi-item-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.scifi-item-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+/* Свечение рамок по редкости */
+.scifi-item-card.common { border-color: rgba(0, 229, 255, 0.3); }
+.scifi-item-card.uncommon { border-color: rgba(30, 255, 0, 0.3); }
+.scifi-item-card.rare { border-color: rgba(0, 112, 221, 0.4); }
+.scifi-item-card.epic { border-color: rgba(163, 53, 238, 0.4); }
+.scifi-item-card.legendary { border-color: rgba(255, 128, 0, 0.5); box-shadow: 0 0 8px rgba(255, 128, 0, 0.15); }
+
+/* Эффект если модуль надет */
+.scifi-item-card.equipped {
+    background: rgba(0, 229, 255, 0.08) !important;
+    border-color: #00e5ff !important;
+    box-shadow: inset 0 0 8px rgba(0, 229, 255, 0.2);
+}
+
+/* 🔮 Базовый класс для превращения эмодзи в 3D-иконки */
+.ico-3d {
+    display: inline-block;
+    font-size: 14px;
+    margin-right: 4px;
+    transform: translateZ(5px); /* Дает ощущение глубины в слоях */
+    vertical-align: middle;
+}
+
+/* 🔼 Класс для объемных стрелок-индикаторов */
+.arrow-3d {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 900;
+    margin-right: 6px;
+    font-family: monospace;
+}
+
+/* 🔥 Настройки неонового свечения по цветам (как в Пассе) */
+.glow-qubi {
+    color: #ffea00;
+    text-shadow: 0 0 4px #ffea00, 0 0 12px #ffbb00;
+    filter: drop-shadow(0 0 3px rgba(255, 234, 0, 0.6));
+}
+
+.glow-quant {
+    color: #00f0ff;
+    text-shadow: 0 0 4px #00f0ff, 0 0 12px #00aaff;
+    filter: drop-shadow(0 0 3px rgba(0, 240, 255, 0.6));
+}
+
+.glow-nft {
+    color: #ff007f;
+    text-shadow: 0 0 4px #ff007f, 0 0 12px #ff00ff;
+    filter: drop-shadow(0 0 3px rgba(255, 0, 127, 0.6));
+}
+
+.glow-hp {
+    color: #ff3300;
+    text-shadow: 0 0 4px #ff3300, 0 0 10px #ff0000;
+    filter: drop-shadow(0 0 2px rgba(255, 51, 0, 0.5));
+}
+
+.glow-energy {
+    color: #00e5ff;
+    text-shadow: 0 0 4px #00e5ff, 0 0 10px #00b0ff;
+    filter: drop-shadow(0 0 2px rgba(0, 229, 255, 0.5));
+}
+
+.glow-regen {
+    color: #9d00ff;
+    text-shadow: 0 0 4px #9d00ff, 0 0 10px #6a00ff;
+    filter: drop-shadow(0 0 2px rgba(157, 0, 255, 0.5));
 }
