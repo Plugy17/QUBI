@@ -1545,25 +1545,29 @@ canvas {
 
 /* 🌌 ПОЛНОЭКРАННАЯ СТРАНИЦА АНГАРА */
 .scifi-fullscreen-page {
-    position: fixed; /* Фиксируем по краям */
+    /* 🔥 КРИТИЧЕСКИЙ ФИКС ДЛЯ МОБИЛЬНОГО ТАЧА: 
+       Меняем fixed на absolute, чтобы у страницы появилась реальная высота для скролла */
+    position: absolute !important; 
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    
+    /* Минимальная высота — экран смартфона, но блок может бесконечно расти вниз */
+    min-height: 100vh; 
+    height: auto !important; 
+    
     background: radial-gradient(circle at center, #0a1b3a 0%, #030812 100%);
     color: #fff;
     
-    /* 🔥 ФИКС: Увеличили верхний отступ с 20px до 50px, чтобы опустить всё ниже кнопок Telegram */
-    padding: 100px 20px 20px 20px; 
+    /* 🔥 ФИКС ОТСТУПА: Сделали 110px сверху, чтобы кнопка и плашка ушли глубоко вниз под Telegram-шапку */
+    padding: 110px 20px 40px 20px;  
     
     display: flex;
     flex-direction: column;
     z-index: 999999 !important; 
     
-    /* 🔥 КЛЮЧЕВОЙ ФИКС 1: Включаем скролл для ВСЕЙ страницы */
-    overflow-y: auto !important; 
-    
-    /* 🔥 КЛЮЧЕВОЙ ФИКС 2: Разрешаем листать пальцем ВСЮ страницу */
+    /* Разрешаем браузеру обрабатывать вертикальные жесты */
+    overflow-y: visible !important; 
     touch-action: pan-y !important; 
     -webkit-overflow-scrolling: touch !important;
     
