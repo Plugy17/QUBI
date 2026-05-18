@@ -660,11 +660,6 @@ function draw() {
                     }
                 }
 
-                // 3. Плавное вращение самого тела планеты вокруг своей оси
-                if (typeof p.rotation === 'undefined') p.rotation = 0;
-                p.rotation += p.speed || 0.005; // Если скорость не задана, крутим по дефолту
-                ctx.rotate(p.rotation);
-
                 // Отрисовываем саму планету QUBI PASS поверх клубов дыма
                 ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
                 ctx.restore();
