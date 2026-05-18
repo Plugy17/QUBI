@@ -1514,6 +1514,10 @@ canvas {
     filter: grayscale(1) opacity(0.3); /* Приглушаем эмодзи внутри собранного куба */
 }
 
+/* ============================================================================
+   🌌 ОБЩИЕ СИСТЕМНЫЕ СТИЛИ МОДАЛЬНЫХ ОКОН
+   ============================================================================ */
+
 /* Полное затемнение фона за модальным окном */
 .modal-overlay {
     position: fixed;
@@ -1529,15 +1533,15 @@ canvas {
     z-index: 10000; /* Чтобы ангар всегда был поверх карты */
 }
 
-/* Кнопка закрытия окна (крестик) */
+/* Кнопка закрытия окна (крестик) с неоновым ховером */
 .scifi-close-btn {
     position: absolute;
-    top: 10px;
-    right: 16px;
+    top: 12px;
+    right: 15px;
     background: none;
     border: none;
     color: #00e5ff;
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 300;
     cursor: pointer;
     transition: all 0.2s;
@@ -1546,10 +1550,10 @@ canvas {
 }
 .scifi-close-btn:hover {
     color: #ff007f;
-    text-shadow: 0 0 8px #ff007f; /* При наведении крестик загорается розовым неоном */
+    text-shadow: 0 0 8px #ff007f; /* При наведении горит розовым неон-эффектом */
 }
 
-/* Киберпанк Стеклянная Карточка Ангара */
+/* Киберпанк Стеклянная Карточка Ангара (3D эффект) */
 .scifi-station-card {
     position: relative;
     width: 92%;
@@ -1563,23 +1567,22 @@ canvas {
     color: #fff;
     box-shadow: 0 0 30px rgba(0, 229, 255, 0.15), inset 0 0 15px rgba(0, 229, 255, 0.05);
     font-family: 'Segoe UI', Roboto, sans-serif;
-    transform: perspective(1000px) rotateX(1deg); /* Легкий 3D-наклон */
+    transform: perspective(1000px) rotateX(1deg); 
+    box-sizing: border-box;
 }
 
-/* Переключатель закрытия */
-.scifi-close-btn {
-    position: absolute;
-    top: 12px;
-    right: 15px;
-    background: none;
-    border: none;
-    color: #00e5ff;
-    font-size: 28px;
-    cursor: pointer;
-    text-shadow: 0 0 8px #00e5ff;
+/* Глобальный сброс для предотвращения раздувания элементов в карточке */
+.scifi-station-card *, 
+.scifi-station-card *::before, 
+.scifi-station-card *::after {
+    box-sizing: border-box;
 }
 
-/* Шапка */
+/* ============================================================================
+   🛸 КОМПОНЕНТЫ ИНТЕРФЕЙСА (ШАПКА И РЕСУРСЫ)
+   ============================================================================ */
+
+/* Шапка модалки */
 .scifi-header {
     display: flex;
     align-items: center;
@@ -1620,7 +1623,10 @@ canvas {
 .neon-quant { text-shadow: 0 0 6px #00f0ff; color: #00f0ff; }
 .neon-nft { text-shadow: 0 0 6px #ff007f; color: #ff007f; }
 
-/* 📊 Объемные Силовые Прогресс-Бары */
+/* ============================================================================
+   📊 ЖИВЫЕ ПРОГРЕСС-БАРЫ (ХАРАКТЕРИСТИКИ)
+   ============================================================================ */
+
 .scifi-progress-wrapper {
     margin-bottom: 12px;
 }
@@ -1629,6 +1635,8 @@ canvas {
     color: #88a0c0;
     margin-bottom: 4px;
     letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
 }
 .scifi-bar-outer {
     position: relative;
@@ -1639,9 +1647,7 @@ canvas {
     overflow: hidden;
     display: flex;
     align-items: center;
-    box-sizing: border-box;
 }
-/* Свечение рамок шкал */
 .border-hp { border: 1px solid rgba(255, 51, 0, 0.4); }
 .border-energy { border: 1px solid rgba(0, 229, 255, 0.4); }
 .border-regen { border: 1px solid rgba(157, 0, 255, 0.4); }
@@ -1650,7 +1656,6 @@ canvas {
     height: 100%;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     background-size: 30px 30px;
-    /* Эффект живой бегущей полоски */
     background-image: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
     animation: barStripes 1.5s linear infinite;
 }
@@ -1674,17 +1679,22 @@ canvas {
     pointer-events: none;
 }
 
-/* Метки секций */
+/* ============================================================================
+   🎛 АКТИВНЫЕ СЛОТЫ И ИНВЕНТАРЬ (ЗДЕСЬ БЫЛ СБОЙ РАЗМЕРОВ)
+   ============================================================================ */
+
 .scifi-section-label {
     font-size: 11px;
     font-weight: bold;
     color: #00e5ff;
     margin: 18px 0 8px 0;
     letter-spacing: 1px;
+    display: flex;
+    align-items: center;
 }
 .scifi-section-label span { color: #fff; }
 
-/* Слоты экипировки */
+/* Слоты экипировки (Верхний ряд) */
 .scifi-slots-row {
     display: flex;
     justify-content: space-between;
@@ -1713,29 +1723,46 @@ canvas {
     object-fit: contain;
 }
 
-/* Сетка инвентаря */
+/* Оболочка инвентаря с кастомным скроллом */
 .scifi-inventory-wrapper {
-    height: 160px;
-    overflow-y: auto;
+    max-height: 160px !important; 
+    overflow-y: auto !important;
     border: 1px solid rgba(255,255,255,0.05);
     background: rgba(0,0,0,0.2);
     border-radius: 8px;
     padding: 8px;
 }
-.scifi-inventory-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+/* Тонкий неоновый скроллбар */
+.scifi-inventory-wrapper::-webkit-scrollbar {
+    width: 4px;
+}
+.scifi-inventory-wrapper::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+.scifi-inventory-wrapper::-webkit-scrollbar-thumb {
+    background: #00e5ff;
+    border-radius: 4px;
+    box-shadow: 0 0 8px #00e5ff;
 }
 
-/* Неоновые карточки предметов */
+/* Четкая сетка инвентаря в 2 колонки */
+.scifi-inventory-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    width: 100%;
+}
+
+/* Жестко фиксированная карточка предмета */
 .scifi-item-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
-    padding: 8px;
-    display: flex;
-    align-items: center;
+    padding: 6px 10px !important;
+    height: 50px !important; /* Строгая фиксация высоты */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
     gap: 10px;
     cursor: pointer;
     transition: all 0.2s;
@@ -1743,30 +1770,57 @@ canvas {
 .scifi-item-card:hover {
     background: rgba(255, 255, 255, 0.07);
 }
-/* Свечение рамок по редкости */
+
+/* ❌ ФИКС ОГРОМНЫХ КАРТИНОК: Картинки теперь точно 32х32px */
+.scifi-item-card img {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    object-fit: contain !important;
+    filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.3));
+}
+
+/* Внутренний контейнер текста карточки предметов */
+.scifi-item-card div {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    text-align: left !important;
+    overflow: hidden;
+}
+.scifi-item-card span {
+    font-size: 11px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Защита от длинных названий */
+}
+
+/* Рамки редкости */
 .scifi-item-card.common { border-color: rgba(0, 229, 255, 0.3); }
 .scifi-item-card.uncommon { border-color: rgba(30, 255, 0, 0.3); }
 .scifi-item-card.rare { border-color: rgba(0, 112, 221, 0.4); }
 .scifi-item-card.epic { border-color: rgba(163, 53, 238, 0.4); }
 .scifi-item-card.legendary { border-color: rgba(255, 128, 0, 0.5); box-shadow: 0 0 8px rgba(255, 128, 0, 0.15); }
 
-/* Эффект если модуль надет */
 .scifi-item-card.equipped {
     background: rgba(0, 229, 255, 0.08) !important;
     border-color: #00e5ff !important;
     box-shadow: inset 0 0 8px rgba(0, 229, 255, 0.2);
 }
 
-/* 🔮 Базовый класс для превращения эмодзи в 3D-иконки */
+/* ============================================================================
+   🔮 3D НЕОНОВЫЕ ЭМОДЗИ И ЭЛЕМЕНТЫ СВЕЧЕНИЯ
+   ============================================================================ */
+
 .ico-3d {
     display: inline-block;
     font-size: 14px;
     margin-right: 4px;
-    transform: translateZ(5px); /* Дает ощущение глубины в слоях */
+    transform: translateZ(5px); 
     vertical-align: middle;
 }
 
-/* 🔼 Класс для объемных стрелок-индикаторов */
 .arrow-3d {
     display: inline-block;
     font-size: 10px;
@@ -1775,37 +1829,31 @@ canvas {
     font-family: monospace;
 }
 
-/* 🔥 Настройки неонового свечения по цветам (как в Пассе) */
 .glow-qubi {
     color: #ffea00;
     text-shadow: 0 0 4px #ffea00, 0 0 12px #ffbb00;
     filter: drop-shadow(0 0 3px rgba(255, 234, 0, 0.6));
 }
-
 .glow-quant {
     color: #00f0ff;
     text-shadow: 0 0 4px #00f0ff, 0 0 12px #00aaff;
     filter: drop-shadow(0 0 3px rgba(0, 240, 255, 0.6));
 }
-
 .glow-nft {
     color: #ff007f;
     text-shadow: 0 0 4px #ff007f, 0 0 12px #ff00ff;
     filter: drop-shadow(0 0 3px rgba(255, 0, 127, 0.6));
 }
-
 .glow-hp {
     color: #ff3300;
     text-shadow: 0 0 4px #ff3300, 0 0 10px #ff0000;
     filter: drop-shadow(0 0 2px rgba(255, 51, 0, 0.5));
 }
-
 .glow-energy {
     color: #00e5ff;
     text-shadow: 0 0 4px #00e5ff, 0 0 10px #00b0ff;
     filter: drop-shadow(0 0 2px rgba(0, 229, 255, 0.5));
 }
-
 .glow-regen {
     color: #9d00ff;
     text-shadow: 0 0 4px #9d00ff, 0 0 10px #6a00ff;
