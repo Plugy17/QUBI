@@ -1525,32 +1525,14 @@ canvas {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 5, 15, 0.75); /* Мягкий космический оверлей */
+    background: rgba(0, 5, 15, 0.75); 
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10000; /* Чтобы ангар всегда был поверх карты */
-}
-
-/* Кнопка закрытия окна (крестик) с неоновым ховером */
-.scifi-close-btn {
-    position: absolute;
-    top: 12px;
-    right: 15px;
-    background: none;
-    border: none;
-    color: #00e5ff;
-    font-size: 28px;
-    font-weight: 300;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-shadow: 0 0 8px #00e5ff;
-    z-index: 10;
-}
-.scifi-close-btn:hover {
-    color: #ff007f;
-    text-shadow: 0 0 8px #ff007f; /* При наведении горит розовым неон-эффектом */
+    z-index: 10000; 
+    /* ⚡ ВАЖНО: Разрешаем клики проходить сквозь подложку, если нужно, 
+       но лучше гарантируем, что сама карточка будет кликабельной */
 }
 
 /* Киберпанк Стеклянная Карточка Ангара (3D эффект) */
@@ -1567,8 +1549,37 @@ canvas {
     color: #fff;
     box-shadow: 0 0 30px rgba(0, 229, 255, 0.15), inset 0 0 15px rgba(0, 229, 255, 0.05);
     font-family: 'Segoe UI', Roboto, sans-serif;
-    transform: perspective(1000px) rotateX(1deg); 
+    
+    /* Слегка корректируем 3D, чтобы не ломать мышь в старых браузерах */
+    transform: perspective(1000px) translateZ(1px); 
     box-sizing: border-box;
+    
+    /* 🔥 КЛЮЧЕВОЙ ФИКС: Принудительно выводим карточку на передний план для кликов */
+    pointer-events: auto !important;
+    z-index: 10001 !important;
+}
+
+/* Кнопка закрытия окна (крестик) */
+.scifi-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    background: none !important;
+    border: none !important;
+    color: #00e5ff;
+    font-size: 28px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-shadow: 0 0 8px #00e5ff;
+    
+    /* 🔥 КЛЮЧЕВОЙ ФИКС: Кнопка должна быть кликабельной поверх карточки */
+    z-index: 10005 !important;
+    pointer-events: auto !important;
+}
+.scifi-close-btn:hover {
+    color: #ff007f;
+    text-shadow: 0 0 8px #ff007f;
 }
 
 /* Глобальный сброс для предотвращения раздувания элементов в карточке */
