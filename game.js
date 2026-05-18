@@ -5030,60 +5030,81 @@ function renderPassCubes() {
         const isClaimed = playerData.qubiPass.claimedCubes.includes(i);
         const reward = qubiPassRewardsList[i];
 
-        // Назначаем класс для 3D анимаций куба, прописанных в твоем style.css
+        // 🛡️ ИСПРАВЛЕНО: Назначаем правильные классы анимаций куба
         let cubeClass = 'cube-locked';
-        if (isClaimed) cubeClass = 'cube-open';
-        else if (isUnlocked) cubeClass = 'cube-ready';
-        else if (isCurrent) cubeClass = 'cube-current';
+        if (isClaimed) {
+            cubeClass = 'cube-collected'; // Новый класс для красивого отображения УЖЕ собранного куба
+        } else if (isUnlocked) {
+            cubeClass = 'cube-ready';      // Зеленый, парит (готов к сбору)
+        } else if (isCurrent) {
+            cubeClass = 'cube-current';    // Синий, крутится (текущий уровень)
+        }
 
-        // Рассчитываем только динамический цвет границ и фона карточки на лету
+        // Рассчитываем динамический цвет границ и фона карточки на лету
         let borderStyle = 'rgba(255, 255, 255, 0.08)';
         let bgStyle = 'rgba(255, 255, 255, 0.02)';
+        
         if (isCurrent) {
             borderStyle = 'rgba(0, 229, 255, 0.4)';
             bgStyle = 'rgba(0, 229, 255, 0.04)';
         } else if (isUnlocked && !isClaimed) {
             borderStyle = 'rgba(0, 255, 102, 0.3)';
             bgStyle = 'rgba(0, 255, 102, 0.03)';
+        } else if (isClaimed) {
+            borderStyle = 'rgba(255, 255, 255, 0.03)';
+            bgStyle = 'rgba(0, 0, 0, 0.2)'; // Карточка собранного уровня темнеет
         }
 
         const cubeCard = document.createElement('div');
         cubeCard.setAttribute('data-id', i);
-        cubeCard.setAttribute('onclick', `attemptClaim(${i})`); // Клик на всей карточке для надежности тапа
+        
+        // Клик разрешен только если куб разблокирован и еще НЕ собран
+        if (isUnlocked && !isClaimed) {
+            cubeCard.setAttribute('onclick', `attemptClaim(${i})`);
+        }
         
         cubeCard.style = `
             background: ${bgStyle}; 
             border: 1px solid ${borderStyle};
-            border-radius: 24px; padding: 25px 15px; text-align: center; position: relative; 
-            display: flex; flex-direction: column; align-items: center; cursor: pointer;
-            opacity: ${isUnlocked || isCurrent ? '1' : '0.4'};
-            filter: ${isUnlocked || i <= playerData.qubiPass.currentCube ? 'none' : 'grayscale(0.8)'};
-            transition: all 0.4s ease;
-            box-shadow: ${isCurrent ? '0 10px 30px rgba(0,229,255,0.1)' : 'none'};
+            border-radius: 24px; 
+            padding: 35px 15px 25px 15px; 
+            text-align: center; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            cursor: ${isUnlocked && !isClaimed ? 'pointer' : 'default'};
+            opacity: ${isUnlocked || isCurrent ? '1' : '0.25'};
+            filter: ${isUnlocked || isCurrent ? 'none' : 'grayscale(0.9)'};
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: ${isCurrent ? '0 10px 30px rgba(0,229,255,0.15)' : 'none'};
         `;
 
+        // Определяем, какую иконку показывать внутри куба
+        const currentIcon = reward?.icon || '🪙';
+
         cubeCard.innerHTML = `
-            <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: ${isCurrent ? '#00e5ff' : '#5f759e'}; margin-bottom: 25px; pointer-events: none;">
+            <div style="font-size: 10px; font-weight: 800; letter-spacing: 2px; color: ${isCurrent ? '#00e5ff' : '#5f759e'}; margin-bottom: 30px; pointer-events: none;">
                 КУБ УРОВНЯ ${i}
             </div>
             
-            <div class="cube-scene" style="pointer-events: none;">
+            <div class="cube-scene" style="pointer-events: none; margin-bottom: 10px;">
                 <div class="cube ${cubeClass}">
-                    <div class="cube-face front"><span>${reward?.icon || '🪙'}</span></div>
-                    <div class="cube-face back"><span>${reward?.icon || '🪙'}</span></div>
-                    <div class="cube-face right"><span>${reward?.icon || '🪙'}</span></div>
-                    <div class="cube-face left"><span>${reward?.icon || '🪙'}</span></div>
-                    <div class="cube-face top"><span>${reward?.icon || '🪙'}</span></div>
-                    <div class="cube-face bottom"><span>${reward?.icon || '🪙'}</span></div>
+                    <div class="cube-face front"><span>${currentIcon}</span></div>
+                    <div class="cube-face back"><span>${currentIcon}</span></div>
+                    <div class="cube-face right"><span>${currentIcon}</span></div>
+                    <div class="cube-face left"><span>${currentIcon}</span></div>
+                    <div class="cube-face top"><span>${currentIcon}</span></div>
+                    <div class="cube-face bottom"><span>${currentIcon}</span></div>
                 </div>
-                <div class="cube-shadow ${isClaimed ? 'shadow-hide' : ''}"></div>
+                <div class="cube-shadow ${isClaimed || (!isUnlocked && !isCurrent) ? 'shadow-hide' : ''}"></div>
             </div>
 
-            <div style="font-size: 14px; font-weight: 800; margin-top: 25px; letter-spacing: 0.5px; color: ${isClaimed ? '#5f759e' : '#fff'}; pointer-events: none;">
+            <div style="font-size: 13px; font-weight: 800; margin-top: 25px; letter-spacing: 0.5px; color: ${isClaimed ? '#5f759e' : '#fff'}; pointer-events: none; text-transform: uppercase;">
                 ${isClaimed ? 'НАГРАДА СОБРАНА' : (reward?.title || 'Награда')}
             </div>
-            <div style="font-size: 12px; font-weight: 700; color: #00e5ff; margin-top: 4px; min-height: 14px; pointer-events: none;">
-                ${reward?.count > 1 && !isClaimed ? 'Количество: ' + reward.count : ''}
+            <div style="font-size: 11px; font-weight: 700; color: #00e5ff; margin-top: 4px; min-height: 14px; pointer-events: none;">
+                ${reward?.count > 1 && !isClaimed ? 'x' + reward.count : ''}
             </div>
         `;
         container.appendChild(cubeCard);
