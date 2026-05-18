@@ -1552,7 +1552,10 @@ canvas {
     height: 100vh;
     background: radial-gradient(circle at center, #0a1b3a 0%, #030812 100%);
     color: #fff;
-    padding: 20px;
+    
+    /* 🔥 ФИКС: Увеличили верхний отступ с 20px до 50px, чтобы опустить всё ниже кнопок Telegram */
+    padding: 50px 20px 20px 20px; 
+    
     display: flex;
     flex-direction: column;
     z-index: 999999 !important; 
@@ -1587,7 +1590,7 @@ canvas {
     text-shadow: 0 0 5px #00e5ff;
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
     transition: all 0.2s;
-    margin-bottom: 10px;
+    margin-bottom: 15px; /* Слегка увеличили отступ снизу */
 }
 .scifi-back-btn:hover {
     background: rgba(255, 0, 127, 0.1);
@@ -1604,7 +1607,9 @@ canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 10px 0 20px 0;
+    
+    /* 🔥 ФИКС: Раздвинули пространство вокруг куба. Сверху 20px, снизу 35px */
+    margin: 20px 0 35px 0; 
 }
 
 .scene3d {
@@ -1666,7 +1671,8 @@ canvas {
 }
 
 .fullscreen-title {
-    margin: 10px 0 0 0;
+    /* 🔥 ФИКС: Увеличили верхний маркер до 25px, чтобы убрать наплыв граней куба на текст */
+    margin: 25px 0 0 0; 
     font-size: 18px;
     letter-spacing: 2px;
     text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
@@ -1685,7 +1691,9 @@ canvas {
     padding: 10px 16px;
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.03);
-    margin-bottom: 20px;
+    
+    /* 🔥 ФИКС: Слегка увеличили отступ до шкал (было 20px, стало 25px) */
+    margin-bottom: 25px; 
     font-size: 12px;
     font-weight: bold;
 }
@@ -1695,10 +1703,12 @@ canvas {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
-    margin-bottom: 20px;
+    
+    /* 🔥 ФИКС: Увеличили отступ снизу до модулей (было 20px, стало 28px) */
+    margin-bottom: 28px; 
 }
 @media (max-width: 650px) {
-    .fullscreen-bars-grid { grid-template-columns: 1fr; gap: 8px; }
+    .fullscreen-bars-grid { grid-template-columns: 1fr; gap: 10px; } /* Чуть увеличили gap между шкалами */
 }
 
 .scifi-progress-wrapper { margin-bottom: 0; }
@@ -1755,7 +1765,9 @@ canvas {
     font-size: 11px;
     font-weight: bold;
     color: #00e5ff;
-    margin: 10px 0 8px 0;
+    
+    /* 🔥 ФИКС: Увеличили верхний отступ метки (было 10px, стало 15px) */
+    margin: 15px 0 10px 0; 
     letter-spacing: 1px;
     display: flex;
     align-items: center;
@@ -1766,7 +1778,9 @@ canvas {
     display: flex;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 20px;
+    
+    /* 🔥 ФИКС: Увеличили нижний отступ до табов инвентаря (было 20px, стало 28px) */
+    margin-bottom: 28px; 
 }
 .scifi-slot-mini {
     width: 18%;
@@ -1807,7 +1821,9 @@ canvas {
     background: rgba(0, 0, 0, 0.5);
     padding: 4px;
     border-radius: 10px;
-    margin-bottom: 12px;
+    
+    /* 🔥 ФИКС: Увеличили расстояние от табов до самих карточек (было 12px, стало 16px) */
+    margin-bottom: 16px; 
     border: 1px solid rgba(255, 255, 255, 0.02);
 }
 
