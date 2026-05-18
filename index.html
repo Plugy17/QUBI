@@ -560,36 +560,82 @@
         </div>
         
         <div id="station-modal" class="modal-overlay" style="display: none;">
-            <div class="moon-card station-card">
-                <button class="close-btn" onclick="closeStation()">×</button>
-                <div class="moon-header">
-                    <img src="assets/station.png" alt="Station">
-                    <h2>ОРБИТАЛЬНЫЙ АНГАР</h2>
-                </div>
-                <div class="station-body">
-                    <div class="ship-stats-grid">
-                        <div class="stat-box">❤️ ЖИЗНЬ: <b id="stat-hp">100</b></div>
-                        <div class="stat-box">⚡ ЭНЕРГИЯ: <b id="stat-energy">100%</b></div>
-                        <div class="stat-box">⚡ РЕГЕНЕРАЦИЯ: <b id="stat-income-quant">0</b></div>
-                    </div>
-                    <p class="section-label">АКТИВНЫЕ МОДУЛИ (MAX 5)</p>
-                    <div class="active-slots-row" id="active-slots-container">
-                        <div class="slot-mini empty"></div>
-                        <div class="slot-mini empty"></div>
-                        <div class="slot-mini empty"></div>
-                        <div class="slot-mini empty"></div>
-                        <div class="slot-mini empty"></div>
-                    </div>
-                    <p class="section-label">ВАШИ МОДУЛИ (ИНВЕНТАРЬ)</p>
-                    <div class="inventory-scroll-wrapper">
-                        <div id="inventory-scroll-list" class="inventory-scroll">
-                            <div class="no-modules">Пусто</div>
-                        </div>
-                    </div>
-                </div>
+    <div class="scifi-station-card">
+        <button class="scifi-close-btn" onclick="closeStation()">×</button>
+        
+        <div class="scifi-header">
+            <div class="scifi-logo-wrapper">
+                <img src="assets/station.png" alt="Station">
+            </div>
+            <div class="scifi-title-block">
+                <h2>ОРБИТАЛЬНЫЙ АНГАР</h2>
+                <small class="glitch-text" data-text="SYSTEM ACTIVE">STATUS: CORE ONLINE</small>
             </div>
         </div>
 
+        <div class="scifi-resource-ticker">
+            <div class="ticker-item neon-qubi">
+                <span class="ico-3d glow-qubi">🪙</span> 
+                <span id="ticker-qubi">0</span> QUBI
+            </div>
+            <div class="ticker-item neon-quant">
+                <span class="ico-3d glow-quant">💎</span> 
+                <span id="ticker-quant">0</span> QUANT
+            </div>
+            <div class="ticker-item neon-nft">
+                <span class="ico-3d glow-nft">🔮</span> 
+                <span id="ticker-nft">0</span> NFT
+            </div>
+        </div>
+
+        <div class="station-body">
+            <div class="scifi-bars-container">
+                <div class="scifi-progress-wrapper">
+                    <div class="bar-label">
+                        <span class="ico-3d glow-hp">❤️</span> ХАРАКТЕРИСТИКИ КОРПУСА
+                    </div>
+                    <div class="scifi-bar-outer border-hp">
+                        <div id="bar-hp-fill" class="scifi-bar-fill fill-hp" style="width: 100%"></div>
+                        <span class="bar-digits">HP: <b id="stat-hp">100</b></span>
+                    </div>
+                </div>
+
+                <div class="scifi-progress-wrapper">
+                    <div class="bar-label">
+                        <span class="ico-3d glow-energy">🔋</span> ЗАПАС ЭНЕРГИИ РЕАКТОРА
+                    </div>
+                    <div class="scifi-bar-outer border-energy">
+                        <div id="bar-energy-fill" class="scifi-bar-fill fill-energy" style="width: 100%"></div>
+                        <span class="bar-digits">MAX: <b id="stat-energy">100</b></span>
+                    </div>
+                </div>
+
+                <div class="scifi-progress-wrapper">
+                    <div class="bar-label">
+                        <span class="ico-3d glow-regen">⏳</span> КВАНТОВОЕ ВОССТАНОВЛЕНИЕ
+                    </div>
+                    <div class="scifi-bar-outer border-regen">
+                        <div id="bar-regen-fill" class="scifi-bar-fill fill-regen" style="width: 0%"></div>
+                        <span class="bar-digits">РЕГЕН: <b id="stat-income-quant">0</b></span>
+                    </div>
+                </div>
+            </div>
+
+            <p class="scifi-section-label">
+                <span class="arrow-3d glow-energy">▲</span> АКТИВНЫЕ МОДУЛИ СИСТЕМЫ (MAX 5)
+            </p>
+            <div class="scifi-slots-row" id="active-slots-container"></div>
+
+            <p class="scifi-section-label">
+                <span class="arrow-3d glow-nft">▼</span> ДОСТУПНЫЕ КОМПОНЕНТЫ И NFT
+            </p>
+            <div class="scifi-inventory-wrapper">
+                <div id="inventory-scroll-list" class="scifi-inventory-grid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+    
         <div id="leaderboard-modal" class="modal-overlay" style="display: none;">
             <div class="moon-card leaderboard-card">
                 <button class="close-btn" onclick="closeLeaderboard()">×</button>
