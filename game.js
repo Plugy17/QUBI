@@ -306,8 +306,8 @@ const planets = [
         id: 'qubi_pass_planet',
         src: 'assets/qubi-pass.png', // Сюда положишь спрайт планеты или куба пасса
         x: window.innerWidth * 0.73, 
-        y: window.innerHeight * 0.95,
-        size: 200,                    // Заметная, красивая планета
+        y: window.innerHeight * 0.92,
+        size: 240,                    // Заметная, красивая планета
         rotation: 0,
         speed: 0,                 // Пусть плавно вращается в космосе
         img: new Image(),
