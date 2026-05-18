@@ -1545,193 +1545,244 @@ canvas {
     z-index: 10000 !important;
 }
 
-/* Киберпанк Стеклянная Карточка Ангара */
-.scifi-station-card {
-    position: relative;
-    width: 92%;
-    max-width: 420px;
-    background: rgba(8, 16, 28, 0.85);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(0, 229, 255, 0.25);
-    border-radius: 16px;
-    padding: 20px;
+/* Изменяем карточку на полноэкранный контейнер */
+.scifi-fullscreen-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at center, #0a1b3a 0%, #030812 100%);
     color: #fff;
-    box-shadow: 0 0 30px rgba(0, 229, 255, 0.15), inset 0 0 15px rgba(0, 229, 255, 0.05);
-    font-family: 'Segoe UI', Roboto, sans-serif;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    z-index: 99999;
     
-    /* Оставляем стабильное отображение без конфликтов мыши */
-    transform: perspective(1000px) translateZ(1px); 
+    /* Перебиваем touch-action: none только для зоны инвентаря, 
+       чтобы внутри списка модулей работал скролл пальцем: */
+    touch-action: auto !important; 
     box-sizing: border-box;
 }
 
-/* Кнопка закрытия окна (крестик) */
-.scifi-close-btn {
-    position: absolute;
-    top: 12px;
-    right: 15px;
-    background: none !important;
-    border: none !important;
+/* Глобальный сброс для бокс-модели внутри ангара */
+.scifi-fullscreen-page *, 
+.scifi-fullscreen-page *::before, 
+.scifi-fullscreen-page *::after {
+    box-sizing: border-box;
+}
+
+/* Кнопка НАЗАД */
+.scifi-back-btn {
+    align-self: flex-start;
+    background: rgba(0, 229, 255, 0.05);
+    border: 1px solid rgba(0, 229, 255, 0.3);
     color: #00e5ff;
-    font-size: 28px;
-    font-weight: 300;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 11px;
+    letter-spacing: 1px;
     cursor: pointer;
+    text-shadow: 0 0 5px #00e5ff;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
     transition: all 0.2s;
-    text-shadow: 0 0 8px #00e5ff;
-    
-    /* Кнопка поверх контента карточки */
-    z-index: 10;
+    margin-bottom: 10px;
 }
-.scifi-close-btn:hover {
+.scifi-back-btn:hover {
+    background: rgba(255, 0, 127, 0.1);
+    border-color: #ff007f;
     color: #ff007f;
-    text-shadow: 0 0 8px #ff007f;
-}
-
-/* Глобальный сброс для предотвращения раздувания элементов в карточке */
-.scifi-station-card *, 
-.scifi-station-card *::before, 
-.scifi-station-card *::after {
-    box-sizing: border-box;
+    text-shadow: 0 0 5px #ff007f;
 }
 
 /* ============================================================================
-   🛸 КОМПОНЕНТЫ ИНТЕРФЕЙСА (ШАПКА И РЕСУРСЫ)
+   📦 ТРЁХМЕРНЫЙ НЕОНОВЫЙ КУБ (CSS 3D RENDER)
    ============================================================================ */
 
-/* Шапка модалки */
-.scifi-header {
+.cube-hub-container {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-.scifi-logo-wrapper img {
-    width: 45px;
-    height: 45px;
-    filter: drop-shadow(0 0 8px #00e5ff);
-}
-.scifi-title-block h2 {
-    margin: 0;
-    font-size: 18px;
-    letter-spacing: 1px;
-    color: #fff;
-    text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
-}
-.glitch-text {
-    color: #00e5ff;
-    font-size: 10px;
-    letter-spacing: 2px;
+    margin: 10px 0 20px 0;
 }
 
-/* Лента Ресурсов (Счетчик всего) */
-.scifi-resource-ticker {
+.scene3d {
+    width: 80px;
+    height: 80px;
+    perspective: 400px;
+}
+
+.cube3d {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    animation: rotateCube 8s infinite linear;
+}
+
+@keyframes rotateCube {
+    0% { transform: rotateX(0deg) rotateY(0deg); }
+    100% { transform: rotateX(360deg) rotateY(360deg); }
+}
+
+.face {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background: rgba(0, 229, 255, 0.08);
+    border: 1.5px solid #00e5ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 900;
+    color: #00e5ff;
+    text-shadow: 0 0 5px #00e5ff;
+    box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.2);
+}
+
+/* Координаты граней куба в 3D пространстве */
+.front  { transform: rotateY(  0deg) translateZ(40px); }
+.back   { transform: rotateY(180deg) translateZ(40px); border-color: #ff007f; color: #ff007f; text-shadow: 0 0 5px #ff007f; }
+.right  { transform: rotateY( 90deg) translateZ(40px); }
+.left   { transform: rotateY(-90deg) translateZ(40px); }
+.top    { transform: rotateX( 90deg) translateZ(40px); font-size: 18px; }
+.bottom { transform: rotateX(-90deg) translateZ(40px); font-size: 18px; }
+
+/* Тень под кубом с пульсацией */
+.cube-shadow {
+    width: 60px;
+    height: 6px;
+    background: rgba(0, 229, 255, 0.25);
+    border-radius: 50%;
+    margin-top: 15px;
+    filter: blur(4px);
+    animation: shadowPulse 2s infinite ease-in-out;
+}
+@keyframes shadowPulse {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.3); opacity: 0.8; }
+}
+
+.fullscreen-title {
+    margin: 10px 0 0 0;
+    font-size: 18px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+    text-transform: uppercase;
+}
+
+/* ============================================================================
+   🛸 КОМПОНЕНТЫ ИНТЕРФЕЙСА (РЕСУРСЫ И ШКАЛЫ)
+   ============================================================================ */
+
+/* Лента Ресурсов */
+.fullscreen-resource-ticker {
     display: flex;
     justify-content: space-between;
     background: rgba(0, 0, 0, 0.4);
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
     margin-bottom: 20px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: bold;
 }
-.neon-qubi { text-shadow: 0 0 6px #ffea00; color: #ffea00; }
-.neon-quant { text-shadow: 0 0 6px #00f0ff; color: #00f0ff; }
-.neon-nft { text-shadow: 0 0 6px #ff007f; color: #ff007f; }
 
-/* ============================================================================
-   📊 ЖИВЫЕ ПРОГРЕСС-БАРЫ (ХАРАКТЕРИСТИКИ)
-   ============================================================================ */
-
-.scifi-progress-wrapper {
-    margin-bottom: 12px;
+/* Сетка для шкал — на десктопе в ряд, на мобилках в столбик */
+.fullscreen-bars-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
 }
+@media (max-width: 650px) {
+    .fullscreen-bars-grid { grid-template-columns: 1fr; gap: 8px; }
+}
+
+.scifi-progress-wrapper { margin-bottom: 0; }
+
 .bar-label {
     font-size: 9px;
     color: #88a0c0;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     letter-spacing: 0.5px;
     display: flex;
     align-items: center;
 }
+
 .scifi-bar-outer {
     position: relative;
     width: 100%;
-    height: 18px;
+    height: 20px;
     background: rgba(0, 0, 0, 0.5);
-    border-radius: 4px;
+    border-radius: 5px;
     overflow: hidden;
     display: flex;
     align-items: center;
 }
-.border-hp { border: 1px solid rgba(255, 51, 0, 0.4); }
-.border-energy { border: 1px solid rgba(0, 229, 255, 0.4); }
-.border-regen { border: 1px solid rgba(157, 0, 255, 0.4); }
+
+.border-hp { border: 1px solid rgba(255, 51, 0, 0.3); }
+.border-energy { border: 1px solid rgba(0, 229, 255, 0.3); }
+.border-regen { border: 1px solid rgba(157, 0, 255, 0.3); }
 
 .scifi-bar-fill {
     height: 100%;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     background-size: 30px 30px;
-    background-image: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
+    background-image: linear-gradient(45deg, rgba(255,255,255,0.08) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, transparent 75%, transparent);
     animation: barStripes 1.5s linear infinite;
 }
-@keyframes barStripes {
-    0% { background-position: 0 0; }
-    100% { background-position: 30px 0; }
-}
 
-.fill-hp { background-color: #ff3300; box-shadow: 0 0 10px #ff3300; }
-.fill-energy { background-color: #00e5ff; box-shadow: 0 0 10px #00e5ff; }
-.fill-regen { background-color: #9d00ff; box-shadow: 0 0 10px #9d00ff; }
+.fill-hp { background-color: #ff3300; box-shadow: 0 0 10px rgba(255, 51, 0, 0.4); }
+.fill-energy { background-color: #00e5ff; box-shadow: 0 0 10px rgba(0, 229, 255, 0.4); }
+.fill-regen { background-color: #9d00ff; box-shadow: 0 0 10px rgba(157, 0, 255, 0.4); }
 
 .bar-digits {
     position: absolute;
     width: 100%;
     text-align: center;
     font-size: 11px;
-    font-weight: 900;
+    font-weight: bold;
     color: #fff;
     text-shadow: 1px 1px 2px #000;
     pointer-events: none;
 }
 
-/* ============================================================================
-   🎛 АКТИВНЫЕ СЛОТЫ И ИНВЕНТАРЬ (ЗДЕСЬ БЫЛ СБОЙ РАЗМЕРОВ)
-   ============================================================================ */
-
+/* Метки секций */
 .scifi-section-label {
     font-size: 11px;
     font-weight: bold;
     color: #00e5ff;
-    margin: 18px 0 8px 0;
+    margin: 10px 0 8px 0;
     letter-spacing: 1px;
     display: flex;
     align-items: center;
 }
-.scifi-section-label span { color: #fff; }
 
-/* Слоты экипировки (Верхний ряд) */
+/* Слоты экипировки */
 .scifi-slots-row {
     display: flex;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 .scifi-slot-mini {
     width: 18%;
     aspect-ratio: 1/1;
+    max-width: 75px;
     background: rgba(0, 0, 0, 0.4);
     border: 1px dashed rgba(0, 229, 255, 0.3);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
 }
 .scifi-slot-mini.filled {
     border: 1px solid #00e5ff;
-    background: rgba(0, 229, 255, 0.1);
-    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+    background: rgba(0, 229, 255, 0.08);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
 }
 .scifi-slot-mini img {
     width: 80%;
@@ -1739,43 +1790,82 @@ canvas {
     object-fit: contain;
 }
 
-/* Оболочка инвентаря с кастомным скроллом */
-.scifi-inventory-wrapper {
-    max-height: 160px !important; 
-    overflow-y: auto !important;
-    border: 1px solid rgba(255,255,255,0.05);
-    background: rgba(0,0,0,0.2);
-    border-radius: 8px;
-    padding: 8px;
-}
-/* Тонкий неоновый скроллбар */
-.scifi-inventory-wrapper::-webkit-scrollbar {
-    width: 4px;
-}
-.scifi-inventory-wrapper::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-}
-.scifi-inventory-wrapper::-webkit-scrollbar-thumb {
-    background: #00e5ff;
-    border-radius: 4px;
-    box-shadow: 0 0 8px #00e5ff;
+/* ============================================================================
+   📂 КУЗОВ ХРАНИЛИЩА И НЕОНОВЫЕ ТАБЫ (НОВЫЙ БЛОК)
+   ============================================================================ */
+
+.storage-section {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Растягивает блок инвентаря на всю оставшуюся высоту */
 }
 
-/* Четкая сетка инвентаря в 2 колонки */
+/* Кнопки переключения разделов */
+.storage-tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #4e6b8c;
+    padding: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+/* Активная вкладка в стиле QUBI PASS */
+.tab-btn.active {
+    background: rgba(0, 229, 255, 0.1);
+    color: #00e5ff;
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    text-shadow: 0 0 5px #00e5ff;
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.05);
+}
+
+/* Скролл-зона хранилища */
+.fullscreen-inventory-wrapper {
+    flex-grow: 1;
+    min-height: 200px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 10px;
+}
+.fullscreen-inventory-wrapper::-webkit-scrollbar {
+    width: 4px;
+}
+.fullscreen-inventory-wrapper::-webkit-scrollbar-thumb {
+    background: #00e5ff;
+    border-radius: 4px;
+}
+
+/* Адаптивная инвентарная сетка */
 .scifi-inventory-grid {
     display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
+    gap: 10px !important;
     width: 100%;
 }
 
-/* Жестко фиксированная карточка предмета */
+/* Твои настроенные карточки предметов */
 .scifi-item-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    padding: 6px 10px !important;
-    height: 50px !important; /* Строгая фиксация высоты */
+    padding: 8px 12px !important;
+    height: 54px !important; 
     display: flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
@@ -1784,20 +1874,19 @@ canvas {
     transition: all 0.2s;
 }
 .scifi-item-card:hover {
-    background: rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
 }
 
-/* ❌ ФИКС ОГРОМНЫХ КАРТИНОК: Картинки теперь точно 32х32px */
 .scifi-item-card img {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    max-width: 32px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
     object-fit: contain !important;
-    filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.3));
+    filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.2));
 }
 
-/* Внутренний контейнер текста карточки предметов */
 .scifi-item-card div {
     display: flex !important;
     flex-direction: column !important;
@@ -1807,22 +1896,23 @@ canvas {
 }
 .scifi-item-card span {
     font-size: 11px !important;
+    font-weight: bold;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Защита от длинных названий */
+    text-overflow: ellipsis;
 }
 
-/* Рамки редкости */
-.scifi-item-card.common { border-color: rgba(0, 229, 255, 0.3); }
-.scifi-item-card.uncommon { border-color: rgba(30, 255, 0, 0.3); }
-.scifi-item-card.rare { border-color: rgba(0, 112, 221, 0.4); }
-.scifi-item-card.epic { border-color: rgba(163, 53, 238, 0.4); }
-.scifi-item-card.legendary { border-color: rgba(255, 128, 0, 0.5); box-shadow: 0 0 8px rgba(255, 128, 0, 0.15); }
+/* Редкости (Твоя палитра) */
+.scifi-item-card.common { border-color: rgba(0, 229, 255, 0.2); }
+.scifi-item-card.uncommon { border-color: rgba(30, 255, 0, 0.2); }
+.scifi-item-card.rare { border-color: rgba(0, 112, 221, 0.3); }
+.scifi-item-card.epic { border-color: rgba(163, 53, 238, 0.3); }
+.scifi-item-card.legendary { border-color: rgba(255, 128, 0, 0.4); box-shadow: 0 0 6px rgba(255, 128, 0, 0.1); }
 
 .scifi-item-card.equipped {
-    background: rgba(0, 229, 255, 0.08) !important;
+    background: rgba(0, 229, 255, 0.06) !important;
     border-color: #00e5ff !important;
-    box-shadow: inset 0 0 8px rgba(0, 229, 255, 0.2);
+    box-shadow: inset 0 0 6px rgba(0, 229, 255, 0.15);
 }
 
 /* ============================================================================
@@ -1831,7 +1921,7 @@ canvas {
 
 .ico-3d {
     display: inline-block;
-    font-size: 14px;
+    font-size: 13px;
     margin-right: 4px;
     transform: translateZ(5px); 
     vertical-align: middle;
@@ -1839,39 +1929,15 @@ canvas {
 
 .arrow-3d {
     display: inline-block;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 900;
-    margin-right: 6px;
+    margin-right: 5px;
     font-family: monospace;
 }
 
-.glow-qubi {
-    color: #ffea00;
-    text-shadow: 0 0 4px #ffea00, 0 0 12px #ffbb00;
-    filter: drop-shadow(0 0 3px rgba(255, 234, 0, 0.6));
-}
-.glow-quant {
-    color: #00f0ff;
-    text-shadow: 0 0 4px #00f0ff, 0 0 12px #00aaff;
-    filter: drop-shadow(0 0 3px rgba(0, 240, 255, 0.6));
-}
-.glow-nft {
-    color: #ff007f;
-    text-shadow: 0 0 4px #ff007f, 0 0 12px #ff00ff;
-    filter: drop-shadow(0 0 3px rgba(255, 0, 127, 0.6));
-}
-.glow-hp {
-    color: #ff3300;
-    text-shadow: 0 0 4px #ff3300, 0 0 10px #ff0000;
-    filter: drop-shadow(0 0 2px rgba(255, 51, 0, 0.5));
-}
-.glow-energy {
-    color: #00e5ff;
-    text-shadow: 0 0 4px #00e5ff, 0 0 10px #00b0ff;
-    filter: drop-shadow(0 0 2px rgba(0, 229, 255, 0.5));
-}
-.glow-regen {
-    color: #9d00ff;
-    text-shadow: 0 0 4px #9d00ff, 0 0 10px #6a00ff;
-    filter: drop-shadow(0 0 2px rgba(157, 0, 255, 0.5));
-}
+.glow-qubi { color: #ffea00; text-shadow: 0 0 4px #ffea00, 0 0 10px #ffbb00; }
+.glow-quant { color: #00f0ff; text-shadow: 0 0 4px #00f0ff, 0 0 10px #00aaff; }
+.glow-nft { color: #ff007f; text-shadow: 0 0 4px #ff007f, 0 0 10px #ff00ff; }
+.glow-hp { color: #ff3300; text-shadow: 0 0 4px #ff3300; }
+.glow-energy { color: #00e5ff; text-shadow: 0 0 4px #00e5ff; }
+.glow-regen { color: #9d00ff; text-shadow: 0 0 4px #9d00ff; }
