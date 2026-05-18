@@ -1654,21 +1654,61 @@ function openStation() {
     // Получаем актуальные статы с учетом надетых модулей
     const current = calculateCurrentStats();
 
-    // 1. Обновляем текстовые показатели в UI
-    const hpEl = document.getElementById('stat-hp');
-    const enEl = document.getElementById('stat-energy');
-    const regEl = document.getElementById('stat-income-quant'); // Используем этот ID под реген, как в твоем исходнике
+    // ============================================================================
+    // 🪙 1. ОБНОВЛЕНИЕ СЧЕТЧИКОВ ВСЕХ РЕСУРСОВ И NFT В АНГАРЕ
+    // ============================================================================
+    if (typeof playerData !== 'undefined') {
+        const tickQubi = document.getElementById('ticker-qubi');
+        const tickQuant = document.getElementById('ticker-quant');
+        const tickNft = document.getElementById('ticker-nft');
 
-    if (hpEl) hpEl.innerText = current.hp;
-    if (enEl) enEl.innerText = current.maxEnergy;
-    
-    if (regEl) {
-        // Переводим мс в минуты (например, 60000мс -> 1.0 мин)
-        const regenBonusMin = (current.regenBonusMs / 60000).toFixed(1);
-        regEl.innerText = "-" + regenBonusMin + " мин";
+        if (tickQubi) tickQubi.innerText = Math.floor(playerData.qubi || 0);
+        if (tickQuant) tickQuant.innerText = Math.floor(playerData.quant || 0);
+        
+        // Считаем количество NFT (если массива еще нет, выводим 0)
+        if (tickNft) tickNft.innerText = playerData.nfts ? playerData.nfts.length : 0;
     }
 
-    // 2. Рендерим 5 верхних слотов экипировки
+    // ============================================================================
+    // 📊 2. УПРАВЛЕНИЕ ЖИВЫМИ ОБЪЕМНЫМИ ПОЛОСКАМИ СТАТОВ
+    // ============================================================================
+    // Лимиты для расчета ширины прогресс-баров в % (можешь менять под свой баланс)
+    const maxPossibleHp = 1000;
+    const maxPossibleEnergy = 1000;
+
+    // Обновляем HP
+    const hpEl = document.getElementById('stat-hp');
+    const hpFill = document.getElementById('bar-hp-fill');
+    if (hpEl) hpEl.innerText = current.hp;
+    if (hpFill) {
+        const hpPercent = Math.min((current.hp / maxPossibleHp) * 100, 100);
+        hpFill.style.width = `${Math.max(hpPercent, 8)}%`; // мини-заполнение 8% для красоты
+    }
+
+    // Обновляем Энергию
+    const enEl = document.getElementById('stat-energy');
+    const enFill = document.getElementById('bar-energy-fill');
+    if (enEl) enEl.innerText = current.maxEnergy;
+    if (enFill) {
+        const enPercent = Math.min((current.maxEnergy / maxPossibleEnergy) * 100, 100);
+        enFill.style.width = `${Math.max(enPercent, 8)}%`;
+    }
+    
+    // Обновляем Регенерацию (бонус уменьшения времени ожидания)
+    const regEl = document.getElementById('stat-income-quant');
+    const regFill = document.getElementById('bar-regen-fill');
+    const regenBonusMin = (current.regenBonusMs / 60000).toFixed(1);
+    
+    if (regEl) regEl.innerText = "-" + regenBonusMin + " мин";
+    if (regFill) {
+        // Допустим, максимальный разгон регена — это урезать 3 минуты
+        const regPercent = Math.min((regenBonusMin / 3.0) * 100, 100);
+        regFill.style.width = `${regPercent}%`;
+    }
+
+    // ============================================================================
+    // 🎛 3. РЕНДЕР 5 ВЕРХНИХ АКТИВНЫХ СЛОТОВ КОМПОНЕНТОВ
+    // ============================================================================
     const activeContainer = document.getElementById('active-slots-container');
     if (activeContainer) {
         activeContainer.innerHTML = '';
@@ -1677,19 +1717,24 @@ function openStation() {
             const equippedId = (playerData.equipped && playerData.equipped[i]) ? playerData.equipped[i] : null;
             
             if (equippedId) {
+                // Ищем надетый предмет в инвентаре
                 const mod = playerData.inventory.find(m => m.id === equippedId);
-                slot.className = 'slot-mini filled';
-                const shopData = SHOP_MODULES.find(sm => sm.id === mod.shopId);
-                const imgPath = shopData ? `assets/shop/${shopData.img}` : `assets/shop/module_01.png`;
-                slot.innerHTML = `<img src="${imgPath}" style="width:100%; height:100%; object-fit:contain;">`;
+                slot.className = 'scifi-slot-mini filled';
+                
+                // Берем картинку напрямую из объекта инвентаря (мы это настроили в QUBI PASS!)
+                const imgName = mod.img || 'module_01.png';
+                slot.innerHTML = `<img src="assets/shop/${imgName}">`;
             } else {
-                slot.className = 'slot-mini empty';
+                slot.className = 'scifi-slot-mini empty';
+                slot.innerHTML = `<span style="font-size:14px; color:rgba(0,229,255,0.2);">+</span>`;
             }
             activeContainer.appendChild(slot);
         }
     }
 
-    // 3. Рендерим список всех модулей в инвентаре (нижний список)
+    // ============================================================================
+    // 🎒 4. РЕНДЕР СЕТКИ ХРАНИЛИЩА (МОДУЛИ С УЧЕТОМ РЕДКОСТИ)
+    // ============================================================================
     const scrollList = document.getElementById('inventory-scroll-list');
     if (scrollList) {
         scrollList.innerHTML = '';
@@ -1697,27 +1742,27 @@ function openStation() {
             playerData.inventory.forEach(item => {
                 const isEquipped = playerData.equipped && playerData.equipped.includes(item.id);
                 const card = document.createElement('div');
-                card.className = `module-card ${isEquipped ? 'equipped' : ''}`;
                 
-                const shopData = SHOP_MODULES.find(sm => sm.id === item.shopId);
-                const imgPath = shopData ? `assets/shop/${shopData.img}` : `assets/shop/module_01.png`;
+                const rarityClass = item.rarity || 'common';
+                card.className = `scifi-item-card ${rarityClass} ${isEquipped ? 'equipped' : ''}`;
+                
+                const imgName = item.img || 'module_01.png';
 
                 card.innerHTML = `
-                    <img src="${imgPath}" style="width:35px; height:35px; object-fit:contain;">
-                    <div style="display:flex; flex-direction:column; margin-left:10px;">
-                        <span style="font-size:12px; font-weight:bold;">${item.name}</span>
-                        <small style="color: ${isEquipped ? '#00e5ff' : '#888'}; font-size:10px;">
-                            ${isEquipped ? 'УСТАНОВЛЕНО' : 'В ГАРДЕРОБЕ'}
+                    <img src="assets/shop/${imgName}" style="width:32px; height:32px; object-fit:contain;">
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <span style="font-size:11px; font-weight:bold; letter-spacing:0.3px;">${item.name}</span>
+                        <small style="color: ${isEquipped ? '#00e5ff' : '#668099'}; font-size:9px; font-weight:900;">
+                            ${isEquipped ? '● ПОДКЛЮЧЕН' : 'В АНГАРЕ'}
                         </small>
                     </div>
                 `;
                 
-                // При клике на карточку — снимаем или надеваем модуль
                 card.onclick = () => toggleModule(item.id);
                 scrollList.appendChild(card);
             });
         } else {
-            scrollList.innerHTML = '<div class="no-modules" style="text-align:center; padding:20px; color:#666;">Ангар пуст. Купи модули в магазине!</div>';
+            scrollList.innerHTML = '<div style="grid-column: 1/3; text-align:center; padding:30px; color:#446688; font-size:12px;">СИСТЕМНЫЕ СКЛАДЫ ПУСТЫ.<br>Купите модули в Магазине.</div>';
         }
     }
 }
