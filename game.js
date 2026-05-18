@@ -594,46 +594,48 @@ function draw() {
             ctx.translate(p.x, p.y); 
 
             // ============================================================================
-            // 🔥 УНИКАЛЬНЫЙ НЕОНОВО-ДЫМНОЙ ЭФФЕКТ ДЛЯ QUBI PASS ПЛАНЕТЫ (РАБОТАЕТ ВСЕГДА!)
+            // 🔥 ОБНОВЛЕННЫЙ ЭФФЕКТ ДЛЯ QUBI PASS ПЛАНЕТЫ (МЕНЬШЕ ДЫМА + НЕОН ПО КОНТУРУ)
             // ============================================================================
             if (p.id === 'qubi_pass_planet') {
                 const time = Date.now();
 
-                // 1. СЛОЖНЫЙ ЭФФЕКТ КЛУБЯЩЕГОСЯ КОСМИЧЕСКОГО ДЫМА (АУРА)
+                // 1. СЛОЖНЫЙ ЭФФЕКТ КЛУБЯЩЕГОСЯ КОСМИЧЕСКОГО ДЫМА (АККУРАТНЫЙ И БОЛЕЕ ПРОЗРАЧНЫЙ)
                 ctx.save();
-                ctx.globalCompositeOperation = 'screen'; // Сочный и светящийся неон
+                ctx.globalCompositeOperation = 'screen'; 
 
-                // Генерируем 4 облака тумана, вращающихся с разной скоростью вокруг планеты
+                // Генерируем 4 облака тумана (масштаб снижен, прозрачность увеличена)
                 for (let i = 0; i < 4; i++) {
                     const angle = (time * (0.0005 + i * 0.0002)) + (i * Math.PI / 2);
-                    const cloudX = Math.cos(angle) * (10 + i * 3);
-                    const cloudY = Math.sin(angle) * (10 + i * 3);
-                    const cloudRadius = (p.size * 0.75) + Math.sin(time * 0.002 + i) * 12;
+                    const cloudX = Math.cos(angle) * (6 + i * 2);
+                    const cloudY = Math.sin(angle) * (6 + i * 2);
+                    // ИСПРАВЛЕНО: Уменьшен базовый размер облака с 0.75 до 0.52
+                    const cloudRadius = (p.size * 0.52) + Math.sin(time * 0.002 + i) * 6;
 
                     const smokeGrad = ctx.createRadialGradient(
-                        cloudX, cloudY, p.size * 0.1, 
+                        cloudX, cloudY, p.size * 0.05, 
                         cloudX, cloudY, cloudRadius
                     );
                     
-                    smokeGrad.addColorStop(0, 'rgba(0, 240, 255, 0.35)');  // Ядерный бирюзовый центр
-                    smokeGrad.addColorStop(0.3, 'rgba(0, 180, 210, 0.20)'); // Средние слои тумана
-                    smokeGrad.addColorStop(0.6, 'rgba(0, 90, 150, 0.08)');   // Глубокое синее свечение
-                    smokeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');          // Растворение
+                    // ИСПРАВЛЕНО: Снижена непрозрачность (альфа-каналы) для большей прозрачности
+                    smokeGrad.addColorStop(0, 'rgba(0, 240, 255, 0.18)');  // Было 0.35
+                    smokeGrad.addColorStop(0.3, 'rgba(0, 180, 210, 0.09)'); // Было 0.20
+                    smokeGrad.addColorStop(0.6, 'rgba(0, 90, 150, 0.04)');   // Было 0.08
+                    smokeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');          
 
                     ctx.beginPath();
-                    ctx.arc(cloudX, cloudY, cloudRadius, 0, Math.PI * 2); // ИСПРАВЛЕНО: Рисуем полный круг дыма (было Math.PI * 1)
+                    ctx.arc(cloudX, cloudY, cloudRadius, 0, Math.PI * 2); 
                     ctx.fillStyle = smokeGrad;
                     ctx.fill();
                 }
                 ctx.restore();
 
-                // Дополнительный мягкий внутренний контур дыма
+                // Дополнительный мягкий внутренний контур дыма (тоже прозрачнее)
                 ctx.save();
-                const innerGrad = ctx.createRadialGradient(0, 0, p.size * 0.4, 0, 0, p.size * 0.7);
-                innerGrad.addColorStop(0, 'rgba(0, 229, 255, 0.2)');
+                const innerGrad = ctx.createRadialGradient(0, 0, p.size * 0.3, 0, 0, p.size * 0.55);
+                innerGrad.addColorStop(0, 'rgba(0, 229, 255, 0.12)'); // Было 0.2
                 innerGrad.addColorStop(1, 'rgba(0, 229, 255, 0)');
                 ctx.beginPath();
-                ctx.arc(0, 0, p.size * 0.7, 0, Math.PI * 2);
+                ctx.arc(0, 0, p.size * 0.55, 0, Math.PI * 2);
                 ctx.fillStyle = innerGrad;
                 ctx.fill();
                 ctx.restore();
@@ -660,10 +662,17 @@ function draw() {
                     }
                 }
 
-                // Отрисовываем саму планету QUBI PASS поверх клубов дыма
+                // 3. ✨ НОВОЕ: НЕОНОВОЕ СВЕЧЕНИЕ СТРОГО ПО КОНТУРУ ПЛАНЕТЫ
+                ctx.save();
+                ctx.shadowBlur = 15;                  // Сила свечения контура
+                ctx.shadowColor = '#00f0ff';            // Яркий бирюзовый неоновый цвет
+                
+                // Отрисовываем саму планету QUBI PASS с наложенным контурным неон-фильтром
                 ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+                ctx.restore(); // Сбрасываем тень контура, чтобы она не переходила на другие объекты
+
                 ctx.restore();
-                return; // Уходим на следующий кадр, для этой планеты всё отрендерено
+                return; 
             }
 
             // ============================================================================
@@ -676,36 +685,9 @@ function draw() {
                     ctx.translate(0, floatY);
                 }
                 
-                // --- УНИКАЛЬНЫЙ ЭФФЕКТ ДЛЯ РЫНКА: МИГАЮЩИЕ ОГНИ ---
+                // --- 🏪 РЫНОК: ТЕПЕРЬ ПРОСТО СТАТИЧНЫЙ СПРАЙТ БЕЗ МИГАЮЩИХ ОГОНЬКОВ ---
                 if (p.id === 'market') {
                     ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
-
-                    const time = Date.now();
-                    const light1 = Math.sin(time * 0.005) > 0;
-                    const light2 = Math.sin(time * 0.003 + 2) > 0;
-                    const radius = p.size * 0.45;
-
-                    const lightPositions = [
-                        { x: -radius, y: 0, status: light1, color: '#00ffcc' },
-                        { x: radius, y: 0, status: light1, color: '#00ffcc' },
-                        { x: 0, y: -radius, status: light2, color: '#ffea00' },
-                        { x: -radius * 0.7, y: -radius * 0.7, status: !light1, color: '#ff3300' },
-                        { x: radius * 0.7, y: radius * 0.7, status: !light1, color: '#ff3300' }
-                    ];
-
-                    lightPositions.forEach(dot => {
-                        if (dot.status) {
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2);
-                            ctx.shadowBlur = 10;
-                            ctx.shadowColor = dot.color;
-                            ctx.fillStyle = dot.color;
-                            ctx.fill();
-                            ctx.restore();
-                        }
-                    });
-
                     ctx.restore();
                     return;
                 }
