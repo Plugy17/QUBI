@@ -4968,43 +4968,86 @@ function bringAlertToFront() {
 }
 
 // ============================================================================
-//   ГЛОБАЛЬНЫЙ СПИСОК НАГРАД QUBI PASS (НА 50 УРОВНЕЙ)
+//   ГЛОБАЛЬНЫЙ СПИСОК НАГРАД QUBI PASS (ИНТЕГРАЦИЯ С ШОПОМ, NFT И НЕОНОМ)
 // ============================================================================
 const qubiPassRewardsList = {};
 
-// Генерируем награды для всех 50 кубов автоматически
+// Вспомогательная функция для генерации неоновых иконок (вместо эмодзи)
+function getNeonIconSvg(type, rarity) {
+    let glowColor = '#00e5ff'; // Дефолтный голубой неоновый
+    if (rarity === 'uncommon') glowColor = '#1eff00'; // Зеленый неон
+    if (rarity === 'rare') glowColor = '#0070dd';     // Синий неон
+    if (rarity === 'epic') glowColor = '#a335ee';     // Фиолетовый неон
+    if (rarity === 'legendary') glowColor = '#ff8000'; // Оранжевый/золотой неон
+
+    const shadowFilter = `filter: drop-shadow(0 0 6px ${glowColor}) drop-shadow(0 0 12px ${glowColor});`;
+
+    // Возвращаем неоновую SVG-графику в зависимости от типа награды
+    if (type === 'QUBI') {
+        return `<svg viewBox="0 0 24 24" width="34" height="34" style="${shadowFilter} fill: none; stroke: ${glowColor}; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v12M15 9H11.5a2.5 2.5 0 0 0 0 5h3a2.5 2.5 0 0 1 0 5H9"></path></svg>`;
+    }
+    if (type === 'NFT') {
+        return `<svg viewBox="0 0 24 24" width="34" height="34" style="filter: drop-shadow(0 0 8px #ff007f) drop-shadow(0 0 15px #ff007f); fill: none; stroke: #ff007f; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"><polygon points="12 2 22 7 12 12 2 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
+    }
+    // Для модулей (Энергия, ХП, Реген и Гибриды) рисуем технологичный неоновый чип
+    return `<svg viewBox="0 0 24 24" width="34" height="34" style="${shadowFilter} fill: none; stroke: ${glowColor}; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"></path></svg>`;
+}
+
+// Заполняем 50 уровней пасса наградами
 for (let i = 1; i <= 50; i++) {
     if (i % 3 === 1) {
+        // 💰 1. УРОВНИ С ВАЛЮТОЙ QUBI
+        const qubiCount = i * 250;
         qubiPassRewardsList[i] = {
-            title: `${i * 150} QUBI Ресурсов`,
-            icon: "🪙",
-            count: i * 150,
+            title: `${qubiCount} QUBI`,
+            icon: getNeonIconSvg('QUBI', 'common'),
+            count: qubiCount,
             claim: function() {
                 if (typeof playerData !== 'undefined') {
-                    playerData.qubi = (playerData.qubi || 0) + (i * 150);
+                    playerData.qubi = (playerData.qubi || 0) + qubiCount;
                 }
             }
         };
     } else if (i % 3 === 2) {
+        // 🔮 2. УРОВНИ С ВНУТРЕННИМИ NFT (Заглушка, которую мы пропишем позже)
         qubiPassRewardsList[i] = {
-            title: `Кристалл Энергии`,
-            icon: "💎",
+            title: `Секретный NFT Кокон (v.${i})`,
+            icon: getNeonIconSvg('NFT', 'legendary'), // У NFT свое жесткое розово-пурпурное свечение
             count: 1,
             claim: function() {
-                if (typeof playerData !== 'undefined') {
-                    playerData.quant = (playerData.quant || 0) + 1;
+                console.log(`💎 [NFT SYSTEM] Игрок собрал Внутренний NFT #${i}. Логика начисления будет добавлена позже.`);
+                if (typeof showInGameAlert === 'function') {
+                    showInGameAlert("🔮 NFT успешно зарегистрирован в вашей системе!");
                 }
+                // Тут в будущем добавим: playerData.nfts.push({ id: 'nft_' + i });
             }
         };
     } else {
+        // ⚙️ 3. УРОВНИ С РЕАЛЬНЫМИ МОДУЛЯМИ ИЗ SHOP
+        // Выбираем модуль из твоего списка SHOP_MODULES по кругу, чтобы задействовать все 20 модулей
+        const moduleIndex = Math.floor((i / 3) - 1) % SHOP_MODULES.length;
+        const selectedModule = SHOP_MODULES[moduleIndex];
+
         qubiPassRewardsList[i] = {
-            title: `${Math.ceil(i / 3)} Квант-Модуль`,
-            icon: "⚡",
-            count: Math.ceil(i / 3),
+            title: selectedModule.name,
+            icon: getNeonIconSvg('MODULE', selectedModule.rarity), // Подсвечивает чип цветом его редкости
+            count: 1,
             claim: function() {
                 if (typeof playerData !== 'undefined') {
                     if (!playerData.inventory) playerData.inventory = [];
-                    playerData.inventory.push({ id: "quant_booster", type: "module" });
+                    
+                    // Клонируем модуль из магазина и закидываем в инвентарь игрока
+                    playerData.inventory.push({
+                        id: selectedModule.id,
+                        name: selectedModule.name,
+                        type: selectedModule.type,
+                        power: selectedModule.power,
+                        rarity: selectedModule.rarity,
+                        desc: selectedModule.desc,
+                        img: selectedModule.img
+                    });
+                    
+                    console.log(`📦 Модуль ${selectedModule.name} успешно добавлен в инвентарь игрока!`);
                 }
             }
         };
