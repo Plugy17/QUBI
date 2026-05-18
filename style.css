@@ -1675,12 +1675,31 @@ canvas {
 }
 
 .fullscreen-title {
-    /* 🔥 ФИКС: Увеличили верхний маркер до 25px, чтобы убрать наплыв граней куба на текст */
-    margin: 25px 0 0 0; 
-    font-size: 18px;
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+    /* 🔥 ФИКС: Увеличили верхний отступ с 25px до 50px, чтобы опустить текст значительно ниже куба */
+    margin: 50px 0 20px 0; 
+    
+    font-size: 20px; /* Слегка увеличили размер для лучшего эффекта */
+    font-weight: 900;
+    letter-spacing: 3px;
     text-transform: uppercase;
+    text-align: center;
+    
+    /* 🎨 ЭФФЕКТ СВЕРХУДАРНОГО 3D ОБЪЕМА: Наслоение теней разного оттенка с шагом в 1px */
+    color: #ffffff;
+    text-shadow: 
+        0 1px 0 #00bcd4,
+        0 2px 0 #0097a7,
+        0 3px 0 #00838f,
+        0 4px 0 #006064,
+        0 5px 0 #00363a,
+        0 6px 1px rgba(0,0,0,0.6),
+        0 0 10px rgba(0, 229, 255, 0.6),  /* Внутреннее неоновое свечение */
+        0 0 20px rgba(0, 229, 255, 0.3);  /* Рассеянное внешнее свечение */
+
+    /* 🔥 ПОДКЛЮЧАЕМ 3D АНИМАЦИЮ */
+    animation: scifiText3d 4s infinite ease-in-out;
+    transform-style: preserve-3d;
+    perspective: 500px;
 }
 
 /* ============================================================================
@@ -1980,3 +1999,20 @@ canvas {
 .glow-hp { color: #ff3300; text-shadow: 0 0 4px #ff3300; }
 .glow-energy { color: #00e5ff; text-shadow: 0 0 4px #00e5ff; }
 .glow-regen { color: #9d00ff; text-shadow: 0 0 4px #9d00ff; }
+
+/* 🎬 КИНЕМАТИЧЕСКАЯ АНИМАЦИЯ ДЛЯ 3D ТЕКСТА */
+@keyframes scifiText3d {
+    0%, 100% {
+        transform: rotateX(12deg) rotateY(-10deg) translateZ(10px);
+        text-shadow: 
+            0 1px 0 #00bcd4, 0 2px 0 #0097a7, 0 3px 0 #00838f,
+            0 5px 10px rgba(0, 229, 255, 0.6);
+    }
+    50% {
+        transform: rotateX(18deg) rotateY(10deg) translateZ(20px);
+        /* В пиковой точке движения тени немного смещаются, усиливая объем */
+        text-shadow: 
+            -1px 1px 0 #ff007f, -2px 2px 0 #d81b60, -3px 3px 0 #ad1457,
+            0 8px 15px rgba(255, 0, 127, 0.6); 
+    }
+}
