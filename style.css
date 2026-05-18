@@ -1519,6 +1519,7 @@ canvas {
    ============================================================================ */
 
 /* Полное затемнение фона за ЛЮБЫМ старым модальным окном */
+/* Полное затемнение фона за обычными модалками */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -1531,22 +1532,18 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 9999; 
     
-    /* Оставляем базовый z-index для обычных окон */
-    z-index: 9999 !important; 
-    
-    /* Щит от кликов по карте под окном */
-    pointer-events: auto !important; 
+    /* Если окно закрыто, оверлей не должен перехватывать клики! */
+    pointer-events: auto; 
 }
 
-/* ⚡️ НАДЁЖНЫЙ ФИКС ДЛЯ ДРУГИХ ОКНОН: 
-   Разрешаем кликать абсолютно ВСЕМ элементам внутри любого старого окна */
-.modal-overlay > div,
-.modal-overlay > div * {
-    pointer-events: auto !important;
+/* Если оверлей скрыт (например, display: none), полностью отключаем его для мыши */
+.modal-overlay[style*="display: none"] {
+    pointer-events: none !important;
 }
 
-/* Изменяем карточку на полноэкранный контейнер */
+/* 🌌 НАШЕ НОВОЕ ПОЛНОЭКРАННОЕ ОКНО */
 .scifi-fullscreen-page {
     position: fixed;
     top: 0;
@@ -1558,19 +1555,21 @@ canvas {
     padding: 20px;
     display: flex;
     flex-direction: column;
-    z-index: 99999;
     
-    /* Перебиваем touch-action: none только для зоны инвентаря, 
-       чтобы внутри списка модулей работал скролл пальцем: */
+    /* 🔥 КЛЮЧЕВОЙ ФИКС 1: Выносим окно на самый верх, ПОВЕРХ оверлея */
+    z-index: 999999 !important; 
+    
+    /* 🔥 КЛЮЧЕВОЙ ФИКС 2: Принудительно разрешаем ВСЕ клики внутри */
+    pointer-events: auto !important; 
+    
+    /* Разрешаем скролл инвентаря на мобилках */
     touch-action: auto !important; 
     box-sizing: border-box;
 }
 
-/* Глобальный сброс для бокс-модели внутри ангара */
-.scifi-fullscreen-page *, 
-.scifi-fullscreen-page *::before, 
-.scifi-fullscreen-page *::after {
-    box-sizing: border-box;
+/* Гарантируем, что ВСЕ элементы внутри нового окна (кнопки, табы, карточки) кликаются */
+.scifi-fullscreen-page * {
+    pointer-events: auto !important;
 }
 
 /* Кнопка НАЗАД */
