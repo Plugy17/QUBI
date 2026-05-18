@@ -1554,7 +1554,7 @@ canvas {
     color: #fff;
     
     /* 🔥 ФИКС: Увеличили верхний отступ с 20px до 50px, чтобы опустить всё ниже кнопок Telegram */
-    padding: 80px 20px 20px 20px; 
+    padding: 100px 20px 20px 20px; 
     
     display: flex;
     flex-direction: column;
