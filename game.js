@@ -593,6 +593,87 @@ function draw() {
             ctx.save();
             ctx.translate(p.x, p.y); 
 
+            // ============================================================================
+            // 🔥 УНИКАЛЬНЫЙ НЕОНОВО-ДЫМНОЙ ЭФФЕКТ ДЛЯ QUBI PASS ПЛАНЕТЫ (РАБОТАЕТ ВСЕГДА!)
+            // ============================================================================
+            if (p.id === 'qubi_pass_planet') {
+                const time = Date.now();
+
+                // 1. СЛОЖНЫЙ ЭФФЕКТ КЛУБЯЩЕГОСЯ КОСМИЧЕСКОГО ДЫМА (АУРА)
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen'; // Сочный и светящийся неон
+
+                // Генерируем 4 облака тумана, вращающихся с разной скоростью вокруг планеты
+                for (let i = 0; i < 4; i++) {
+                    const angle = (time * (0.0005 + i * 0.0002)) + (i * Math.PI / 2);
+                    const cloudX = Math.cos(angle) * (10 + i * 3);
+                    const cloudY = Math.sin(angle) * (10 + i * 3);
+                    const cloudRadius = (p.size * 0.75) + Math.sin(time * 0.002 + i) * 12;
+
+                    const smokeGrad = ctx.createRadialGradient(
+                        cloudX, cloudY, p.size * 0.1, 
+                        cloudX, cloudY, cloudRadius
+                    );
+                    
+                    smokeGrad.addColorStop(0, 'rgba(0, 240, 255, 0.35)');  // Ядерный бирюзовый центр
+                    smokeGrad.addColorStop(0.3, 'rgba(0, 180, 210, 0.20)'); // Средние слои тумана
+                    smokeGrad.addColorStop(0.6, 'rgba(0, 90, 150, 0.08)');   // Глубокое синее свечение
+                    smokeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');          // Растворение
+
+                    ctx.beginPath();
+                    ctx.arc(cloudX, cloudY, cloudRadius, 0, Math.PI * 2); // ИСПРАВЛЕНО: Рисуем полный круг дыма (было Math.PI * 1)
+                    ctx.fillStyle = smokeGrad;
+                    ctx.fill();
+                }
+                ctx.restore();
+
+                // Дополнительный мягкий внутренний контур дыма
+                ctx.save();
+                const innerGrad = ctx.createRadialGradient(0, 0, p.size * 0.4, 0, 0, p.size * 0.7);
+                innerGrad.addColorStop(0, 'rgba(0, 229, 255, 0.2)');
+                innerGrad.addColorStop(1, 'rgba(0, 229, 255, 0)');
+                ctx.beginPath();
+                ctx.arc(0, 0, p.size * 0.7, 0, Math.PI * 2);
+                ctx.fillStyle = innerGrad;
+                ctx.fill();
+                ctx.restore();
+
+                // 2. Эффект взрывной ударной волны (Тап-эффект)
+                if (p.lastClickTime) {
+                    const elapsed = time - p.lastClickTime;
+                    const duration = 650;
+
+                    if (elapsed < duration) {
+                        const progress = elapsed / duration; 
+                        const waveRadius = (p.size / 2) + (progress * 55);
+                        const opacity = 1 - progress; 
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(0, 0, waveRadius, 0, Math.PI * 2);
+                        ctx.lineWidth = 4 * (1 - progress); 
+                        ctx.strokeStyle = `rgba(0, 255, 150, ${opacity})`; 
+                        ctx.shadowBlur = 25 * opacity;
+                        ctx.shadowColor = '#00ff99';
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+
+                // 3. Плавное вращение самого тела планеты вокруг своей оси
+                if (typeof p.rotation === 'undefined') p.rotation = 0;
+                p.rotation += p.speed || 0.005; // Если скорость не задана, крутим по дефолту
+                ctx.rotate(p.rotation);
+
+                // Отрисовываем саму планету QUBI PASS поверх клубов дыма
+                ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
+                ctx.restore();
+                return; // Уходим на следующий кадр, для этой планеты всё отрендерено
+            }
+
+            // ============================================================================
+            // ЛОГИКА ДЛЯ ОСТАЛЬНЫХ СТАНЦИЙ И ПЛАНЕТ
+            // ============================================================================
             if (p.isStationary) {
                 // 🛸 ОСТАВЛЯЕМ ПОКАЧИВАНИЕ ТОЛЬКО ДЛЯ БАЗОВОЙ СТАНЦИИ
                 if (p.id === 'station') {
@@ -634,7 +715,7 @@ function draw() {
                     return;
                 }
 
-                // --- 🎰 УНИКАЛЬНЫЙ ЭФФЕКТ ДЛЯ КАЗИНО: ЛАС-ВЕГАС ОГНИ (БЕЗ АУРЫ) ---
+                // --- 🎰 УНИКАЛЬНЫЙ ЭФФЕКТ ДЛЯ КАЗИНО: ЛАС-ВЕГАС ОГНИ ---
                 if (p.id === 'casino_station') {
                     ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
 
@@ -670,89 +751,14 @@ function draw() {
                     return;
                 }
 
-                // --- 🌟 УНИКАЛЬНЫЙ НЕОНОВО-ДЫМНОЙ ЭФФЕКТ ДЛЯ QUBI PASS ПЛАНЕТЫ ---
-                if (p.id === 'qubi_pass_planet') {
-                    const time = Date.now();
-
-                    // 1. СЛОЖНЫЙ ЭФФЕКТ КЛУБЯЩЕГОСЯ КОСМИЧЕСКОГО ДЫМА
-                    ctx.save();
-                    // Режим наложения screen делает цвета туманности сочными и светящимися
-                    ctx.globalCompositeOperation = 'screen'; 
-
-                    // Генерируем 4 облака тумана, вращающихся с разной скоростью вокруг планеты
-                    for (let i = 0; i < 4; i++) {
-                        const angle = (time * (0.0005 + i * 0.0002)) + (i * Math.PI / 2);
-                        // Вычисляем смещение центра каждого облака для создания неровных клубов
-                        const cloudX = Math.cos(angle) * (10 + i * 3);
-                        const cloudY = Math.sin(angle) * (10 + i * 3);
-                        // Пульсация размеров облака дыма
-                        const cloudRadius = (p.size * 0.75) + Math.sin(time * 0.002 + i) * 12;
-
-                        // Создаем мягкий радиальный градиент для имитации плотности газа
-                        const smokeGrad = ctx.createRadialGradient(
-                            cloudX, cloudY, p.size * 0.1, 
-                            cloudX, cloudY, cloudRadius
-                        );
-                        
-                        // Цветовая палитра точь-в-точь как на арте (Бирюза, Циан и глубокий синий неон)
-                        smokeGrad.addColorStop(0, 'rgba(0, 240, 255, 0.35)');  // Ядерный бирюзовый центр
-                        smokeGrad.addColorStop(0.3, 'rgba(0, 180, 210, 0.20)'); // Средние слои тумана
-                        smokeGrad.addColorStop(0.6, 'rgba(0, 90, 150, 0.08)');   // Глубокое космическое синее свечение
-                        smokeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');          // Растворение в космосе
-
-                        ctx.beginPath();
-                        ctx.arc(cloudX, cloudY, cloudRadius, 0, Math.PI * 1);
-                        ctx.fillStyle = smokeGrad;
-                        ctx.fill();
-                    }
-                    ctx.restore();
-
-                    // Дополнительный плотный мягкий внутренний контур дыма, чтобы планета не "отрывалась" от ауры
-                    ctx.save();
-                    const innerGrad = ctx.createRadialGradient(0, 0, p.size * 0.4, 0, 0, p.size * 0.7);
-                    innerGrad.addColorStop(0, 'rgba(0, 229, 255, 0.2)');
-                    innerGrad.addColorStop(1, 'rgba(0, 229, 255, 0)');
-                    ctx.beginPath();
-                    ctx.arc(0, 0, p.size * 0.7, 0, Math.PI * 2);
-                    ctx.fillStyle = innerGrad;
-                    ctx.fill();
-                    ctx.restore();
-
-                    // 2. Эффект взрывной ударной волны (Тап-эффект) при нажатии
-                    if (p.lastClickTime) {
-                        const elapsed = time - p.lastClickTime;
-                        const duration = 650; // Время жизни волны
-
-                        if (elapsed < duration) {
-                            const progress = elapsed / duration; 
-                            const waveRadius = (p.size / 2) + (progress * 55); // Разлет волны
-                            const opacity = 1 - progress; 
-
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.arc(0, 0, waveRadius, 0, Math.PI * 2);
-                            // Волна растворяется и слегка "размывается" по толщине
-                            ctx.lineWidth = 4 * (1 - progress); 
-                            ctx.strokeStyle = `rgba(0, 255, 150, ${opacity})`; 
-                            ctx.shadowBlur = 25 * opacity;
-                            ctx.shadowColor = '#00ff99';
-                            ctx.stroke();
-                            ctx.restore();
-                        }
-                    }
-
-                    // Отрисовываем саму планету QUBI PASS поверх клубов дыма
-                    ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
-                    ctx.restore();
-                    return;
-                }
-
             } else {
-                p.rotation += p.speed;
+                // Обычные крутящиеся планеты (включая PVP)
+                if (typeof p.rotation === 'undefined') p.rotation = 0;
+                p.rotation += p.speed || 0.01;
                 ctx.rotate(p.rotation);
             }
 
-            // Рендерим ПВП и остальные обычные планеты
+            // Рендерим дефолтный спрайт для остальных объектов
             ctx.drawImage(p.img, -p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
         }
