@@ -1647,16 +1647,16 @@ function grantModule(itemData) {
     });
 }
 
+// Глобальная переменная для отслеживания активного раздела в ангаре
+let currentStorageTab = 'modules'; // По умолчанию открыты 'modules', второй вариант 'nfts'
+
 function openStation() {
     const modal = document.getElementById('station-modal');
-    if (modal) modal.style.display = 'flex';
+    if (modal) modal.style.display = 'flex'; // Полноэкранный блок разворачивается на весь экран
 
-    // Получаем актуальные статы с учетом надетых модулей
     const current = calculateCurrentStats();
 
-    // ============================================================================
-    // 🪙 1. ОБНОВЛЕНИЕ СЧЕТЧИКОВ ВСЕХ РЕСУРСОВ И NFT В АНГАРЕ
-    // ============================================================================
+    // 1. Счётчики ресурсов в тикер-баре
     if (typeof playerData !== 'undefined') {
         const tickQubi = document.getElementById('ticker-qubi');
         const tickQuant = document.getElementById('ticker-quant');
@@ -1664,51 +1664,30 @@ function openStation() {
 
         if (tickQubi) tickQubi.innerText = Math.floor(playerData.qubi || 0);
         if (tickQuant) tickQuant.innerText = Math.floor(playerData.quant || 0);
-        
-        // Считаем количество NFT (если массива еще нет, выводим 0)
         if (tickNft) tickNft.innerText = playerData.nfts ? playerData.nfts.length : 0;
     }
 
-    // ============================================================================
-    // 📊 2. УПРАВЛЕНИЕ ЖИВЫМИ ОБЪЕМНЫМИ ПОЛОСКАМИ СТАТОВ
-    // ============================================================================
-    // Лимиты для расчета ширины прогресс-баров в % (можешь менять под свой баланс)
+    // 2. Живые прогресс-бары статов
     const maxPossibleHp = 1000;
     const maxPossibleEnergy = 1000;
 
-    // Обновляем HP
     const hpEl = document.getElementById('stat-hp');
     const hpFill = document.getElementById('bar-hp-fill');
     if (hpEl) hpEl.innerText = current.hp;
-    if (hpFill) {
-        const hpPercent = Math.min((current.hp / maxPossibleHp) * 100, 100);
-        hpFill.style.width = `${Math.max(hpPercent, 8)}%`; // мини-заполнение 8% для красоты
-    }
+    if (hpFill) hpFill.style.style.width = `${Math.min((current.hp / maxPossibleHp) * 100, 100)}%`;
 
-    // Обновляем Энергию
     const enEl = document.getElementById('stat-energy');
     const enFill = document.getElementById('bar-energy-fill');
     if (enEl) enEl.innerText = current.maxEnergy;
-    if (enFill) {
-        const enPercent = Math.min((current.maxEnergy / maxPossibleEnergy) * 100, 100);
-        enFill.style.width = `${Math.max(enPercent, 8)}%`;
-    }
+    if (enFill) enFill.style.width = `${Math.min((current.maxEnergy / maxPossibleEnergy) * 100, 100)}%`;
     
-    // Обновляем Регенерацию (бонус уменьшения времени ожидания)
     const regEl = document.getElementById('stat-income-quant');
     const regFill = document.getElementById('bar-regen-fill');
     const regenBonusMin = (current.regenBonusMs / 60000).toFixed(1);
-    
-    if (regEl) regEl.innerText = "-" + regenBonusMin + " мин";
-    if (regFill) {
-        // Допустим, максимальный разгон регена — это урезать 3 минуты
-        const regPercent = Math.min((regenBonusMin / 3.0) * 100, 100);
-        regFill.style.width = `${regPercent}%`;
-    }
+    if (regEl) regEl.innerText = "-" + regenBonusMin + " мин регена";
+    if (regFill) regFill.style.width = `${Math.min((regenBonusMin / 3.0) * 100, 100)}%`;
 
-    // ============================================================================
-    // 🎛 3. РЕНДЕР 5 ВЕРХНИХ АКТИВНЫХ СЛОТОВ КОМПОНЕНТОВ
-    // ============================================================================
+    // 3. Активные слоты модулей (Верхний ряд)
     const activeContainer = document.getElementById('active-slots-container');
     if (activeContainer) {
         activeContainer.innerHTML = '';
@@ -1717,54 +1696,86 @@ function openStation() {
             const equippedId = (playerData.equipped && playerData.equipped[i]) ? playerData.equipped[i] : null;
             
             if (equippedId) {
-                // Ищем надетый предмет в инвентаре
                 const mod = playerData.inventory.find(m => m.id === equippedId);
                 slot.className = 'scifi-slot-mini filled';
-                
-                // Берем картинку напрямую из объекта инвентаря (мы это настроили в QUBI PASS!)
-                const imgName = mod.img || 'module_01.png';
+                const imgName = (mod && mod.img) ? mod.img : 'module_01.png';
                 slot.innerHTML = `<img src="assets/shop/${imgName}">`;
             } else {
                 slot.className = 'scifi-slot-mini empty';
-                slot.innerHTML = `<span style="font-size:14px; color:rgba(0,229,255,0.2);">+</span>`;
+                slot.innerHTML = `<span style="font-size:12px; color:rgba(0,229,255,0.15);">EMPTY</span>`;
             }
             activeContainer.appendChild(slot);
         }
     }
 
-    // ============================================================================
-    // 🎒 4. РЕНДЕР СЕТКИ ХРАНИЛИЩА (МОДУЛИ С УЧЕТОМ РЕДКОСТИ)
-    // ============================================================================
+    // 4. Отрисовка Хранилища в зависимости от выбранного таба
+    renderStorageContent();
+}
+
+// Новая функция раздельного рендеринга контента
+function renderStorageContent() {
     const scrollList = document.getElementById('inventory-scroll-list');
-    if (scrollList) {
-        scrollList.innerHTML = '';
+    if (!scrollList) return;
+    scrollList.innerHTML = '';
+
+    if (currentStorageTab === 'modules') {
+        // РЕНДЕР МОДУЛЕЙ СИСТЕМЫ
         if (playerData.inventory && playerData.inventory.length > 0) {
             playerData.inventory.forEach(item => {
                 const isEquipped = playerData.equipped && playerData.equipped.includes(item.id);
                 const card = document.createElement('div');
+                card.className = `scifi-item-card ${item.rarity || 'common'} ${isEquipped ? 'equipped' : ''}`;
                 
-                const rarityClass = item.rarity || 'common';
-                card.className = `scifi-item-card ${rarityClass} ${isEquipped ? 'equipped' : ''}`;
-                
-                const imgName = item.img || 'module_01.png';
-
                 card.innerHTML = `
-                    <img src="assets/shop/${imgName}" style="width:32px; height:32px; object-fit:contain;">
-                    <div style="display:flex; flex-direction:column; gap:2px;">
-                        <span style="font-size:11px; font-weight:bold; letter-spacing:0.3px;">${item.name}</span>
-                        <small style="color: ${isEquipped ? '#00e5ff' : '#668099'}; font-size:9px; font-weight:900;">
+                    <img src="assets/shop/${item.img || 'module_01.png'}">
+                    <div>
+                        <span>${item.name}</span>
+                        <small style="color: ${isEquipped ? '#00e5ff' : '#668099'};">
                             ${isEquipped ? '● ПОДКЛЮЧЕН' : 'В АНГАРЕ'}
                         </small>
                     </div>
                 `;
-                
                 card.onclick = () => toggleModule(item.id);
                 scrollList.appendChild(card);
             });
         } else {
-            scrollList.innerHTML = '<div style="grid-column: 1/3; text-align:center; padding:30px; color:#446688; font-size:12px;">СИСТЕМНЫЕ СКЛАДЫ ПУСТЫ.<br>Купите модули в Магазине.</div>';
+            scrollList.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#446688; font-size:12px;">НЕТ ДОСТУПНЫХ МОДУЛЕЙ</div>';
+        }
+    } else {
+        // РЕНДЕР NFT-КОЛЛЕКЦИИ
+        if (playerData.nfts && playerData.nfts.length > 0) {
+            playerData.nfts.forEach(nft => {
+                const card = document.createElement('div');
+                // Задаем NFT фиолетово-розовую рамку редкости
+                card.className = `scifi-item-card legendary`; 
+                
+                card.innerHTML = `
+                    <img src="assets/nfts/${nft.img || 'nft_default.png'}" style="border-radius: 4px;">
+                    <div>
+                        <span style="color: #ff007f;">${nft.name || 'Магический NFT'}</span>
+                        <small style="color: #ffea00;">💰 МУЛЬТИПЛИКАТОР: x${nft.multiplier || '1.5'}</small>
+                    </div>
+                `;
+                // Сюда можно повесить функцию просмотра или продажи NFT
+                card.onclick = () => alert(`Просмотр NFT: ${nft.name}`); 
+                scrollList.appendChild(card);
+            });
+        } else {
+            scrollList.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#884466; font-size:12px;">NFT НЕ ОБНАРУЖЕНЫ.<br>Разблокируйте их в QUBI PASS!</div>';
         }
     }
+}
+
+// Функция переключения вкладок
+function switchStorageTab(tabName) {
+    currentStorageTab = tabName;
+    
+    // Переключаем активные классы на кнопках
+    document.getElementById('tab-modules-btn').classList.toggle('active', tabName === 'modules');
+    document.getElementById('tab-nfts-btn').classList.toggle('active', tabName === 'nfts');
+    
+    // Перерисовываем список
+    renderStorageContent();
 }
 
 function toggleModule(modId) {
