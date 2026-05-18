@@ -1767,6 +1767,44 @@ function renderStorageContent() {
     }
 }
 
+// 🔥 МОДИФИЦИРОВАННАЯ ФУНКЦИЯ ОТКРЫТИЯ АНГАРА
+function openStation() {
+    const modal = document.getElementById('station-modal');
+    if (modal) {
+        modal.style.display = 'flex'; 
+        
+        /* ⚡️ ГЛАВНЫЙ СМАРТФОННЫЙ ФИКС: Временно разрешаем body скроллиться, 
+           чтобы жесты тача на мобилках ожили внутри ангара! */
+        document.body.style.position = 'relative';
+        document.body.style.overflow = 'auto';
+        document.body.style.touchAction = 'auto';
+    }
+
+    // Твой старый код обработки ресурсов и баров...
+    let current = { hp: 100, maxEnergy: 100, regenBonusMs: 0 };
+    if (typeof calculateCurrentStats === 'function') { current = calculateCurrentStats(); }
+    if (typeof playerData !== 'undefined') {
+        const tickQubi = document.getElementById('ticker-qubi');
+        if (tickQubi) tickQubi.innerText = Math.floor(playerData.qubi || 0);
+        // ... и так далее до конца функции ...
+    }
+    renderStorageContent();
+}
+
+// 🔥 МОДИФИЦИРОВАННАЯ ФУНКЦИЯ ЗАКРЫТИЯ АНГАРА (Кнопка "Назад" / "Вернуться в космос")
+function closeStation() {
+    const modal = document.getElementById('station-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        
+        /* ⚡️ ВОЗВРАЩАЕМ ВСЁ НА МЕСТА: Когда игрок выходит в космос, 
+           снова намертво зажимаем экран, как у тебя было в body изначально */
+        document.body.style.position = 'fixed';
+        document.body.style.overflow = 'hidden';
+        document.body.style.touchAction = 'none';
+    }
+}
+
 // Функция переключения вкладок
 function switchStorageTab(tabName) {
     currentStorageTab = tabName;
